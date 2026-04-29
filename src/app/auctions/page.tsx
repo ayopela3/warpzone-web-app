@@ -1,13 +1,13 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Gavel, Clock, Users, TrendingUp, Search, ArrowUpRight, X } from "lucide-react"
+import { useApp } from "@/components/shared/app-provider"
 
 interface Auction {
   id: number
@@ -62,6 +62,7 @@ type AuctionFilter = "all" | "live" | "upcoming" | "ended"
 export default function AuctionsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<AuctionFilter>("all")
+  const { requireAuth } = useApp()
 
   const filteredAuctions = useMemo(() => {
     let result = [...auctions]
@@ -199,12 +200,24 @@ export default function AuctionsPage() {
                         {auction.watchers} watching
                       </span>
                     </div>
-                    <Link href={`/auctions/${auction.id}`} className="block pt-2">
-                      <Button className="w-full" variant={auction.status === "live" ? "default" : "outline"}>
+                    <Button
+                      className="w-full mt-2"
+                      variant={auction.status === "live" ? "default" : "outline"}
+                      onClick={() => {
+                        if (!requireAuth()) {
+                          return
+                        }
+
+                        window.alert(
+                          auction.status === "live"
+                            ? `Bid flow opened for ${auction.name}.`
+                            : `You will be notified for ${auction.name}.`
+                        )
+                      }}
+                    >
                         {auction.status === "live" ? "Place Bid" : "Notify Me"}
                         <ArrowUpRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </Link>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

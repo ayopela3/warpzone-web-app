@@ -1,13 +1,13 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Trophy, MapPin, Calendar, Users, DollarSign, Search, X } from "lucide-react"
+import { useApp } from "@/components/shared/app-provider"
 
 interface Tournament {
   id: number
@@ -62,6 +62,7 @@ type TournamentFilter = "all" | "upcoming" | "open" | "past"
 export default function TournamentsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<TournamentFilter>("all")
+  const { requireAuth } = useApp()
 
   const filteredTournaments = useMemo(() => {
     let result = [...tournaments]
@@ -198,11 +199,18 @@ export default function TournamentsPage() {
                         style={{ width: `${(tournament.registered / tournament.maxPlayers) * 100}%` }}
                       ></div>
                     </div>
-                    <Link href={`/tournaments/${tournament.id}`} className="block pt-2">
-                      <Button className="w-full">
-                        {tournament.status === "open" ? "Register Now" : "View Details"}
-                      </Button>
-                    </Link>
+                    <Button
+                      className="w-full mt-2"
+                      onClick={() => {
+                        if (!requireAuth()) {
+                          return
+                        }
+
+                        window.alert(`Registration flow opened for ${tournament.name}.`)
+                      }}
+                    >
+                      {tournament.status === "open" ? "Register Now" : "View Details"}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

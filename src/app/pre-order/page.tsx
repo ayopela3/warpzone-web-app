@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, Clock, Package, CheckCircle, Search, Truck, X } from "lucide-react"
+import { useApp } from "@/components/shared/app-provider"
 
 interface PreOrder {
   id: number
@@ -50,6 +51,7 @@ type PreOrderFilter = "all" | "confirmed" | "processing" | "shipped" | "delivere
 export default function PreOrderPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<PreOrderFilter>("all")
+  const { addToCart, requireAuth } = useApp()
 
   const filteredPreOrders = useMemo(() => {
     let result = [...preOrders]
@@ -208,7 +210,23 @@ export default function PreOrderPage() {
                       <div className="flex gap-2 mt-4">
                         {order.status === "confirmed" && (
                           <>
-                            <Button size="sm">Reserve now</Button>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (!requireAuth()) {
+                                  return
+                                }
+
+                                addToCart({
+                                  id: `pre-order-${order.id}`,
+                                  name: order.product,
+                                  price: order.price,
+                                  category: "Pre-order",
+                                })
+                              }}
+                            >
+                              Reserve now
+                            </Button>
                             <Button variant="outline" size="sm">Details</Button>
                           </>
                         )}

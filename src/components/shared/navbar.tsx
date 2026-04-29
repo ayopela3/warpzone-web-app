@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { useApp } from "@/components/shared/app-provider"
 
 const navigation = [
   { name: "Shop", href: "/shop" },
@@ -22,6 +23,7 @@ const navigation = [
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { cartCount, isAuthenticated, signIn, signOut } = useApp()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -75,8 +77,15 @@ export function Navbar() {
               Sell with us
             </Link>
           </Button>
-          <Button size="icon" aria-label="Shopping cart">
-            <ShoppingCart className="h-5 w-5" />
+          <Button size="icon" aria-label="Shopping cart" className="relative" asChild>
+            <Link href="/cart">
+              <ShoppingCart className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-black px-1 text-xs font-black text-white">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -85,6 +94,9 @@ export function Navbar() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={isAuthenticated ? signOut : signIn}>
+                {isAuthenticated ? "Sign out" : "Sign in"}
+              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/dashboard">Dashboard</Link>
               </DropdownMenuItem>

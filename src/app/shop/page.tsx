@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Search, ShoppingBag, ArrowUpDown, X } from "lucide-react"
+import { useApp } from "@/components/shared/app-provider"
 
 interface Category {
   id: string
@@ -152,6 +153,7 @@ export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedCondition, setSelectedCondition] = useState<string>("all")
   const [sortBy, setSortBy] = useState<SortOption>("relevance")
+  const { addToCart } = useApp()
 
   const filteredProducts = useMemo(() => {
     let result = [...products]
@@ -341,7 +343,19 @@ export default function ShopPage() {
                         <span className="text-xl font-black text-primary">${product.price.toLocaleString()}</span>
                         <Badge variant="outline">{product.condition}</Badge>
                       </div>
-                      <Button className="w-full mt-3" disabled={!product.inStock}>
+                      <Button
+                        className="w-full mt-3"
+                        disabled={!product.inStock}
+                        onClick={(event) => {
+                          event.preventDefault()
+                          addToCart({
+                            id: String(product.id),
+                            name: product.name,
+                            price: product.price,
+                            category: product.category,
+                          })
+                        }}
+                      >
                         {product.inStock ? "Add to Cart" : "Out of Stock"}
                       </Button>
                     </div>
