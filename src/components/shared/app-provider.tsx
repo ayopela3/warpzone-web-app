@@ -16,6 +16,7 @@ type AppContextValue = {
   cartTotal: number
   isAuthenticated: boolean
   userId: string | null
+  userRole: string | null
   addToCart: (item: Omit<CartItem, "quantity">) => void
   removeFromCart: (id: string) => void
   updateCartQuantity: (id: string, quantity: number) => void
@@ -31,6 +32,7 @@ const AppContext = createContext<AppContextValue | undefined>(undefined)
 const cartStorageKey = "warpzone-cart"
 const sessionIdKey = "warpzone-session-id"
 const userIdKey = "warpzone-user-id"
+const userRoleKey = "warpzone-user-role"
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -54,6 +56,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return null
     }
     return window.localStorage.getItem(userIdKey)
+  })
+
+  const [userRole, setUserRole] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null
+    }
+    return window.localStorage.getItem(userRoleKey)
   })
 
   useEffect(() => {
@@ -125,8 +134,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (data.success) {
         window.localStorage.setItem(sessionIdKey, data.sessionId)
         window.localStorage.setItem(userIdKey, data.userId)
+        window.localStorage.setItem(userRoleKey, data.userRole || "regular-user")
         setIsAuthenticated(true)
         setUserId(data.userId)
+        setUserRole(data.userRole || "regular-user")
         return { success: true }
       }
       return { success: false, error: data.error || "Sign in failed" }
@@ -149,8 +160,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     window.localStorage.removeItem(sessionIdKey)
     window.localStorage.removeItem(userIdKey)
+    window.localStorage.removeItem(userRoleKey)
     setIsAuthenticated(false)
     setUserId(null)
+    setUserRole(null)
   }, [])
 
   const requireAuth = useCallback(() => {
@@ -172,6 +185,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       cartTotal,
       isAuthenticated,
       userId,
+      userRole,
       addToCart,
       removeFromCart,
       updateCartQuantity,
@@ -181,7 +195,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       signOut,
       requireAuth,
     }
-  }, [cartItems, isAuthenticated, userId, addToCart, removeFromCart, updateCartQuantity, clearCart, signUp, signIn, signOut, requireAuth])
+  }, [cartItems, isAuthenticated, userId, userRole, addToCart, removeFromCart, updateCartQuantity, clearCart, signUp, signIn, signOut, requireAuth])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

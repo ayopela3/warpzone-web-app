@@ -18,18 +18,22 @@ const navigation = [
   { name: "Auctions", href: "/auctions" },
   { name: "Tournaments", href: "/tournaments" },
   { name: "Pre-orders", href: "/pre-order" },
-  { name: "Sell", href: "/seller" },
 ]
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const { cartCount, isAuthenticated, signOut } = useApp()
+  const { cartCount, isAuthenticated, userRole, signOut } = useApp()
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
   }, [])
+
+  // Show Sell with Us button only for unauthenticated users or regular users
+  const showSellButton = !isAuthenticated || userRole === "regular-user"
+  // Show Admin Dashboard only for admin users
+  const showAdminDashboard = userRole === "admin"
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -72,17 +76,19 @@ export function Navbar() {
             </Link>
           ))}
         </div>
-        
+
         <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:gap-4">
           <Button variant="ghost" size="icon" aria-label="Search inventory">
             <Search className="h-5 w-5" />
           </Button>
-          <Button variant="outline" asChild>
-            <Link href="/seller">
-              <Store className="h-4 w-4" />
-              Sell with us
-            </Link>
-          </Button>
+          {showSellButton && (
+            <Button variant="outline" asChild>
+              <Link href="/auth/become-seller">
+                <Store className="h-4 w-4" />
+                Sell with us
+              </Link>
+            </Button>
+          )}
           <Button size="icon" aria-label="Shopping cart" className="relative" asChild>
             <Link href="/cart">
               <ShoppingCart className="h-5 w-5" />
@@ -101,6 +107,11 @@ export function Navbar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {showAdminDashboard && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin">Admin Dashboard</Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => signOut()}>
                   Sign out
                 </DropdownMenuItem>
@@ -159,6 +170,15 @@ export function Navbar() {
                   {item.name}
                 </Link>
               ))}
+              {showSellButton && (
+                <Link
+                  href="/auth/become-seller"
+                  className="block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-foreground hover:bg-accent"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sell with us
+                </Link>
+              )}
             </div>
             <div className="border-t py-6 space-y-2">
               {isAuthenticated ? (
