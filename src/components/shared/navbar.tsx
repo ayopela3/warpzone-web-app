@@ -93,43 +93,38 @@ export function Navbar() {
               )}
             </Link>
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Account menu">
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Account menu">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => signOut()}>
+                  Sign out
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard">Dashboard</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/orders">My Orders</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/auctions">My Bids</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/tournaments">My Tournaments</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="ghost" size="icon" aria-label="Sign in" asChild>
+              <Link href="/auth/signin">
                 <User className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {isAuthenticated ? (
-                <>
-                  <DropdownMenuItem onClick={() => signOut()}>
-                    Sign out
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard">Dashboard</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/orders">My Orders</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/auctions">My Bids</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/tournaments">My Tournaments</Link>
-                  </DropdownMenuItem>
-                </>
-              ) : (
-                <>
-                  <DropdownMenuItem asChild>
-                    <Link href="/auth/signin">Sign in</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/auth/signup">Sign up</Link>
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </Link>
+            </Button>
+          )}
         </div>
       </nav>
       

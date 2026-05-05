@@ -8,5 +8,8 @@ database_name = "warpzone-db"
 database_id = "your-database-id"
 
 [build]
-command = "npm run build"
-output_directory = "dist"
+command = "npm run cloudflare:build"
+
+[assets]
+directory = ".vercel/output/static"
+binding = "ASSETS"
