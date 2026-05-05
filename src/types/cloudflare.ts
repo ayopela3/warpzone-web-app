@@ -1,5 +1,49 @@
 export interface CloudflareEnv {
   DB: D1Database
+  IMAGES: R2Bucket
+}
+
+export interface R2Bucket {
+  put(key: string, value: Uint8Array, options?: R2PutOptions): Promise<void>
+  get(key: string): Promise<R2Object | null>
+  delete(key: string): Promise<void>
+  list(options?: R2ListOptions): Promise<R2Objects>
+  bucketName: string
+}
+
+export interface R2PutOptions {
+  httpMetadata?: {
+    contentType?: string
+    cacheControl?: string
+    contentEncoding?: string
+    contentLanguage?: string
+    contentDisposition?: string
+  }
+  customMetadata?: Record<string, string>
+}
+
+export interface R2Object {
+  key: string
+  size: number
+  httpMetadata?: {
+    contentType?: string
+  }
+  customMetadata?: Record<string, string>
+  write: () => ReadableStream
+}
+
+export interface R2Objects {
+  objects: Array<{
+    key: string
+    size: number
+  }>
+  truncated: boolean
+}
+
+export interface R2ListOptions {
+  limit?: number
+  prefix?: string
+  cursor?: string
 }
 
 export interface D1Database {
