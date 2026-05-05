@@ -7,16 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-const featuredCards = [
-  { id: 1, name: "Charizard ex Special Illustration Rare", game: "Pokemon", price: 189.99, condition: "Near Mint" },
-  { id: 2, name: "The One Ring Borderless Foil", game: "Magic", price: 129.99, condition: "Mint" },
-  { id: 3, name: "Blue-Eyes White Dragon Quarter Century", game: "Yu-Gi-Oh!", price: 74.99, condition: "Near Mint" },
-]
+const featuredCards: Array<{ id: number; name: string; game: string; price: number; condition: string }> = []
 
-const upcomingEvents = [
-  { id: 1, title: "Friday Night Commander Pods", date: "May 3", players: "24 seats", prize: "Store credit" },
-  { id: 2, title: "Pokemon League Challenge", date: "May 11", players: "32 seats", prize: "Booster boxes" },
-]
+const upcomingEvents: Array<{ id: number; title: string; date: string; players: string; prize: string }> = []
 
 const services = [
   { title: "Verified singles", description: "Condition-checked cards from Pokemon, MTG, Yu-Gi-Oh!, and more.", icon: ShieldCheck },
@@ -38,6 +31,100 @@ export default function HomePage() {
   const showNextFeaturedCard = () => {
     setActiveFeaturedIndex((currentIndex) =>
       currentIndex === featuredCards.length - 1 ? 0 : currentIndex + 1
+    )
+  }
+
+  if (featuredCards.length === 0) {
+    return (
+      <div className="bg-white text-black">
+        <section className="relative overflow-hidden border-b border-black bg-primary text-black">
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.42),transparent_45%)]" />
+          <div className="relative mx-auto max-w-7xl px-4 py-20 lg:px-8 lg:py-28">
+            <div className="flex flex-col items-center justify-center text-center">
+              <Badge className="mb-6 w-fit border-black bg-white text-black hover:bg-white">
+                <Sparkles className="mr-2 h-3.5 w-3.5" />
+                Your local TCG hobby shop online
+              </Badge>
+              <h1 className="max-w-3xl text-5xl font-black tracking-tight sm:text-6xl lg:text-7xl">
+                Buy cards, reserve releases, bid on grails, and join events.
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg font-medium leading-8 text-black/80">
+                The Warpzone brings your favorite hobby shop experience online with curated singles,
+                sealed products, live auctions, pre-orders, and tournament registration.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Button size="lg" className="bg-black text-white hover:bg-neutral-800" asChild>
+                  <Link href="/shop">
+                    Shop cards
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button size="lg" className="border border-black bg-white text-black hover:bg-white/90" asChild>
+                  <Link href="/tournaments">
+                    Join tournaments
+                    <Trophy className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 py-16 lg:px-8">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {services.map((service) => (
+              <Card key={service.title} className="border-neutral-200 bg-white transition hover:-translate-y-1 hover:border-black hover:shadow-lg">
+                <CardContent className="p-6">
+                  <service.icon className="mb-4 h-8 w-8 text-primary" />
+                  <h3 className="font-black text-black">{service.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-neutral-600">{service.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 py-16 lg:px-8">
+          <div className="text-center">
+            <ShoppingBag className="mx-auto h-12 w-12 text-neutral-300" />
+            <h2 className="mt-4 text-xl font-semibold">No featured products yet</h2>
+            <p className="mt-2 text-sm text-neutral-600">Check back later for new listings</p>
+          </div>
+        </section>
+
+        <section className="mx-auto grid max-w-7xl gap-8 px-4 py-16 lg:grid-cols-2 lg:px-8">
+          <Card className="border-neutral-200 bg-white shadow-sm">
+            <CardHeader>
+              <Badge className="w-fit">Live now</Badge>
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <Gavel className="h-6 w-6 text-primary" />
+                Auction block
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-6 text-neutral-600">Bid on graded slabs, sealed boxes, and hard-to-find singles.</p>
+              <Button asChild>
+                <Link href="/auctions">Browse auctions</Link>
+              </Button>
+            </CardContent>
+          </Card>
+          <Card className="border-neutral-200 bg-white shadow-sm">
+            <CardHeader>
+              <Badge className="w-fit">Events</Badge>
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <CalendarDays className="h-6 w-6 text-primary" />
+                Upcoming tournaments
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-6 text-neutral-600">No upcoming events scheduled yet.</p>
+              <Button variant="outline" asChild>
+                <Link href="/tournaments">See event calendar</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
+      </div>
     )
   }
 

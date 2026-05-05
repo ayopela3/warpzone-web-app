@@ -3,7 +3,7 @@ INSERT INTO users (id, email, password_hash, created_at)
 VALUES (
   '9127bd51-d8d9-449c-a7eb-b85e0631a497',
   'admin@warpzone.com',
-  '$2b$10$lsN/UiCZIQju/xTFtpVuNOcE3ZOodGiM7QZDqAV9ZUkocwZwmM9qG',
+  '$2b$10$KLHFfzC3GZuYAVSBqzRasOvaSPl927YbeuXoXDLELWo33sFAkd7N6',
   datetime('now')
 );
 
@@ -12,7 +12,7 @@ INSERT INTO users (id, email, password_hash, created_at)
 VALUES (
   '56f6605c-1631-415a-af04-560cd69445d2',
   'seller@warpzone.com',
-  '$2b$10$RoawqLIXVKhE4WAlf5BimOLqldAeHcqxTEhyfHwwlpcqfQSqSf0rq',
+  '$2b$10$xG6foB.k4av1prpSgaIGWeIeM89LKM5qJhrC0CRpCggwFG.tiwGVe',
   datetime('now')
 );
 

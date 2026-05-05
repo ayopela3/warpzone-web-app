@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -13,26 +15,204 @@ import {
   DollarSign, 
   ShoppingBag,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Plus
 } from "lucide-react"
+import { useApp } from "@/components/shared/app-provider"
 
-const recentOrders = [
-  { id: "ORD-001", date: "Dec 8, 2024", total: 299.99, status: "delivered", items: 2 },
-  { id: "ORD-002", date: "Dec 5, 2024", total: 149.99, status: "shipped", items: 1 },
-  { id: "ORD-003", date: "Dec 1, 2024", total: 599.99, status: "processing", items: 3 },
-]
+const recentOrders: Array<{ id: string; date: string; total: number; status: string; items: number }> = []
 
-const activeBids = [
-  { id: 1, item: "1st Edition Charizard", currentBid: 25000, yourBid: 23000, endTime: "2h 30m", status: "outbid" },
-  { id: 2, item: "Tropical Mega Battle Pikachu", currentBid: 8500, yourBid: 8500, endTime: "5h 15m", status: "winning" },
-]
+const activeBids: Array<{ id: number; item: string; currentBid: number; yourBid: number; endTime: string; status: string }> = []
 
-const upcomingTournaments = [
-  { id: 1, name: "Pokemon Regional Championship", date: "Dec 15, 2024", location: "Los Angeles, CA" },
-  { id: 2, name: "MTG Pro Tour", date: "Dec 22, 2024", location: "Las Vegas, NV" },
-]
+const upcomingTournaments: Array<{ id: number; name: string; date: string; location: string }> = []
+
+const sellerProducts: Array<{ id: string; name: string; sku: string; price: number; quantity: number, condition: string }> = []
+
+const sellerOrders: Array<{ id: string; customer: string; total: number; status: string, items: number }> = []
 
 export default function DashboardPage() {
+  const router = useRouter()
+  const { isAuthenticated, userRole } = useApp()
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/auth/signin")
+    }
+  }, [isAuthenticated, router])
+
+  if (!isAuthenticated) {
+    return null
+  }
+
+  // Redirect admin to admin dashboard
+  if (userRole === "admin") {
+    router.push("/admin")
+    return null
+  }
+
+  // Seller dashboard
+  if (userRole === "seller") {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="border-b bg-muted/50">
+          <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
+            <h1 className="text-3xl font-bold">Seller Dashboard</h1>
+            <p className="text-muted-foreground mt-1">Manage your products and orders</p>
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Package className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Products</p>
+                    <p className="text-2xl font-bold">0</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <ShoppingBag className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Orders</p>
+                    <p className="text-2xl font-bold">0</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 bg-emerald-100 rounded-lg">
+                    <DollarSign className="h-5 w-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Revenue</p>
+                    <p className="text-2xl font-bold">$0</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 bg-amber-100 rounded-lg">
+                    <Clock className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Pending</p>
+                    <p className="text-2xl font-bold">0</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Tabs defaultValue="products" className="space-y-6">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="products">Manage Products</TabsTrigger>
+              <TabsTrigger value="orders">Manage Orders</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="products" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Your Products</h2>
+                <Button asChild>
+                  <Link href="/seller/listings/new">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Product
+                  </Link>
+                </Button>
+              </div>
+              {sellerProducts.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <Package className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-4 text-lg font-semibold">No products yet</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">Add your first product to start selling</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {sellerProducts.map((product) => (
+                    <Card key={product.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold">{product.name}</p>
+                            <p className="text-sm text-muted-foreground">SKU: {product.sku} · {product.condition}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold">${product.price}</p>
+                            <Badge variant="outline">{product.quantity} in stock</Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="orders" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Incoming Orders</h2>
+              </div>
+              {sellerOrders.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-4 text-lg font-semibold">No orders yet</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">Orders from customers will appear here</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {sellerOrders.map((order) => (
+                    <Card key={order.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="p-2 bg-primary/10 rounded-lg">
+                              <ShoppingBag className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-semibold">{order.customer}</p>
+                              <p className="text-sm text-muted-foreground">{order.items} items</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold">${order.total.toFixed(2)}</p>
+                            <Badge variant={
+                              order.status === "delivered" ? "secondary" :
+                              order.status === "shipped" ? "outline" : "default"
+                            }>
+                              {order.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    )
+  }
+
+  // Regular user dashboard
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}

@@ -112,20 +112,11 @@ export function Navbar() {
                     <Link href="/admin">Admin Dashboard</Link>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => signOut()}>
-                  Sign out
-                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard">Dashboard</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/orders">My Orders</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/auctions">My Bids</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/tournaments">My Tournaments</Link>
+                <DropdownMenuItem onClick={() => signOut()}>
+                  Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

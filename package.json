@@ -3,8 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "npm run dev:next",
+    "dev:wrangler": "npm run init-local-db && npm run build:cf && wrangler pages dev --compatibility-date=2025-01-01 --d1 DB",
+    "dev:next": "next dev",
     "build": "next build",
+    "build:cf": "next build && npx @cloudflare/next-on-pages",
+    "init-local-db": "npx wrangler d1 execute DB --local --file=./schema.sql && npx wrangler d1 execute DB --local --file=./prisma/migrations/20260505_seed_users/migration.sql",
     "start": "next start",
     "lint": "eslint"
   },

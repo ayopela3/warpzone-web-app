@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getRequestContext } from "@cloudflare/next-on-pages"
 import bcrypt from "bcryptjs"
 import type { CloudflareEnv } from "@/types/cloudflare"
+
+export const runtime = "edge"
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,8 +10,17 @@ export async function POST(request: NextRequest) {
     const { email, password } = body
 
     // Get D1 database binding from Cloudflare context
-    const { env } = getRequestContext()
-    const db = (env as CloudflareEnv).DB
+    let db: CloudflareEnv["DB"] | null = null
+    try {
+      const { getRequestContext } = await import("@cloudflare/next-on-pages")
+      const { env } = getRequestContext()
+      db = (env as CloudflareEnv).DB
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Database connection failed. Ensure you're running in Cloudflare environment." },
+        { status: 500 }
+      )
+    }
 
     if (!db) {
       return NextResponse.json({ success: false, error: "Database not available" }, { status: 500 })
@@ -20,7 +30,7 @@ export async function POST(request: NextRequest) {
     const user = await db
       .prepare("SELECT id, email, password_hash FROM users WHERE email = ?")
       .bind(email)
-      .first<{ id: string; email: string; password_hash: string }>()
+      .first() as { id: string; email: string; password_hash: string } | null
 
     if (!user) {
       return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
@@ -36,7 +46,7 @@ export async function POST(request: NextRequest) {
     const profile = await db
       .prepare("SELECT role FROM profiles WHERE user_id = ?")
       .bind(user.id)
-      .first<{ role: string }>()
+      .first() as { role: string } | null
 
     const userRole = profile?.role || "regular-user"
 
@@ -57,6 +67,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Signin error:", error)
-    return NextResponse.json({ success: false, error: "Sign in failed" }, { status: 500 })
+    return NextResponse.json({ success: false, error: "Failed to sign in" }, { status: 500 })
   }
 }
