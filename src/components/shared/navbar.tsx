@@ -34,6 +34,8 @@ export function Navbar() {
   const showSellButton = !isAuthenticated || userRole === "regular-user"
   // Show Admin Dashboard only for admin users
   const showAdminDashboard = userRole === "admin"
+  // Show cart button and shopping features only for non-seller users
+  const showShoppingFeatures = !isAuthenticated || userRole === "regular-user"
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -66,7 +68,7 @@ export function Navbar() {
         </div>
         
         <div className="hidden lg:flex lg:gap-x-8">
-          {navigation.map((item) => (
+          {showShoppingFeatures && navigation.map((item) => (
             <Link
               key={item.name}
               href={item.href}
@@ -78,9 +80,11 @@ export function Navbar() {
         </div>
 
         <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:gap-4">
-          <Button variant="ghost" size="icon" aria-label="Search inventory">
-            <Search className="h-5 w-5" />
-          </Button>
+          {showShoppingFeatures && (
+            <Button variant="ghost" size="icon" aria-label="Search inventory">
+              <Search className="h-5 w-5" />
+            </Button>
+          )}
           {showSellButton && (
             <Button variant="outline" asChild>
               <Link href="/auth/become-seller">
@@ -89,16 +93,18 @@ export function Navbar() {
               </Link>
             </Button>
           )}
-          <Button size="icon" aria-label="Shopping cart" className="relative" asChild>
-            <Link href="/cart">
-              <ShoppingCart className="h-5 w-5" />
-              {mounted && cartCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-black px-1 text-xs font-black text-white">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-          </Button>
+          {showShoppingFeatures && (
+            <Button size="icon" aria-label="Shopping cart" className="relative" asChild>
+              <Link href="/cart">
+                <ShoppingCart className="h-5 w-5" />
+                {mounted && cartCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-black px-1 text-xs font-black text-white">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+            </Button>
+          )}
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -151,7 +157,7 @@ export function Navbar() {
           </div>
           <div className="mt-6 flow-root px-4">
             <div className="space-y-2 py-6">
-              {navigation.map((item) => (
+              {showShoppingFeatures && navigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}

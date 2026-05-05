@@ -53,64 +53,74 @@ export default function DashboardPage() {
   // Seller dashboard
   if (userRole === "seller") {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="border-b bg-muted/50">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="border-b bg-white shadow-sm">
           <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-            <h1 className="text-3xl font-bold">Seller Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Manage your products and orders</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Seller Dashboard</h1>
+                <p className="text-gray-600 mt-1">Manage your products, auctions, and orders</p>
+              </div>
+              <Button asChild className="bg-primary hover:bg-primary/90">
+                <Link href="/seller/listings/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Listing
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
 
-        <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <Card>
-              <CardContent className="p-4">
+        <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Package className="h-5 w-5 text-primary" />
+                  <div className="p-3 bg-primary/10 rounded-xl">
+                    <Package className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Products</p>
-                    <p className="text-2xl font-bold">0</p>
+                    <p className="text-sm font-medium text-gray-600">Products</p>
+                    <p className="text-3xl font-bold text-gray-900">0</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4">
+            <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <ShoppingBag className="h-5 w-5 text-blue-600" />
+                  <div className="p-3 bg-blue-100 rounded-xl">
+                    <ShoppingBag className="h-6 w-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Orders</p>
-                    <p className="text-2xl font-bold">0</p>
+                    <p className="text-sm font-medium text-gray-600">Orders</p>
+                    <p className="text-3xl font-bold text-gray-900">0</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4">
+            <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-2 bg-emerald-100 rounded-lg">
-                    <DollarSign className="h-5 w-5 text-emerald-600" />
+                  <div className="p-3 bg-emerald-100 rounded-xl">
+                    <DollarSign className="h-6 w-6 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Revenue</p>
-                    <p className="text-2xl font-bold">$0</p>
+                    <p className="text-sm font-medium text-gray-600">Revenue</p>
+                    <p className="text-3xl font-bold text-gray-900">$0</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4">
+            <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-2 bg-amber-100 rounded-lg">
-                    <Clock className="h-5 w-5 text-amber-600" />
+                  <div className="p-3 bg-amber-100 rounded-xl">
+                    <Gavel className="h-6 w-6 text-amber-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Pending</p>
-                    <p className="text-2xl font-bold">0</p>
+                    <p className="text-sm font-medium text-gray-600">Active Auctions</p>
+                    <p className="text-3xl font-bold text-gray-900">0</p>
                   </div>
                 </div>
               </CardContent>
@@ -118,42 +128,45 @@ export default function DashboardPage() {
           </div>
 
           <Tabs defaultValue="products" className="space-y-6">
-            <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="products">Manage Products</TabsTrigger>
-              <TabsTrigger value="orders">Manage Orders</TabsTrigger>
+            <TabsList className="grid w-full max-w-lg grid-cols-3 bg-white p-1">
+              <TabsTrigger value="products" className="data-[state=active]:bg-primary data-[state=active]:text-white">Products</TabsTrigger>
+              <TabsTrigger value="auctions" className="data-[state=active]:bg-primary data-[state=active]:text-white">Auctions</TabsTrigger>
+              <TabsTrigger value="orders" className="data-[state=active]:bg-primary data-[state=active]:text-white">Orders</TabsTrigger>
             </TabsList>
 
             <TabsContent value="products" className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Your Products</h2>
-                <Button asChild>
-                  <Link href="/seller/listings/new">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Product
-                  </Link>
-                </Button>
+                <h2 className="text-xl font-bold text-gray-900">Your Products</h2>
               </div>
               {sellerProducts.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <Package className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-4 text-lg font-semibold">No products yet</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">Add your first product to start selling</p>
+                <Card className="bg-white shadow-md">
+                  <CardContent className="p-12 text-center">
+                    <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
+                      <Package className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="mt-6 text-xl font-semibold text-gray-900">No products yet</h3>
+                    <p className="mt-2 text-gray-600">Add your first product to start selling on Warpzone</p>
+                    <Button asChild className="mt-6 bg-primary hover:bg-primary/90">
+                      <Link href="/seller/listings/new">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Your First Product
+                      </Link>
+                    </Button>
                   </CardContent>
                 </Card>
               ) : (
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {sellerProducts.map((product) => (
-                    <Card key={product.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
+                    <Card key={product.id} className="bg-white shadow-md hover:shadow-lg transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="space-y-4">
                           <div>
-                            <p className="font-semibold">{product.name}</p>
-                            <p className="text-sm text-muted-foreground">SKU: {product.sku} · {product.condition}</p>
+                            <p className="font-bold text-gray-900">{product.name}</p>
+                            <p className="text-sm text-gray-600">SKU: {product.sku} · {product.condition}</p>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold">${product.price}</p>
-                            <Badge variant="outline">{product.quantity} in stock</Badge>
+                          <div className="flex items-center justify-between pt-4 border-t">
+                            <p className="text-2xl font-bold text-primary">${product.price}</p>
+                            <Badge variant="outline" className="text-sm">{product.quantity} in stock</Badge>
                           </div>
                         </div>
                       </CardContent>
@@ -163,39 +176,68 @@ export default function DashboardPage() {
               )}
             </TabsContent>
 
+            <TabsContent value="auctions" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">Your Auctions</h2>
+                <Button asChild className="bg-primary hover:bg-primary/90">
+                  <Link href="/seller/auctions/new">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Auction
+                  </Link>
+                </Button>
+              </div>
+              <Card className="bg-white shadow-md">
+                <CardContent className="p-12 text-center">
+                  <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
+                    <Gavel className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="mt-6 text-xl font-semibold text-gray-900">No auctions yet</h3>
+                  <p className="mt-2 text-gray-600">Create your first auction to start bidding wars on your products</p>
+                  <Button asChild className="mt-6 bg-primary hover:bg-primary/90">
+                    <Link href="/seller/auctions/new">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Your First Auction
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="orders" className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Incoming Orders</h2>
+                <h2 className="text-xl font-bold text-gray-900">Incoming Orders</h2>
               </div>
               {sellerOrders.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-4 text-lg font-semibold">No orders yet</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">Orders from customers will appear here</p>
+                <Card className="bg-white shadow-md">
+                  <CardContent className="p-12 text-center">
+                    <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
+                      <ShoppingBag className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="mt-6 text-xl font-semibold text-gray-900">No orders yet</h3>
+                    <p className="mt-2 text-gray-600">Orders from customers will appear here</p>
                   </CardContent>
                 </Card>
               ) : (
                 <div className="space-y-4">
                   {sellerOrders.map((order) => (
-                    <Card key={order.id}>
-                      <CardContent className="p-4">
+                    <Card key={order.id} className="bg-white shadow-md">
+                      <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                              <ShoppingBag className="h-5 w-5 text-primary" />
+                            <div className="p-3 bg-primary/10 rounded-xl">
+                              <ShoppingBag className="h-6 w-6 text-primary" />
                             </div>
                             <div>
-                              <p className="font-semibold">{order.customer}</p>
-                              <p className="text-sm text-muted-foreground">{order.items} items</p>
+                              <p className="font-bold text-gray-900">{order.customer}</p>
+                              <p className="text-sm text-gray-600">{order.items} items</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold">${order.total.toFixed(2)}</p>
+                            <p className="text-2xl font-bold text-gray-900">${order.total.toFixed(2)}</p>
                             <Badge variant={
                               order.status === "delivered" ? "secondary" :
                               order.status === "shipped" ? "outline" : "default"
-                            }>
+                            } className="text-sm">
                               {order.status}
                             </Badge>
                           </div>
@@ -214,66 +256,66 @@ export default function DashboardPage() {
 
   // Regular user dashboard
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="border-b bg-muted/50">
+      <div className="border-b bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Welcome back! Here is your overview.</p>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 mt-1">Welcome back! Here is your overview.</p>
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Package className="h-5 w-5 text-primary" />
+                <div className="p-3 bg-primary/10 rounded-xl">
+                  <Package className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Orders</p>
-                  <p className="text-2xl font-bold">12</p>
+                  <p className="text-sm font-medium text-gray-600">Total Orders</p>
+                  <p className="text-3xl font-bold text-gray-900">12</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4">
+          <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-2 bg-amber-100 rounded-lg">
-                  <Gavel className="h-5 w-5 text-amber-600" />
+                <div className="p-3 bg-amber-100 rounded-xl">
+                  <Gavel className="h-6 w-6 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Active Bids</p>
-                  <p className="text-2xl font-bold">2</p>
+                  <p className="text-sm font-medium text-gray-600">Active Bids</p>
+                  <p className="text-3xl font-bold text-gray-900">2</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4">
+          <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-2 bg-emerald-100 rounded-lg">
-                  <Trophy className="h-5 w-5 text-emerald-600" />
+                <div className="p-3 bg-emerald-100 rounded-xl">
+                  <Trophy className="h-6 w-6 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Tournaments</p>
-                  <p className="text-2xl font-bold">3</p>
+                  <p className="text-sm font-medium text-gray-600">Tournaments</p>
+                  <p className="text-3xl font-bold text-gray-900">3</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4">
+          <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-blue-600" />
+                <div className="p-3 bg-blue-100 rounded-xl">
+                  <DollarSign className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Spent</p>
-                  <p className="text-2xl font-bold">$2,439</p>
+                  <p className="text-sm font-medium text-gray-600">Total Spent</p>
+                  <p className="text-3xl font-bold text-gray-900">$2,439</p>
                 </div>
               </div>
             </CardContent>
@@ -282,125 +324,167 @@ export default function DashboardPage() {
 
         {/* Main Content */}
         <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="auctions">Auctions</TabsTrigger>
-            <TabsTrigger value="tournaments">Tournaments</TabsTrigger>
+          <TabsList className="grid w-full max-w-lg grid-cols-3 bg-white p-1">
+            <TabsTrigger value="orders" className="data-[state=active]:bg-primary data-[state=active]:text-white">Orders</TabsTrigger>
+            <TabsTrigger value="auctions" className="data-[state=active]:bg-primary data-[state=active]:text-white">Auctions</TabsTrigger>
+            <TabsTrigger value="tournaments" className="data-[state=active]:bg-primary data-[state=active]:text-white">Tournaments</TabsTrigger>
           </TabsList>
 
           <TabsContent value="orders" className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Recent Orders</h2>
+              <h2 className="text-xl font-bold text-gray-900">Recent Orders</h2>
               <Link href="/dashboard/orders">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="border-2">
                   View All
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </div>
             <div className="space-y-4">
-              {recentOrders.map((order) => (
-                <Card key={order.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <ShoppingBag className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-semibold">{order.id}</p>
-                          <p className="text-sm text-muted-foreground">{order.items} items &bull; {order.date}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold">${order.total.toFixed(2)}</p>
-                        <Badge variant={
-                          order.status === "delivered" ? "secondary" :
-                          order.status === "shipped" ? "outline" : "default"
-                        }>
-                          {order.status}
-                        </Badge>
-                      </div>
+              {recentOrders.length === 0 ? (
+                <Card className="bg-white shadow-md">
+                  <CardContent className="p-12 text-center">
+                    <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
+                      <ShoppingBag className="h-8 w-8 text-gray-400" />
                     </div>
+                    <h3 className="mt-6 text-xl font-semibold text-gray-900">No orders yet</h3>
+                    <p className="mt-2 text-gray-600">Start shopping to see your orders here</p>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                <div className="space-y-4">
+                  {recentOrders.map((order) => (
+                    <Card key={order.id} className="bg-white shadow-md hover:shadow-lg transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 bg-primary/10 rounded-xl">
+                              <ShoppingBag className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-gray-900">{order.id}</p>
+                              <p className="text-sm text-gray-600">{order.items} items &bull; {order.date}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-gray-900">${order.total.toFixed(2)}</p>
+                            <Badge variant={
+                              order.status === "delivered" ? "secondary" :
+                              order.status === "shipped" ? "outline" : "default"
+                            } className="text-sm">
+                              {order.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
 
           <TabsContent value="auctions" className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Active Bids</h2>
+              <h2 className="text-xl font-bold text-gray-900">Active Bids</h2>
               <Link href="/dashboard/auctions">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="border-2">
                   View All
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </div>
             <div className="space-y-4">
-              {activeBids.map((bid) => (
-                <Card key={bid.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-amber-100 rounded-lg">
-                          <Gavel className="h-5 w-5 text-amber-600" />
-                        </div>
-                        <div>
-                          <p className="font-semibold">{bid.item}</p>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            Ends in {bid.endTime}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Current Bid</p>
-                        <p className="font-bold">${bid.currentBid.toLocaleString()}</p>
-                        <Badge variant={bid.status === "winning" ? "secondary" : "destructive"}>
-                          {bid.status === "winning" ? "Winning" : "Outbid"}
-                        </Badge>
-                      </div>
+              {activeBids.length === 0 ? (
+                <Card className="bg-white shadow-md">
+                  <CardContent className="p-12 text-center">
+                    <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
+                      <Gavel className="h-8 w-8 text-gray-400" />
                     </div>
+                    <h3 className="mt-6 text-xl font-semibold text-gray-900">No active bids</h3>
+                    <p className="mt-2 text-gray-600">Join auctions to see your active bids here</p>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                <div className="space-y-4">
+                  {activeBids.map((bid) => (
+                    <Card key={bid.id} className="bg-white shadow-md hover:shadow-lg transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 bg-amber-100 rounded-xl">
+                              <Gavel className="h-6 w-6 text-amber-600" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-gray-900">{bid.item}</p>
+                              <p className="text-sm text-gray-600 flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                Ends in {bid.endTime}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-gray-600">Current Bid</p>
+                            <p className="text-2xl font-bold text-gray-900">${bid.currentBid.toLocaleString()}</p>
+                            <Badge variant={bid.status === "winning" ? "secondary" : "destructive"} className="text-sm">
+                              {bid.status === "winning" ? "Winning" : "Outbid"}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
 
           <TabsContent value="tournaments" className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Registered Tournaments</h2>
+              <h2 className="text-xl font-bold text-gray-900">Registered Tournaments</h2>
               <Link href="/dashboard/tournaments">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="border-2">
                   View All
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </div>
             <div className="space-y-4">
-              {upcomingTournaments.map((tournament) => (
-                <Card key={tournament.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-emerald-100 rounded-lg">
-                          <Trophy className="h-5 w-5 text-emerald-600" />
-                        </div>
-                        <div>
-                          <p className="font-semibold">{tournament.name}</p>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {tournament.date}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge>Registered</Badge>
+              {upcomingTournaments.length === 0 ? (
+                <Card className="bg-white shadow-md">
+                  <CardContent className="p-12 text-center">
+                    <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
+                      <Trophy className="h-8 w-8 text-gray-400" />
                     </div>
+                    <h3 className="mt-6 text-xl font-semibold text-gray-900">No tournaments yet</h3>
+                    <p className="mt-2 text-gray-600">Register for tournaments to see them here</p>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                <div className="space-y-4">
+                  {upcomingTournaments.map((tournament) => (
+                    <Card key={tournament.id} className="bg-white shadow-md hover:shadow-lg transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 bg-emerald-100 rounded-xl">
+                              <Trophy className="h-6 w-6 text-emerald-600" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-gray-900">{tournament.name}</p>
+                              <p className="text-sm text-gray-600 flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {tournament.date}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge className="text-sm">Registered</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>

@@ -90,6 +90,51 @@ CREATE TABLE IF NOT EXISTS sessions (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Auctions table
+CREATE TABLE IF NOT EXISTS auctions (
+  id TEXT PRIMARY KEY,
+  seller_id TEXT NOT NULL,
+  product_id TEXT NOT NULL,
+  listing_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  starting_price REAL NOT NULL,
+  current_bid REAL NOT NULL DEFAULT 0,
+  min_bid_increment REAL NOT NULL DEFAULT 1,
+  start_time TEXT NOT NULL,
+  end_time TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'upcoming',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (seller_id) REFERENCES profiles(id) ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+  FOREIGN KEY (listing_id) REFERENCES product_listings(id) ON DELETE CASCADE
+);
+
+-- Auction bids table
+CREATE TABLE IF NOT EXISTS auction_bids (
+  id TEXT PRIMARY KEY,
+  auction_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  bid_amount REAL NOT NULL,
+  bid_time TEXT NOT NULL DEFAULT (datetime('now')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (auction_id) REFERENCES auctions(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Auction participants table (tracks users who have joined an auction)
+CREATE TABLE IF NOT EXISTS auction_participants (
+  id TEXT PRIMARY KEY,
+  auction_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  joined_at TEXT NOT NULL DEFAULT (datetime('now')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (auction_id) REFERENCES auctions(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE(auction_id, user_id)
+);
+
 -- Index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_sessions_id ON sessions(id);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
@@ -101,3 +146,10 @@ CREATE INDEX IF NOT EXISTS idx_product_listings_product_id ON product_listings(p
 CREATE INDEX IF NOT EXISTS idx_product_listings_seller_id ON product_listings(seller_id);
 CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_auctions_seller_id ON auctions(seller_id);
+CREATE INDEX IF NOT EXISTS idx_auctions_product_id ON auctions(product_id);
+CREATE INDEX IF NOT EXISTS idx_auctions_status ON auctions(status);
+CREATE INDEX IF NOT EXISTS idx_auction_bids_auction_id ON auction_bids(auction_id);
+CREATE INDEX IF NOT EXISTS idx_auction_bids_user_id ON auction_bids(user_id);
+CREATE INDEX IF NOT EXISTS idx_auction_participants_auction_id ON auction_participants(auction_id);
+CREATE INDEX IF NOT EXISTS idx_auction_participants_user_id ON auction_participants(user_id);
