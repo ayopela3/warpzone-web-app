@@ -7,7 +7,6 @@ pages_build_output_dir = ".vercel/output/static"
 binding = "DB"
 database_name = "warpzone"
 database_id = "c339931b-53c8-48fa-a271-aae6bf51ac8a"
-preview_database_id = "DB"
 migrations_dir = "prisma/migrations"
 
 [observability]
