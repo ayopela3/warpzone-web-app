@@ -58,7 +58,7 @@ export default function DashboardPage() {
   const fetchSellerProducts = useCallback(async () => {
     setIsLoadingProducts(true)
     try {
-      const response = await fetch(`/api/products?sellerId=${userId}`)
+      const response = await fetch(`/api/products?sellerId=${userId}&approvalStatus=approved`)
       const data = await response.json()
       if (data.success) {
         setSellerProducts(data.products || [])

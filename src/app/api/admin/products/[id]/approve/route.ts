@@ -3,9 +3,10 @@ import type { CloudflareEnv } from "@/types/cloudflare"
 
 export const runtime = "edge"
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { approvalStatus } = await request.json()
+    const { id } = await params
 
     if (!approvalStatus || !["approved", "rejected"].includes(approvalStatus)) {
       return NextResponse.json({ success: false, error: "Invalid approval status" }, { status: 400 })
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     // Update product approval status
     await db
       .prepare("UPDATE products SET approval_status = ?, updated_at = datetime('now') WHERE id = ?")
-      .bind(approvalStatus, params.id)
+      .bind(approvalStatus, id)
       .run()
 
     return NextResponse.json({ success: true, approvalStatus })

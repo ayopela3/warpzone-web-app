@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { ArrowRight, CalendarDays, Gavel, PackageCheck, ShieldCheck, ShoppingBag, Sparkles, Trophy, Users } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,10 +21,17 @@ const services = [
 ]
 
 export default function HomePage() {
-  const { userRole } = useApp()
+  const { userRole, isAuthenticated } = useApp()
+  const router = useRouter()
   const [activeFeaturedIndex, setActiveFeaturedIndex] = useState(0)
   const activeFeaturedCard = featuredCards[activeFeaturedIndex]
   const isSeller = userRole === "seller"
+
+  useEffect(() => {
+    if (isAuthenticated && userRole === "admin") {
+      router.push("/admin")
+    }
+  }, [isAuthenticated, userRole, router])
 
   const showPreviousFeaturedCard = () => {
     setActiveFeaturedIndex((currentIndex) =>

@@ -57,6 +57,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const sku = searchParams.get("sku")
     const sellerId = searchParams.get("sellerId")
+    const approvalStatus = searchParams.get("approvalStatus")
+    const showAll = searchParams.get("showAll") === "true"
 
     // Get D1 database binding from Cloudflare context
     let db: CloudflareEnv["DB"] | null = null
@@ -89,17 +91,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, product })
     }
 
-    // Get products - filter by seller if sellerId is provided
-    let products
+    // Build query based on filters
+    let query = "SELECT * FROM products"
+    const conditions: string[] = []
+    const params: (string | number)[] = []
+
     if (sellerId) {
-      products = await db
-        .prepare("SELECT * FROM products WHERE created_by = ? ORDER BY created_at DESC")
-        .bind(sellerId)
-        .all()
+      conditions.push("created_by = ?")
+      params.push(sellerId)
+    }
+
+    if (approvalStatus) {
+      conditions.push("approval_status = ?")
+      params.push(approvalStatus)
+    } else if (!showAll && !sellerId) {
+      // By default, only show approved products unless showAll is true or filtering by seller
+      conditions.push("approval_status = 'approved'")
+    }
+
+    if (conditions.length > 0) {
+      query += " WHERE " + conditions.join(" AND ")
+    }
+
+    query += " ORDER BY created_at DESC"
+
+    let products
+    if (params.length > 0) {
+      products = await db.prepare(query).bind(...params).all()
     } else {
-      products = await db
-        .prepare("SELECT * FROM products ORDER BY created_at DESC")
-        .all()
+      products = await db.prepare(query).all()
     }
 
     return NextResponse.json({ success: true, products: products.results })
