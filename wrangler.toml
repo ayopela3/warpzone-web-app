@@ -1,15 +1,6 @@
 name = "warpzone"
 compatibility_date = "2025-01-01"
-compatibility_flags = ["nodejs_compat"]
-
-[[d1_databases]]
-binding = "DB"
-database_name = "warpzone-db"
-database_id = "your-database-id"
+main = ".worker-asset/index.js"
 
 [build]
-command = "npm run cloudflare:build"
-
-[assets]
-directory = ".vercel/output/static"
-binding = "ASSETS"
+command = "npx @cloudflare/next-on-pages"
