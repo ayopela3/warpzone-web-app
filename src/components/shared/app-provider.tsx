@@ -15,19 +15,22 @@ type AppContextValue = {
   cartCount: number
   cartTotal: number
   isAuthenticated: boolean
+  userId: string | null
   addToCart: (item: Omit<CartItem, "quantity">) => void
   removeFromCart: (id: string) => void
   updateCartQuantity: (id: string, quantity: number) => void
   clearCart: () => void
-  signIn: () => void
-  signOut: () => void
+  signUp: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  signOut: () => Promise<void>
   requireAuth: () => boolean
 }
 
 const AppContext = createContext<AppContextValue | undefined>(undefined)
 
 const cartStorageKey = "warpzone-cart"
-const authStorageKey = "warpzone-authenticated"
+const sessionIdKey = "warpzone-session-id"
+const userIdKey = "warpzone-user-id"
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -43,17 +46,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") {
       return false
     }
+    return !!window.localStorage.getItem(sessionIdKey)
+  })
 
-    return window.localStorage.getItem(authStorageKey) === "true"
+  const [userId, setUserId] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null
+    }
+    return window.localStorage.getItem(userIdKey)
   })
 
   useEffect(() => {
     window.localStorage.setItem(cartStorageKey, JSON.stringify(cartItems))
   }, [cartItems])
-
-  useEffect(() => {
-    window.localStorage.setItem(authStorageKey, String(isAuthenticated))
-  }, [isAuthenticated])
 
   const addToCart = useCallback((item: Omit<CartItem, "quantity">) => {
     setCartItems((currentItems) => {
@@ -92,12 +97,60 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCartItems([])
   }, [])
 
-  const signIn = useCallback(() => {
-    setIsAuthenticated(true)
+  const signUp = useCallback(async (email: string, password: string) => {
+    try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await response.json()
+      if (data.success) {
+        return { success: true }
+      }
+      return { success: false, error: data.error || "Sign up failed" }
+    } catch {
+      return { success: false, error: "Network error" }
+    }
   }, [])
 
-  const signOut = useCallback(() => {
+  const signIn = useCallback(async (email: string, password: string) => {
+    try {
+      const response = await fetch("/api/auth/signin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await response.json()
+      if (data.success) {
+        window.localStorage.setItem(sessionIdKey, data.sessionId)
+        window.localStorage.setItem(userIdKey, data.userId)
+        setIsAuthenticated(true)
+        setUserId(data.userId)
+        return { success: true }
+      }
+      return { success: false, error: data.error || "Sign in failed" }
+    } catch {
+      return { success: false, error: "Network error" }
+    }
+  }, [])
+
+  const signOut = useCallback(async () => {
+    const sessionId = window.localStorage.getItem(sessionIdKey)
+    if (sessionId) {
+      try {
+        await fetch("/api/auth/signout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessionId}` },
+        })
+      } catch {
+        // Ignore signout errors
+      }
+    }
+    window.localStorage.removeItem(sessionIdKey)
+    window.localStorage.removeItem(userIdKey)
     setIsAuthenticated(false)
+    setUserId(null)
   }, [])
 
   const requireAuth = useCallback(() => {
@@ -118,15 +171,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       cartCount,
       cartTotal,
       isAuthenticated,
+      userId,
       addToCart,
       removeFromCart,
       updateCartQuantity,
       clearCart,
+      signUp,
       signIn,
       signOut,
       requireAuth,
     }
-  }, [cartItems, isAuthenticated, addToCart, removeFromCart, updateCartQuantity, clearCart, signIn, signOut, requireAuth])
+  }, [cartItems, isAuthenticated, userId, addToCart, removeFromCart, updateCartQuantity, clearCart, signUp, signIn, signOut, requireAuth])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }
