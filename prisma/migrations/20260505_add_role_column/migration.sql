@@ -1,0 +1,2 @@
+-- This migration is no longer needed since role is now in profiles table
+-- This file can be deleted or kept as a no-op
