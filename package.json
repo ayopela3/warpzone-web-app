@@ -9,6 +9,7 @@
     "build": "next build",
     "build:cf": "next build && npx @cloudflare/next-on-pages",
     "init-local-db": "npx wrangler d1 execute DB --local --file=./schema.sql && npx wrangler d1 execute DB --local --file=./prisma/migrations/20260505_seed_users/migration.sql",
+    "deploy": "npm run build:cf && wrangler pages deploy .vercel/output/static --project-name=warpzone-web-app",
     "start": "next start",
     "lint": "eslint"
   },
