@@ -134,6 +134,35 @@ CREATE TABLE IF NOT EXISTS auction_participants (
   UNIQUE(auction_id, user_id)
 );
 
+-- Tournaments table
+CREATE TABLE IF NOT EXISTS tournaments (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  player_size INTEGER NOT NULL,
+  description TEXT NOT NULL,
+  preregistration_fee REAL NOT NULL DEFAULT 0,
+  tournament_date TEXT NOT NULL,
+  location TEXT,
+  format TEXT,
+  prize_pool TEXT,
+  status TEXT NOT NULL DEFAULT 'upcoming',
+  registered_players INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Tournament registrations table
+CREATE TABLE IF NOT EXISTS tournament_registrations (
+  id TEXT PRIMARY KEY,
+  tournament_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  registered_at TEXT NOT NULL DEFAULT (datetime('now')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE(tournament_id, user_id)
+);
+
 -- Index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_sessions_id ON sessions(id);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
@@ -152,3 +181,7 @@ CREATE INDEX IF NOT EXISTS idx_auction_bids_auction_id ON auction_bids(auction_i
 CREATE INDEX IF NOT EXISTS idx_auction_bids_user_id ON auction_bids(user_id);
 CREATE INDEX IF NOT EXISTS idx_auction_participants_auction_id ON auction_participants(auction_id);
 CREATE INDEX IF NOT EXISTS idx_auction_participants_user_id ON auction_participants(user_id);
+CREATE INDEX IF NOT EXISTS idx_tournaments_status ON tournaments(status);
+CREATE INDEX IF NOT EXISTS idx_tournaments_date ON tournaments(tournament_date);
+CREATE INDEX IF NOT EXISTS idx_tournament_registrations_tournament_id ON tournament_registrations(tournament_id);
+CREATE INDEX IF NOT EXISTS idx_tournament_registrations_user_id ON tournament_registrations(user_id);

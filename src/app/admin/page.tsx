@@ -6,8 +6,11 @@ import { useApp } from "@/components/shared/app-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, ShoppingBag, Gavel, Trophy, Package, Check, X, Clock, Eye } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Users, ShoppingBag, Gavel, Trophy, Package, Check, X, Clock, Eye, Plus, Loader2 } from "lucide-react"
 
 const pendingApprovals: Array<{
   id: string
@@ -26,11 +29,74 @@ export default function AdminDashboard() {
   const { isAuthenticated, userRole } = useApp()
   const [selectedApproval, setSelectedApproval] = useState<typeof pendingApprovals[0] | null>(null)
 
+  // Tournament form state
+  const [tournamentForm, setTournamentForm] = useState({
+    name: "",
+    playerSize: "",
+    description: "",
+    preregistrationFee: "",
+    tournamentDate: "",
+    location: "",
+    format: "",
+    prizePool: ""
+  })
+  const [isCreatingTournament, setIsCreatingTournament] = useState(false)
+  const [tournamentError, setTournamentError] = useState("")
+  const [tournamentSuccess, setTournamentSuccess] = useState(false)
+
   useEffect(() => {
     if (!isAuthenticated || userRole !== "admin") {
       router.push("/")
     }
   }, [isAuthenticated, userRole, router])
+
+  const handleTournamentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsCreatingTournament(true)
+    setTournamentError("")
+
+    try {
+      const response = await fetch("/api/tournaments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: tournamentForm.name,
+          playerSize: parseInt(tournamentForm.playerSize),
+          description: tournamentForm.description,
+          preregistrationFee: parseFloat(tournamentForm.preregistrationFee) || 0,
+          tournamentDate: tournamentForm.tournamentDate,
+          location: tournamentForm.location,
+          format: tournamentForm.format,
+          prizePool: tournamentForm.prizePool
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to create tournament")
+      }
+
+      setTournamentSuccess(true)
+      // Reset form
+      setTournamentForm({
+        name: "",
+        playerSize: "",
+        description: "",
+        preregistrationFee: "",
+        tournamentDate: "",
+        location: "",
+        format: "",
+        prizePool: ""
+      })
+
+      setTimeout(() => setTournamentSuccess(false), 3000)
+    } catch (error) {
+      setTournamentError(error instanceof Error ? error.message : "Failed to create tournament")
+    } finally {
+      setIsCreatingTournament(false)
+    }
+  }
 
   if (!isAuthenticated || userRole !== "admin") {
     return null
@@ -111,10 +177,11 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs defaultValue="approvals" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
             <TabsTrigger value="approvals">Approvals</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="auctions">Auctions</TabsTrigger>
+            <TabsTrigger value="tournaments">Tournaments</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
           </TabsList>
 
@@ -249,6 +316,131 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-600">Auction management coming soon</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="tournaments">
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle>Create Tournament Announcement</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {tournamentSuccess && (
+                  <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-800 font-medium">Tournament created successfully!</p>
+                  </div>
+                )}
+                {tournamentError && (
+                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-800">{tournamentError}</p>
+                  </div>
+                )}
+                <form onSubmit={handleTournamentSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="tournamentName">Tournament Name *</Label>
+                    <Input
+                      id="tournamentName"
+                      placeholder="e.g., Pokemon Championship 2024"
+                      value={tournamentForm.name}
+                      onChange={(e) => setTournamentForm({ ...tournamentForm, name: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="playerSize">Player Size *</Label>
+                      <Input
+                        id="playerSize"
+                        type="number"
+                        placeholder="e.g., 32"
+                        value={tournamentForm.playerSize}
+                        onChange={(e) => setTournamentForm({ ...tournamentForm, playerSize: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="preregistrationFee">Preregistration Fee</Label>
+                      <Input
+                        id="preregistrationFee"
+                        type="number"
+                        step="0.01"
+                        placeholder="e.g., 25.00"
+                        value={tournamentForm.preregistrationFee}
+                        onChange={(e) => setTournamentForm({ ...tournamentForm, preregistrationFee: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tournamentDate">Tournament Date *</Label>
+                    <Input
+                      id="tournamentDate"
+                      type="date"
+                      value={tournamentForm.tournamentDate}
+                      onChange={(e) => setTournamentForm({ ...tournamentForm, tournamentDate: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="location">Location</Label>
+                      <Input
+                        id="location"
+                        placeholder="e.g., Main Hall, 123 Event St"
+                        value={tournamentForm.location}
+                        onChange={(e) => setTournamentForm({ ...tournamentForm, location: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="format">Format</Label>
+                      <Input
+                        id="format"
+                        placeholder="e.g., Standard, Commander"
+                        value={tournamentForm.format}
+                        onChange={(e) => setTournamentForm({ ...tournamentForm, format: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="prizePool">Prize Pool</Label>
+                    <Input
+                      id="prizePool"
+                      placeholder="e.g., $500 cash + prizes"
+                      value={tournamentForm.prizePool}
+                      onChange={(e) => setTournamentForm({ ...tournamentForm, prizePool: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description *</Label>
+                    <textarea
+                      id="description"
+                      className="w-full min-h-[120px] p-3 border rounded-md text-sm"
+                      placeholder="Describe the tournament details, rules, schedule, etc."
+                      value={tournamentForm.description}
+                      onChange={(e) => setTournamentForm({ ...tournamentForm, description: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={isCreatingTournament}>
+                    {isCreatingTournament ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating Tournament...
+                      </>
+                    ) : (
+                      <>
+                        <Trophy className="mr-2 h-4 w-4" />
+                        Create Tournament
+                      </>
+                    )}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </TabsContent>
