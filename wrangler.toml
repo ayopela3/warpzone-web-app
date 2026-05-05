@@ -1,4 +1,4 @@
-name = "warpzone"
+name = "warpzone-web-app"
 compatibility_date = "2025-01-01"
 main = ".vercel/output/static/_worker.js/index.js"
 
