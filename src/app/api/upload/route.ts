@@ -52,9 +52,9 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Return the public URL
-    // Note: You'll need to configure a custom domain or use the R2 public URL
-    const publicUrl = `https://pub-${r2.bucketName.replace(/[^a-z0-9-]/g, "")}.${r2.bucketName}.r2.dev/${uniqueFileName}`
+    // Return the public URL from environment variable
+    const r2PublicUrl = process.env.R2_PUBLIC_URL
+    const publicUrl = `${r2PublicUrl}/${uniqueFileName}`
 
     return NextResponse.json({
       success: true,

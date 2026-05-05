@@ -9,6 +9,9 @@ export interface R2Bucket {
   delete(key: string): Promise<void>
   list(options?: R2ListOptions): Promise<R2Objects>
   bucketName: string
+  http: {
+    binding: string
+  }
 }
 
 export interface R2PutOptions {
