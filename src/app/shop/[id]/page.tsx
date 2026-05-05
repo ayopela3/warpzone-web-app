@@ -1,12 +1,11 @@
-"use client"
-
 import Link from "next/link"
-import { notFound, useParams } from "next/navigation"
+import { notFound } from "next/navigation"
 import { ArrowLeft, PackageCheck, ShieldCheck, ShoppingBag, Truck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { useApp } from "@/components/shared/app-provider"
+import AddToCartButton from "./add-to-cart-button"
+
+export const runtime = 'edge'
 
 type Product = {
   id: number
@@ -96,10 +95,9 @@ const products: Product[] = [
   },
 ]
 
-export default function ProductPage() {
-  const params = useParams<{ id: string }>()
-  const { addToCart } = useApp()
-  const product = products.find((item) => item.id === Number(params.id))
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const product = products.find((item) => item.id === Number(id))
 
   if (!product) {
     notFound()
@@ -109,12 +107,12 @@ export default function ProductPage() {
     <div className="min-h-screen bg-white text-black">
       <div className="border-b border-neutral-200 bg-neutral-50">
         <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-          <Button variant="ghost" asChild>
+          <button className="flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-black">
             <Link href="/shop">
               <ArrowLeft className="h-4 w-4" />
               Back to shop
             </Link>
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -151,21 +149,13 @@ export default function ProductPage() {
               </Badge>
             </div>
 
-            <Button
-              className="mt-5 w-full"
-              size="lg"
-              disabled={!product.inStock}
-              onClick={() => {
-                addToCart({
-                  id: String(product.id),
-                  name: product.name,
-                  price: product.price,
-                  category: product.category,
-                })
-              }}
-            >
-              {product.inStock ? "Add to cart" : "Out of stock"}
-            </Button>
+            <AddToCartButton
+              productId={String(product.id)}
+              name={product.name}
+              price={product.price}
+              category={product.category}
+              inStock={product.inStock}
+            />
           </div>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
