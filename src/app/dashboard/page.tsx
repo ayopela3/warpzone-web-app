@@ -1,22 +1,25 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
-  Package, 
-  Gavel, 
-  Trophy, 
-  Calendar, 
-  DollarSign, 
+import {
+  Package,
+  Gavel,
+  Trophy,
+  Calendar,
+  DollarSign,
   ShoppingBag,
   Clock,
   ArrowRight,
-  Plus
+  Plus,
+  CheckCircle2,
+  XCircle,
+  Hourglass
 } from "lucide-react"
 import { useApp } from "@/components/shared/app-provider"
 
@@ -26,19 +29,52 @@ const activeBids: Array<{ id: number; item: string; currentBid: number; yourBid:
 
 const upcomingTournaments: Array<{ id: number; name: string; date: string; location: string }> = []
 
-const sellerProducts: Array<{ id: string; name: string; sku: string; price: number; quantity: number, condition: string }> = []
-
 const sellerOrders: Array<{ id: string; customer: string; total: number; status: string, items: number }> = []
+
+type SellerProduct = {
+  id: string
+  name: string
+  sku: string
+  category: string
+  rarity: string | null
+  description: string | null
+  image_url: string | null
+  approval_status: string
+  created_at: string
+}
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { isAuthenticated, userRole } = useApp()
+  const { isAuthenticated, userRole, userId } = useApp()
+  const [sellerProducts, setSellerProducts] = useState<SellerProduct[]>([])
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/auth/signin")
     }
   }, [isAuthenticated, router])
+
+  const fetchSellerProducts = useCallback(async () => {
+    setIsLoadingProducts(true)
+    try {
+      const response = await fetch(`/api/products?sellerId=${userId}`)
+      const data = await response.json()
+      if (data.success) {
+        setSellerProducts(data.products || [])
+      }
+    } catch (error) {
+      console.error("Failed to fetch seller products:", error)
+    } finally {
+      setIsLoadingProducts(false)
+    }
+  }, [userId])
+
+  useEffect(() => {
+    if (isAuthenticated && userRole === "seller" && userId) {
+      fetchSellerProducts()
+    }
+  }, [isAuthenticated, userRole, userId, fetchSellerProducts])
 
   if (!isAuthenticated) {
     return null
@@ -142,7 +178,13 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">Your Products</h2>
               </div>
-              {sellerProducts.length === 0 ? (
+              {isLoadingProducts ? (
+                <Card className="bg-white shadow-md">
+                  <CardContent className="p-12 text-center">
+                    <p className="text-gray-600">Loading products...</p>
+                  </CardContent>
+                </Card>
+              ) : sellerProducts.length === 0 ? (
                 <Card className="bg-white shadow-md">
                   <CardContent className="p-12 text-center">
                     <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
@@ -161,17 +203,58 @@ export default function DashboardPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {sellerProducts.map((product) => (
-                    <Card key={product.id} className="bg-white shadow-md hover:shadow-lg transition-shadow">
+                    <Card
+                      key={product.id}
+                      className={`bg-white shadow-md hover:shadow-lg transition-shadow ${
+                        product.approval_status === "pending" ? "opacity-60" : ""
+                      }`}
+                    >
                       <CardContent className="p-6">
                         <div className="space-y-4">
-                          <div>
-                            <p className="font-bold text-gray-900">{product.name}</p>
-                            <p className="text-sm text-gray-600">SKU: {product.sku} · {product.condition}</p>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <p className="font-bold text-gray-900">{product.name}</p>
+                              <p className="text-sm text-gray-600">SKU: {product.sku}</p>
+                            </div>
+                            {product.approval_status === "pending" && (
+                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                                <Hourglass className="h-3 w-3" />
+                                Pending
+                              </Badge>
+                            )}
+                            {product.approval_status === "approved" && (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Approved
+                              </Badge>
+                            )}
+                            {product.approval_status === "rejected" && (
+                              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 flex items-center gap-1">
+                                <XCircle className="h-3 w-3" />
+                                Rejected
+                              </Badge>
+                            )}
                           </div>
-                          <div className="flex items-center justify-between pt-4 border-t">
-                            <p className="text-2xl font-bold text-primary">${product.price}</p>
-                            <Badge variant="outline" className="text-sm">{product.quantity} in stock</Badge>
+                          {product.image_url && (
+                            <div className="w-full h-32 rounded-md overflow-hidden bg-gray-100">
+                              <img
+                                src={product.image_url}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="pt-4 border-t">
+                            <p className="text-sm text-gray-600">{product.category}</p>
+                            {product.rarity && (
+                              <p className="text-sm text-gray-500">Rarity: {product.rarity}</p>
+                            )}
                           </div>
+                          {product.approval_status === "pending" && (
+                            <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md">
+                              Your product is pending admin approval. You&apos;ll be able to create listings once approved.
+                            </p>
+                          )}
                         </div>
                       </CardContent>
                     </Card>

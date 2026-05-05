@@ -34,8 +34,11 @@ CREATE TABLE IF NOT EXISTS products (
   rarity TEXT,
   description TEXT,
   image_url TEXT,
+  approval_status TEXT NOT NULL DEFAULT 'pending',
+  created_by TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 );
 
 -- Product inventory/listings table (connects sellers to products)

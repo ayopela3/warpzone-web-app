@@ -158,7 +158,8 @@ export default function NewListingPage() {
           setName: "",
           rarity: productForm.rarity,
           description: productForm.description,
-          imageUrl
+          imageUrl,
+          sellerId: localStorage.getItem("warpzone-user-id")
         })
       })
 

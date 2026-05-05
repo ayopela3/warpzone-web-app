@@ -6,7 +6,7 @@ export const runtime = "edge"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { sku, name, category, setName, rarity, description, imageUrl } = body
+    const { sku, name, category, setName, rarity, description, imageUrl, sellerId } = body
 
     // Get D1 database binding from Cloudflare context
     let db: CloudflareEnv["DB"] | null = null
@@ -35,14 +35,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Product with this SKU already exists" }, { status: 400 })
     }
 
-    // Create product
+    // Create product with pending approval status
     const productId = crypto.randomUUID()
     await db
       .prepare(
-        `INSERT INTO products (id, sku, name, category, set_name, rarity, description, image_url, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
+        `INSERT INTO products (id, sku, name, category, set_name, rarity, description, image_url, approval_status, created_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, datetime('now'), datetime('now'))`
       )
-      .bind(productId, sku, name, category, setName, rarity, description, imageUrl)
+      .bind(productId, sku, name, category, setName, rarity, description, imageUrl, sellerId)
       .run()
 
     return NextResponse.json({ success: true, productId })
@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const sku = searchParams.get("sku")
+    const sellerId = searchParams.get("sellerId")
 
     // Get D1 database binding from Cloudflare context
     let db: CloudflareEnv["DB"] | null = null
@@ -88,10 +89,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, product })
     }
 
-    // Get all products
-    const products = await db
-      .prepare("SELECT * FROM products ORDER BY created_at DESC")
-      .all()
+    // Get products - filter by seller if sellerId is provided
+    let products
+    if (sellerId) {
+      products = await db
+        .prepare("SELECT * FROM products WHERE created_by = ? ORDER BY created_at DESC")
+        .bind(sellerId)
+        .all()
+    } else {
+      products = await db
+        .prepare("SELECT * FROM products ORDER BY created_at DESC")
+        .all()
+    }
 
     return NextResponse.json({ success: true, products: products.results })
   } catch (error) {
