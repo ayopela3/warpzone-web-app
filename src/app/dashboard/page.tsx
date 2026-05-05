@@ -61,7 +61,7 @@ export default function DashboardPage() {
                 <h1 className="text-3xl font-bold text-gray-900">Seller Dashboard</h1>
                 <p className="text-gray-600 mt-1">Manage your products, auctions, and orders</p>
               </div>
-              <Button asChild className="bg-primary hover:bg-primary/90">
+              <Button asChild className="bg-primary hover:bg-primary/90 text-white">
                 <Link href="/seller/listings/new">
                   <Plus className="mr-2 h-4 w-4" />
                   New Listing
@@ -73,54 +73,58 @@ export default function DashboardPage() {
 
         <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+            <Card className="bg-gradient-to-br from-primary to-primary/90 text-white shadow-lg hover:shadow-xl transition-all">
               <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-primary/10 rounded-xl">
-                    <Package className="h-6 w-6 text-primary" />
-                  </div>
+                <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Products</p>
-                    <p className="text-3xl font-bold text-gray-900">0</p>
+                    <p className="text-sm font-bold text-white/90">Products</p>
+                    <p className="text-4xl font-black mt-2">0</p>
+                    <p className="text-xs font-medium text-white/80 mt-1">Total listings</p>
+                  </div>
+                  <div className="p-3 bg-white/20 rounded-xl">
+                    <Package className="h-6 w-6 text-white" />
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+            <Card className="bg-white shadow-lg hover:shadow-xl transition-all border-l-4 border-l-blue-500">
               <CardContent className="p-6">
-                <div className="flex items-center gap-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Orders</p>
+                    <p className="text-4xl font-bold mt-2 text-gray-900">0</p>
+                    <p className="text-xs text-gray-500 mt-1">Pending fulfillment</p>
+                  </div>
                   <div className="p-3 bg-blue-100 rounded-xl">
                     <ShoppingBag className="h-6 w-6 text-blue-600" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Orders</p>
-                    <p className="text-3xl font-bold text-gray-900">0</p>
-                  </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+            <Card className="bg-white shadow-lg hover:shadow-xl transition-all border-l-4 border-l-emerald-500">
               <CardContent className="p-6">
-                <div className="flex items-center gap-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Revenue</p>
+                    <p className="text-4xl font-bold mt-2 text-gray-900">$0</p>
+                    <p className="text-xs text-emerald-600 mt-1">+0% from last month</p>
+                  </div>
                   <div className="p-3 bg-emerald-100 rounded-xl">
                     <DollarSign className="h-6 w-6 text-emerald-600" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Revenue</p>
-                    <p className="text-3xl font-bold text-gray-900">$0</p>
-                  </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+            <Card className="bg-white shadow-lg hover:shadow-xl transition-all border-l-4 border-l-amber-500">
               <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-amber-100 rounded-xl">
-                    <Gavel className="h-6 w-6 text-amber-600" />
-                  </div>
+                <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Active Auctions</p>
-                    <p className="text-3xl font-bold text-gray-900">0</p>
+                    <p className="text-4xl font-bold mt-2 text-gray-900">0</p>
+                    <p className="text-xs text-amber-600 mt-1">Currently live</p>
+                  </div>
+                  <div className="p-3 bg-amber-100 rounded-xl">
+                    <Gavel className="h-6 w-6 text-amber-600" />
                   </div>
                 </div>
               </CardContent>
@@ -144,12 +148,12 @@ export default function DashboardPage() {
                     <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
                       <Package className="h-8 w-8 text-gray-400" />
                     </div>
-                    <h3 className="mt-6 text-xl font-semibold text-gray-900">No products yet</h3>
-                    <p className="mt-2 text-gray-600">Add your first product to start selling on Warpzone</p>
-                    <Button asChild className="mt-6 bg-primary hover:bg-primary/90">
+                    <h3 className="mt-6 text-xl font-semibold text-gray-900">No listings yet</h3>
+                    <p className="mt-2 text-gray-600">Add your first listing to start selling on Warpzone</p>
+                    <Button asChild className="mt-6 bg-primary hover:bg-primary/90 text-white">
                       <Link href="/seller/listings/new">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Your First Product
+                        New Listing
                       </Link>
                     </Button>
                   </CardContent>
@@ -179,7 +183,7 @@ export default function DashboardPage() {
             <TabsContent value="auctions" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">Your Auctions</h2>
-                <Button asChild className="bg-primary hover:bg-primary/90">
+                <Button asChild className="bg-primary hover:bg-primary/90 text-white">
                   <Link href="/seller/auctions/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Create Auction
@@ -193,7 +197,7 @@ export default function DashboardPage() {
                   </div>
                   <h3 className="mt-6 text-xl font-semibold text-gray-900">No auctions yet</h3>
                   <p className="mt-2 text-gray-600">Create your first auction to start bidding wars on your products</p>
-                  <Button asChild className="mt-6 bg-primary hover:bg-primary/90">
+                  <Button asChild className="mt-6 bg-primary hover:bg-primary/90 text-white">
                     <Link href="/seller/auctions/new">
                       <Plus className="mr-2 h-4 w-4" />
                       Create Your First Auction
@@ -268,54 +272,58 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+          <Card className="bg-gradient-to-br from-primary to-primary/90 text-white shadow-lg hover:shadow-xl transition-all">
             <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-xl">
-                  <Package className="h-6 w-6 text-primary" />
-                </div>
+              <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                  <p className="text-3xl font-bold text-gray-900">12</p>
+                  <p className="text-sm font-bold text-white/90">Total Orders</p>
+                  <p className="text-4xl font-black mt-2">12</p>
+                  <p className="text-xs font-medium text-white/80 mt-1">All time</p>
+                </div>
+                <div className="p-3 bg-white/20 rounded-xl">
+                  <Package className="h-6 w-6 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+          <Card className="bg-white shadow-lg hover:shadow-xl transition-all border-l-4 border-l-amber-500">
             <CardContent className="p-6">
-              <div className="flex items-center gap-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Active Bids</p>
+                  <p className="text-4xl font-bold mt-2 text-gray-900">2</p>
+                  <p className="text-xs text-amber-600 mt-1">Currently bidding</p>
+                </div>
                 <div className="p-3 bg-amber-100 rounded-xl">
                   <Gavel className="h-6 w-6 text-amber-600" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Active Bids</p>
-                  <p className="text-3xl font-bold text-gray-900">2</p>
-                </div>
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+          <Card className="bg-white shadow-lg hover:shadow-xl transition-all border-l-4 border-l-emerald-500">
             <CardContent className="p-6">
-              <div className="flex items-center gap-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Tournaments</p>
+                  <p className="text-4xl font-bold mt-2 text-gray-900">3</p>
+                  <p className="text-xs text-emerald-600 mt-1">Registered</p>
+                </div>
                 <div className="p-3 bg-emerald-100 rounded-xl">
                   <Trophy className="h-6 w-6 text-emerald-600" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Tournaments</p>
-                  <p className="text-3xl font-bold text-gray-900">3</p>
-                </div>
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
+          <Card className="bg-white shadow-lg hover:shadow-xl transition-all border-l-4 border-l-blue-500">
             <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 rounded-xl">
-                  <DollarSign className="h-6 w-6 text-blue-600" />
-                </div>
+              <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Spent</p>
-                  <p className="text-3xl font-bold text-gray-900">$2,439</p>
+                  <p className="text-4xl font-bold mt-2 text-gray-900">$2,439</p>
+                  <p className="text-xs text-blue-600 mt-1">Lifetime</p>
+                </div>
+                <div className="p-3 bg-blue-100 rounded-xl">
+                  <DollarSign className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>

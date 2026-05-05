@@ -31,7 +31,6 @@ CREATE TABLE IF NOT EXISTS products (
   sku TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   category TEXT NOT NULL,
-  set_name TEXT,
   rarity TEXT,
   description TEXT,
   image_url TEXT,

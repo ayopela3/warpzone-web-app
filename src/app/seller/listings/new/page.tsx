@@ -21,8 +21,6 @@ import {
 const existingProducts: Array<{
   id: string
   name: string
-  setName: string
-  cardNumber: string
   category: string
   rarity: string
   hasListings: boolean
@@ -36,11 +34,10 @@ export default function NewListingPage() {
   const [selectedProduct, setSelectedProduct] = useState<typeof existingProducts[0] | null>(null)
   const [showNewProductForm, setShowNewProductForm] = useState(false)
 
-  const filteredProducts = searchQuery.length > 2 
-    ? existingProducts.filter(p => 
+  const filteredProducts = searchQuery.length > 2
+    ? existingProducts.filter(p =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.setName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.cardNumber.includes(searchQuery)
+        p.category.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : []
 
@@ -83,13 +80,13 @@ export default function NewListingPage() {
                 What are you selling?
               </Label>
               <p className="text-sm text-muted-foreground mb-4">
-                Enter card name, set name, or card number to find existing products
+                Enter product name or category to find existing products
               </p>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="search"
-                  placeholder="e.g., Charizard VMAX, Darkness Ablaze, 020/189..."
+                  placeholder="e.g., Charizard VMAX, Pokemon, Booster Pack..."
                   className="pl-10 h-14 text-lg"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -117,11 +114,11 @@ export default function NewListingPage() {
                             <div>
                               <h3 className="font-semibold">{product.name}</h3>
                               <p className="text-sm text-muted-foreground">
-                                {product.setName} &bull; #{product.cardNumber}
+                                {product.category}
                               </p>
                               <div className="flex gap-2 mt-1">
                                 <Badge variant="secondary" className="text-xs">{product.category}</Badge>
-                                <Badge variant="outline" className="text-xs">{product.rarity}</Badge>
+                                {product.rarity && <Badge variant="outline" className="text-xs">{product.rarity}</Badge>}
                               </div>
                             </div>
                           </div>
@@ -180,11 +177,11 @@ export default function NewListingPage() {
                   <div className="flex-1">
                     <h3 className="font-semibold">{selectedProduct.name}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {selectedProduct.setName} &bull; #{selectedProduct.cardNumber}
+                      {selectedProduct.category}
                     </p>
                     <div className="flex gap-2 mt-1">
                       <Badge variant="secondary" className="text-xs">{selectedProduct.category}</Badge>
-                      <Badge variant="outline" className="text-xs">{selectedProduct.rarity}</Badge>
+                      {selectedProduct.rarity && <Badge variant="outline" className="text-xs">{selectedProduct.rarity}</Badge>}
                     </div>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => setStep("search")}>
@@ -203,11 +200,11 @@ export default function NewListingPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="price">Your Price *</Label>
-                    <Input id="price" type="number" step="0.01" placeholder="299.99" />
+                    <Input id="price" type="number" step="0.01" placeholder="299.99" className="placeholder:text-gray-400" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="comparePrice">Compare at Price (optional)</Label>
-                    <Input id="comparePrice" type="number" step="0.01" placeholder="349.99" />
+                    <Input id="comparePrice" type="number" step="0.01" placeholder="349.99" className="placeholder:text-gray-400" />
                   </div>
                 </div>
 
@@ -230,7 +227,7 @@ export default function NewListingPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="stock">Quantity Available *</Label>
-                    <Input id="stock" type="number" placeholder="1" />
+                    <Input id="stock" type="number" placeholder="1" className="placeholder:text-gray-400" />
                   </div>
                 </div>
 
@@ -300,49 +297,73 @@ export default function NewListingPage() {
               </CardHeader>
               <CardContent className="p-6 space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="productName">Card Name *</Label>
-                  <Input id="productName" placeholder="e.g., Charizard VMAX" defaultValue={searchQuery} />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="setName">Set Name *</Label>
-                    <Input id="setName" placeholder="e.g., Darkness Ablaze" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cardNumber">Card Number *</Label>
-                    <Input id="cardNumber" placeholder="e.g., 020/189" />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category *</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pokemon">Pokemon</SelectItem>
-                        <SelectItem value="mtg">Magic: The Gathering</SelectItem>
-                        <SelectItem value="yugioh">Yu-Gi-Oh!</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="rarity">Rarity</Label>
-                    <Input id="rarity" placeholder="e.g., Ultra Rare" />
-                  </div>
+                  <Label htmlFor="productName">Product Name *</Label>
+                  <Input id="productName" placeholder="e.g., Charizard VMAX Booster Pack" defaultValue={searchQuery} className="placeholder:text-gray-400" />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="category">Category *</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pokemon">Pokemon</SelectItem>
+                      <SelectItem value="mtg">Magic: The Gathering</SelectItem>
+                      <SelectItem value="yugioh">Yu-Gi-Oh!</SelectItem>
+                      <SelectItem value="plushies">Plushies</SelectItem>
+                      <SelectItem value="stickers">Stickers</SelectItem>
+                      <SelectItem value="accessories">Accessories</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="price">Selling Price *</Label>
+                  <Input id="price" type="number" step="0.01" placeholder="299.99" className="placeholder:text-gray-400" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">Quantity *</Label>
+                  <Input id="quantity" type="number" placeholder="1" className="placeholder:text-gray-400" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="rarity">Rarity (Optional)</Label>
+                  <Input id="rarity" placeholder="e.g., Ultra Rare, Limited Edition" className="placeholder:text-gray-400" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description *</Label>
                   <textarea 
                     id="description" 
-                    className="w-full min-h-[100px] p-3 border rounded-md text-sm"
-                    placeholder="Describe the card details, artwork, etc."
+                    className="w-full min-h-[100px] p-3 border rounded-md text-sm placeholder:text-gray-400"
+                    placeholder="Describe the product details, condition, contents, etc."
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="image">Product Image *</Label>
+                  <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                    <input
+                      id="image"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <label htmlFor="image" className="cursor-pointer">
+                      <div className="flex flex-col items-center">
+                        <Package className="h-12 w-12 text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          Click to upload or drag and drop
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          PNG, JPG, GIF up to 10MB
+                        </p>
+                      </div>
+                    </label>
+                  </div>
                 </div>
 
                 <div className="pt-4 border-t">
