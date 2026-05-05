@@ -96,12 +96,6 @@ const products: Product[] = [
   },
 ]
 
-export function generateStaticParams() {
-  return products.map((product) => ({
-    id: String(product.id),
-  }))
-}
-
 export default function ProductPage() {
   const params = useParams<{ id: string }>()
   const { addToCart } = useApp()
