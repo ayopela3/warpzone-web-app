@@ -1,6 +1,6 @@
 name = "warpzone"
 compatibility_date = "2025-01-01"
-main = ".worker-asset/index.js"
+main = ".vercel/output/static/_worker.js/index.js"
 
 [build]
 command = "npx @cloudflare/next-on-pages"
