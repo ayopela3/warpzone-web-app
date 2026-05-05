@@ -21,41 +21,7 @@ interface Tournament {
   status: string
 }
 
-const tournaments: Tournament[] = [
-  {
-    id: 1,
-    name: "Pokemon League Challenge",
-    date: "May 11, 2026",
-    location: "The Warpzone Play Area",
-    format: "Standard",
-    prizePool: "Booster boxes",
-    registered: 18,
-    maxPlayers: 32,
-    status: "open",
-  },
-  {
-    id: 2,
-    name: "Friday Night Commander Pods",
-    date: "May 3, 2026",
-    location: "The Warpzone Play Area",
-    format: "Commander",
-    prizePool: "Store credit",
-    registered: 20,
-    maxPlayers: 24,
-    status: "open",
-  },
-  {
-    id: 3,
-    name: "Yu-Gi-Oh! OTS Local",
-    date: "May 18, 2026",
-    location: "The Warpzone Play Area",
-    format: "Advanced",
-    prizePool: "OTS packs",
-    registered: 9,
-    maxPlayers: 24,
-    status: "upcoming",
-  },
-]
+const tournaments: Tournament[] = []
 
 type TournamentFilter = "all" | "upcoming" | "open" | "past"
 

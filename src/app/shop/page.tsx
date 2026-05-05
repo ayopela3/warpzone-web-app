@@ -54,80 +54,8 @@ const conditions: Condition[] = [
   { id: "light-played", name: "Lightly Played", slug: "light-played" },
 ]
 
-const products: Product[] = [
-  {
-    id: 1,
-    name: "Charizard ex Special Illustration Rare",
-    price: 189.99,
-    category: "Pokemon",
-    condition: "Near Mint",
-    categoryId: "pokemon",
-    conditionId: "near-mint",
-    inStock: true,
-    rarity: "Special Illustration Rare",
-    setName: "Obsidian Flames",
-  },
-  {
-    id: 2,
-    name: "The One Ring Borderless Foil",
-    price: 129.99,
-    category: "Magic: The Gathering",
-    condition: "Mint",
-    categoryId: "mtg",
-    conditionId: "mint",
-    inStock: true,
-    rarity: "Mythic Rare",
-    setName: "The Lord of the Rings",
-  },
-  {
-    id: 3,
-    name: "Blue-Eyes White Dragon Quarter Century",
-    price: 74.99,
-    category: "Yu-Gi-Oh!",
-    condition: "Near Mint",
-    categoryId: "yugioh",
-    conditionId: "near-mint",
-    inStock: true,
-    rarity: "Quarter Century Secret Rare",
-    setName: "25th Anniversary Tin",
-  },
-  {
-    id: 4,
-    name: "Pokemon Temporal Forces Booster Box",
-    price: 124.99,
-    category: "Sealed Product",
-    condition: "Mint",
-    categoryId: "sealed",
-    conditionId: "mint",
-    inStock: true,
-    rarity: "Sealed Booster Box",
-    setName: "Temporal Forces",
-  },
-  {
-    id: 5,
-    name: "MTG Modern Horizons 3 Bundle",
-    price: 69.99,
-    category: "Sealed Product",
-    condition: "Mint",
-    categoryId: "sealed",
-    conditionId: "mint",
-    inStock: true,
-    rarity: "Sealed Bundle",
-    setName: "Modern Horizons 3",
-  },
-  {
-    id: 6,
-    name: "Pikachu Van Gogh Promo",
-    price: 139.99,
-    category: "Pokemon",
-    condition: "Lightly Played",
-    categoryId: "pokemon",
-    conditionId: "light-played",
-    inStock: false,
-    rarity: "Promo",
-    setName: "Pokemon Center Promo",
-  },
-]
+const products: Product[] = []
+
 const productsWithoutListings: Array<{
   id: number
   name: string
@@ -135,16 +63,7 @@ const productsWithoutListings: Array<{
   categoryId: string
   setName: string
   rarity: string
-}> = [
-  {
-    id: 101,
-    name: "Lorcana Enchanted Elsa",
-    category: "Lorcana",
-    categoryId: "lorcana",
-    setName: "The First Chapter",
-    rarity: "Enchanted",
-  },
-]
+}> = []
 
 type SortOption = "relevance" | "price-low" | "price-high" | "newest"
 

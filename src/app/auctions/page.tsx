@@ -21,41 +21,7 @@ interface Auction {
   category: string
 }
 
-const auctions: Auction[] = [
-  {
-    id: 1,
-    name: "PSA 10 Umbreon VMAX Alt Art",
-    currentBid: 1180,
-    startingBid: 800,
-    endTime: "2h 14m",
-    bids: 28,
-    watchers: 91,
-    status: "live",
-    category: "Pokemon Slab",
-  },
-  {
-    id: 2,
-    name: "Sealed Evolving Skies Booster Box",
-    currentBid: 640,
-    startingBid: 450,
-    endTime: "5h 40m",
-    bids: 17,
-    watchers: 64,
-    status: "live",
-    category: "Sealed Product",
-  },
-  {
-    id: 3,
-    name: "The One Ring Borderless Foil",
-    currentBid: 220,
-    startingBid: 150,
-    endTime: "Starts tomorrow",
-    bids: 0,
-    watchers: 32,
-    status: "upcoming",
-    category: "Magic",
-  },
-]
+const auctions: Auction[] = []
 
 type AuctionFilter = "all" | "live" | "upcoming" | "ended"
 

@@ -19,32 +19,7 @@ interface PreOrder {
   price: number
 }
 
-const preOrders: PreOrder[] = [
-  {
-    id: 1,
-    product: "Pokemon Scarlet & Violet Booster Box",
-    orderDate: "Reserve today",
-    releaseDate: "Jun 7, 2026",
-    status: "confirmed",
-    price: 119.99,
-  },
-  {
-    id: 2,
-    product: "Magic: The Gathering Modern Horizons Bundle",
-    orderDate: "Reserve today",
-    releaseDate: "Jun 14, 2026",
-    status: "processing",
-    price: 69.99,
-  },
-  {
-    id: 3,
-    product: "Yu-Gi-Oh! Core Booster Box",
-    orderDate: "Reserve today",
-    releaseDate: "Jul 5, 2026",
-    status: "confirmed",
-    price: 89.99,
-  },
-]
+const preOrders: PreOrder[] = []
 
 type PreOrderFilter = "all" | "confirmed" | "processing" | "shipped" | "delivered"
 
