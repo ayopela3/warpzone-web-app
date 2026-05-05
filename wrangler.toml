@@ -4,3 +4,9 @@ main = ".vercel/output/static/_worker.js/index.js"
 
 [build]
 command = "npx @cloudflare/next-on-pages"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "warpzone"
+database_id = "c339931b-53c8-48fa-a271-aae6bf51ac8a"
+migrations_dir = "prisma/migrations"
