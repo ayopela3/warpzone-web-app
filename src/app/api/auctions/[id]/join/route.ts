@@ -3,9 +3,9 @@ import type { CloudflareEnv } from "@/types/cloudflare"
 
 export const runtime = "edge"
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auctionId = params.id
+    const { id: auctionId } = await params
 
     // Get D1 database binding from Cloudflare context
     let db: CloudflareEnv["DB"] | null = null

@@ -26,7 +26,6 @@ export function Navbar() {
   const { cartCount, isAuthenticated, userRole, signOut } = useApp()
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
   }, [])
 

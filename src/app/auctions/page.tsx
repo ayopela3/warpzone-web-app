@@ -69,6 +69,7 @@ export default function AuctionsPage() {
         alert(data.error || "Failed to join auction")
       }
     } catch (error) {
+      console.log(error)
       alert("Failed to join auction")
     }
   }
