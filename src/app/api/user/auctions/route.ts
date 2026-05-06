@@ -31,8 +31,13 @@ export async function GET(request: NextRequest) {
       .prepare(
         `SELECT
            a.id, a.title, a.category, a.condition, a.rarity, a.image_url,
-           a.starting_price, a.current_bid, a.status, a.start_time, a.end_time,
-           ap.joined_at
+           a.starting_price, a.current_bid, a.start_time, a.end_time,
+           ap.joined_at,
+           CASE
+             WHEN datetime('now') < a.start_time THEN 'upcoming'
+             WHEN datetime('now') > a.end_time   THEN 'ended'
+             ELSE 'active'
+           END AS status
          FROM auction_participants ap
          JOIN auctions a ON ap.auction_id = a.id
          WHERE ap.user_id = ?

@@ -104,7 +104,11 @@ export async function GET() {
            a.min_bid_increment,
            a.start_time,
            a.end_time,
-           a.status,
+           CASE
+             WHEN datetime('now') < a.start_time THEN 'upcoming'
+             WHEN datetime('now') > a.end_time   THEN 'ended'
+             ELSE 'active'
+           END AS status,
            pr.full_name   AS seller_name,
            pr.business_name
          FROM auctions a

@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       db.prepare(
         `SELECT COUNT(*) AS count FROM auction_participants ap
          JOIN auctions a ON ap.auction_id = a.id
-         WHERE ap.user_id = ? AND a.status IN ('active', 'upcoming')`
+         WHERE ap.user_id = ? AND datetime('now') <= a.end_time`
       ).bind(userId).first<{ count: number }>(),
       db.prepare("SELECT COUNT(*) AS count FROM tournament_registrations WHERE user_id = ?").bind(userId).first<{ count: number }>(),
       db.prepare("SELECT COALESCE(SUM(total), 0) AS total FROM orders WHERE user_id = ?").bind(userId).first<{ total: number }>(),

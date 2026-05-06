@@ -30,22 +30,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ success: false, error: "Invalid or expired session" }, { status: 401 })
     }
 
-    // Check if auction exists and is active
+    // Check if auction exists and hasn't ended (using real-time computed status)
     const auctionResult = await db
-      .prepare("SELECT id, status, end_time FROM auctions WHERE id = ?")
+      .prepare(
+        `SELECT id, start_time, end_time,
+           CASE
+             WHEN datetime('now') < start_time THEN 'upcoming'
+             WHEN datetime('now') > end_time   THEN 'ended'
+             ELSE 'active'
+           END AS computed_status
+         FROM auctions WHERE id = ?`
+      )
       .bind(auctionId)
-      .first<{ id: string; status: string; end_time: string }>()
+      .first<{ id: string; start_time: string; end_time: string; computed_status: string }>()
 
     if (!auctionResult) {
       return NextResponse.json({ success: false, error: "Auction not found" }, { status: 404 })
     }
 
-    if (auctionResult.status !== "upcoming" && auctionResult.status !== "active") {
-      return NextResponse.json({ success: false, error: "Auction is not accepting participants" }, { status: 400 })
-    }
-
-    // Check if auction has ended
-    if (new Date(auctionResult.end_time) < new Date()) {
+    if (auctionResult.computed_status === "ended") {
       return NextResponse.json({ success: false, error: "Auction has ended" }, { status: 400 })
     }
 

@@ -45,7 +45,12 @@ export async function GET(request: NextRequest) {
         `SELECT
            id, title, description, category, condition, rarity, image_url,
            starting_price, current_bid, min_bid_increment,
-           start_time, end_time, status, created_at
+           start_time, end_time, created_at,
+           CASE
+             WHEN datetime('now') < start_time THEN 'upcoming'
+             WHEN datetime('now') > end_time   THEN 'ended'
+             ELSE 'active'
+           END AS status
          FROM auctions
          WHERE seller_id = ?
          ORDER BY created_at DESC`

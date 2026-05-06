@@ -52,11 +52,19 @@ export async function PUT(
       return NextResponse.json({ success: false, error: "Only sellers can edit auctions" }, { status: 403 })
     }
 
-    // Verify auction exists and belongs to this seller
+    // Verify auction exists and belongs to this seller (use computed status)
     const auction = await db
-      .prepare("SELECT id, seller_id, status FROM auctions WHERE id = ?")
+      .prepare(
+        `SELECT id, seller_id,
+           CASE
+             WHEN datetime('now') < start_time THEN 'upcoming'
+             WHEN datetime('now') > end_time   THEN 'ended'
+             ELSE 'active'
+           END AS computed_status
+         FROM auctions WHERE id = ?`
+      )
       .bind(auctionId)
-      .first<{ id: string; seller_id: string; status: string }>()
+      .first<{ id: string; seller_id: string; computed_status: string }>()
 
     if (!auction) {
       return NextResponse.json({ success: false, error: "Auction not found" }, { status: 404 })
@@ -66,11 +74,11 @@ export async function PUT(
       return NextResponse.json({ success: false, error: "You can only edit your own auctions" }, { status: 403 })
     }
 
-    if (auction.status === "active") {
+    if (auction.computed_status === "active") {
       return NextResponse.json({ success: false, error: "Cannot edit a live auction" }, { status: 400 })
     }
 
-    if (auction.status === "ended") {
+    if (auction.computed_status === "ended") {
       return NextResponse.json({ success: false, error: "Cannot edit an ended auction" }, { status: 400 })
     }
 

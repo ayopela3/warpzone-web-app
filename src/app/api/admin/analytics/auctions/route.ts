@@ -10,7 +10,10 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
     }
 
-    const result = await db.prepare("SELECT COUNT(*) as count FROM auctions WHERE status = 'active'").first()
+    const result = await db.prepare(
+      `SELECT COUNT(*) as count FROM auctions
+       WHERE datetime('now') >= start_time AND datetime('now') <= end_time`
+    ).first()
     const count = result ? (result as { count: number }).count : 0
 
     return NextResponse.json({ success: true, count })
