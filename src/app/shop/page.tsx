@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -13,8 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Search, ShoppingBag, ArrowUpDown, X } from "lucide-react"
-import { useApp } from "@/components/shared/app-provider"
+import { Search, ShoppingBag, ArrowUpDown, X, Loader2 } from "lucide-react"
 
 interface Category {
   id: string
@@ -29,16 +28,15 @@ interface Condition {
 }
 
 interface Product {
-  id: number
+  id: string
   name: string
-  price: number
   category: string
-  condition: string
-  categoryId: string
-  conditionId: string
-  inStock: boolean
-  rarity?: string
-  setName: string
+  rarity: string
+  description: string
+  image_url: string
+  sku: string
+  approval_status: string
+  created_at: string
 }
 
 const categories: Category[] = [
@@ -52,9 +50,9 @@ const conditions: Condition[] = [
   { id: "mint", name: "Mint", slug: "mint" },
   { id: "near-mint", name: "Near Mint", slug: "near-mint" },
   { id: "light-played", name: "Lightly Played", slug: "light-played" },
+  { id: "played", name: "Played", slug: "played" },
+  { id: "poor", name: "Poor", slug: "poor" },
 ]
-
-const products: Product[] = []
 
 const productsWithoutListings: Array<{
   id: number
@@ -65,17 +63,37 @@ const productsWithoutListings: Array<{
   rarity: string
 }> = []
 
-type SortOption = "relevance" | "price-low" | "price-high" | "newest"
+type SortOption = "relevance" | "newest"
 
 export default function ShopPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedCondition, setSelectedCondition] = useState<string>("all")
   const [sortBy, setSortBy] = useState<SortOption>("relevance")
-  const { addToCart } = useApp()
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false)
+  const [productsData, setProductsData] = useState<Product[]>([])
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoadingProducts(true)
+      try {
+        const response = await fetch("/api/products")
+        const data = await response.json()
+        if (data.success) {
+          setProductsData(data.products || [])
+        }
+      } catch (error) {
+        console.error("Failed to fetch products:", error)
+      } finally {
+        setIsLoadingProducts(false)
+      }
+    }
+
+    fetchProducts()
+  }, [])
 
   const filteredProducts = useMemo(() => {
-    let result = [...products]
+    let result = [...productsData]
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
@@ -87,27 +105,15 @@ export default function ShopPage() {
     }
 
     if (selectedCategory !== "all") {
-      result = result.filter((p) => p.categoryId === selectedCategory)
+      result = result.filter((p) => p.category.toLowerCase() === selectedCategory.toLowerCase())
     }
 
-    if (selectedCondition !== "all") {
-      result = result.filter((p) => p.conditionId === selectedCondition)
-    }
-
-    switch (sortBy) {
-      case "price-low":
-        result.sort((a, b) => a.price - b.price)
-        break
-      case "price-high":
-        result.sort((a, b) => b.price - a.price)
-        break
-      case "newest":
-        result.sort((a, b) => b.id - a.id)
-        break
+    if (sortBy === "newest") {
+      result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     }
 
     return result
-  }, [searchQuery, selectedCategory, selectedCondition, sortBy])
+  }, [searchQuery, selectedCategory, sortBy, productsData])
 
   const activeFiltersCount = [
     selectedCategory !== "all",
@@ -192,8 +198,6 @@ export default function ShopPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="relevance">Relevance</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
                 <SelectItem value="newest">Newest</SelectItem>
               </SelectContent>
             </Select>
@@ -215,12 +219,17 @@ export default function ShopPage() {
         {/* Results */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-muted-foreground">
-            Showing <span className="font-medium">{filteredProducts.length}</span> of {products.length} results
+            Showing <span className="font-medium">{filteredProducts.length}</span> of {productsData.length} results
           </p>
         </div>
 
         {/* Product Grid */}
-        {filteredProducts.length === 0 ? (
+        {isLoadingProducts ? (
+          <div className="text-center py-12">
+            <Loader2 className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-spin" />
+            <h3 className="text-lg font-semibold">Loading products...</h3>
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="text-center py-12">
             <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold">No products found</h3>
@@ -243,39 +252,35 @@ export default function ShopPage() {
                   <CardContent className="flex h-full flex-col p-0">
                     <div className="relative flex h-64 items-center justify-center overflow-hidden bg-[linear-gradient(135deg,#fff7cc,#ffffff)]">
                       <div className="absolute inset-x-8 top-6 h-44 rounded-2xl border border-primary/30 bg-white/70 blur-xl" />
-                      <div className="relative flex h-40 w-28 items-center justify-center rounded-2xl border-2 border-primary bg-white shadow-lg transition-transform group-hover:scale-105">
-                        <ShoppingBag className="h-12 w-12 text-primary" />
-                      </div>
-                      <Badge className="absolute top-3 left-3">{product.category}</Badge>
-                      {!product.inStock && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <Badge variant="secondary" className="text-sm">Out of Stock</Badge>
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="relative h-40 w-28 object-contain transition-transform group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="relative flex h-40 w-28 items-center justify-center rounded-2xl border-2 border-primary bg-white shadow-lg transition-transform group-hover:scale-105">
+                          <ShoppingBag className="h-12 w-12 text-primary" />
                         </div>
                       )}
+                      <Badge className="absolute top-3 left-3">{product.category}</Badge>
                     </div>
                     <div className="flex flex-1 flex-col p-4">
                       <h3 className="line-clamp-2 min-h-12 font-black leading-6 text-black">{product.name}</h3>
                       {product.rarity && (
-                        <p className="mt-1 line-clamp-1 text-sm text-neutral-600">{product.setName} · {product.rarity}</p>
+                        <p className="mt-1 line-clamp-1 text-sm text-neutral-600">{product.rarity}</p>
                       )}
                       <div className="mt-auto flex items-center justify-between pt-4">
-                        <span className="text-xl font-black text-primary">${product.price.toLocaleString()}</span>
-                        <Badge variant="outline">{product.condition}</Badge>
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Approved</Badge>
+                        <Badge variant="outline">SKU: {product.sku}</Badge>
                       </div>
                       <Button
                         className="w-full mt-3"
-                        disabled={!product.inStock}
                         onClick={(event) => {
                           event.preventDefault()
-                          addToCart({
-                            id: String(product.id),
-                            name: product.name,
-                            price: product.price,
-                            category: product.category,
-                          })
                         }}
                       >
-                        {product.inStock ? "Add to Cart" : "Out of Stock"}
+                        View Details
                       </Button>
                     </div>
                   </CardContent>

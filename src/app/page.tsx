@@ -11,6 +11,20 @@ import { useApp } from "@/components/shared/app-provider"
 
 const featuredCards: Array<{ id: number; name: string; game: string; price: number; condition: string }> = []
 
+type FeaturedProduct = {
+  id: string
+  sku: string
+  name: string
+  category: string
+  rarity: string
+  description: string
+  image_url: string
+  approval_status: string
+  created_at: string
+  seller_name: string
+  seller_business: string
+}
+
 const upcomingEvents: Array<{ id: number; title: string; date: string; players: string; prize: string }> = []
 
 const services = [
@@ -24,6 +38,8 @@ export default function HomePage() {
   const { userRole, isAuthenticated } = useApp()
   const router = useRouter()
   const [activeFeaturedIndex, setActiveFeaturedIndex] = useState(0)
+  const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([])
+  const [isLoadingFeatured, setIsLoadingFeatured] = useState(false)
   const activeFeaturedCard = featuredCards[activeFeaturedIndex]
   const isSeller = userRole === "seller"
 
@@ -33,19 +49,40 @@ export default function HomePage() {
     }
   }, [isAuthenticated, userRole, router])
 
+  useEffect(() => {
+    const fetchFeaturedProducts = async () => {
+      setIsLoadingFeatured(true)
+      try {
+        const response = await fetch("/api/products/featured")
+        const data = await response.json()
+        if (data.success) {
+          setFeaturedProducts(data.products || [])
+        }
+      } catch (error) {
+        console.error("Failed to fetch featured products:", error)
+      } finally {
+        setIsLoadingFeatured(false)
+      }
+    }
+
+    fetchFeaturedProducts()
+  }, [])
+
   const showPreviousFeaturedCard = () => {
     setActiveFeaturedIndex((currentIndex) =>
-      currentIndex === 0 ? featuredCards.length - 1 : currentIndex - 1
+      currentIndex === 0 ? featuredProducts.length - 1 : currentIndex - 1
     )
   }
 
   const showNextFeaturedCard = () => {
     setActiveFeaturedIndex((currentIndex) =>
-      currentIndex === featuredCards.length - 1 ? 0 : currentIndex + 1
+      currentIndex === featuredProducts.length - 1 ? 0 : currentIndex + 1
     )
   }
 
-  if (featuredCards.length === 0) {
+  const activeFeaturedProduct = featuredProducts[activeFeaturedIndex]
+
+  if (featuredProducts.length === 0) {
     return (
       <div className="bg-white text-black">
         <section className="relative overflow-hidden border-b border-black bg-primary text-black">
@@ -217,27 +254,31 @@ export default function HomePage() {
                 <div className="grid min-h-[290px] gap-4 md:grid-cols-[1.1fr_0.9fr]">
                   <div className="rounded-2xl border bg-[linear-gradient(135deg,#fff3b0,#ffffff)] p-5">
                     <div className="flex h-56 items-center justify-center rounded-xl bg-white/60">
-                      <div className="flex h-40 w-28 items-center justify-center rounded-2xl border-2 border-primary bg-white shadow-md">
-                        <ShoppingBag className="h-12 w-12 text-primary" />
-                      </div>
+                      {activeFeaturedProduct?.image_url ? (
+                        <img
+                          src={activeFeaturedProduct.image_url}
+                          alt={activeFeaturedProduct.name}
+                          className="h-40 w-28 object-contain"
+                        />
+                      ) : (
+                        <div className="flex h-40 w-28 items-center justify-center rounded-2xl border-2 border-primary bg-white shadow-md">
+                          <ShoppingBag className="h-12 w-12 text-primary" />
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex min-h-[290px] flex-col justify-between">
                     <div className="min-h-[170px]">
-                      <p className="text-sm font-bold text-neutral-500">{activeFeaturedCard.game} · {activeFeaturedCard.condition}</p>
+                      <p className="text-sm font-bold text-neutral-500">{activeFeaturedProduct?.category || 'TCG'} · Featured</p>
                       <h3 className="mt-2 line-clamp-3 min-h-[108px] text-3xl font-black leading-9 text-black">
-                        {activeFeaturedCard.name}
+                        {activeFeaturedProduct?.name || 'Featured Product'}
                       </h3>
                       <p className="mt-3 line-clamp-2 min-h-12 text-sm leading-6 text-neutral-600">
-                        Verified condition, ready for binder pickup or secure shipping.
+                        {activeFeaturedProduct?.description || 'Verified condition, ready for binder pickup or secure shipping.'}
                       </p>
                     </div>
                     <div className="mt-5">
-                      <div className="mb-4 flex items-center justify-between">
-                        <span className="text-sm font-bold text-neutral-500">Starting at</span>
-                        <span className="text-3xl font-black text-black">${activeFeaturedCard.price}</span>
-                      </div>
                       <Button className="w-full bg-black text-white hover:bg-neutral-800" asChild>
                         <Link href="/shop">
                           View product
@@ -249,10 +290,10 @@ export default function HomePage() {
                 </div>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                  {featuredCards.map((card, index) => (
+                  {featuredProducts.map((product, index) => (
                     <button
                       type="button"
-                      key={card.id}
+                      key={product.id}
                       className={`rounded-xl border p-3 text-left transition hover:border-black ${
                         activeFeaturedIndex === index
                           ? "border-black bg-primary/15"
@@ -262,18 +303,18 @@ export default function HomePage() {
                     >
                       <div className="mb-2 flex items-center justify-between">
                         <span className="text-xs font-black uppercase text-neutral-500">0{index + 1}</span>
-                        <span className="text-xs font-bold text-neutral-500">{card.game}</span>
+                        <span className="text-xs font-bold text-neutral-500">{product.category}</span>
                       </div>
-                      <p className="line-clamp-2 h-10 text-sm font-black leading-5 text-black">{card.name}</p>
-                      <p className="mt-2 text-sm font-black text-primary">${card.price}</p>
+                      <p className="line-clamp-2 h-10 text-sm font-black leading-5 text-black">{product.name}</p>
+                      <p className="mt-2 text-sm font-black text-primary">Featured</p>
                     </button>
                   ))}
                 </div>
 
                 <div className="mt-5 flex justify-center gap-2">
-                  {featuredCards.map((card, index) => (
+                  {featuredProducts.map((product, index) => (
                     <button
-                      key={card.id}
+                      key={product.id}
                       type="button"
                       aria-label={`Show featured product ${index + 1}`}
                       className={`h-2 rounded-full transition-all ${
@@ -316,19 +357,27 @@ export default function HomePage() {
               </Button>
             </div>
             <div className="grid gap-6 md:grid-cols-3">
-              {featuredCards.map((card) => (
-                <Card key={card.id} className="overflow-hidden border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-black hover:shadow-xl">
+              {featuredProducts.map((product) => (
+                <Card key={product.id} className="overflow-hidden border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-black hover:shadow-xl">
                   <div className="flex aspect-4/3 items-center justify-center bg-[linear-gradient(135deg,#fff7cc,#ffffff)]">
-                    <div className="rounded-2xl border-2 border-primary bg-white p-5 shadow-sm">
-                      <ShoppingBag className="h-12 w-12 text-primary" />
-                    </div>
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="h-32 w-32 object-contain"
+                      />
+                    ) : (
+                      <div className="rounded-2xl border-2 border-primary bg-white p-5 shadow-sm">
+                        <ShoppingBag className="h-12 w-12 text-primary" />
+                      </div>
+                    )}
                   </div>
                   <CardContent className="p-5">
-                    <Badge variant="outline">{card.game}</Badge>
-                    <h3 className="mt-3 min-h-12 font-black leading-6 text-black">{card.name}</h3>
+                    <Badge variant="outline">{product.category}</Badge>
+                    <h3 className="mt-3 min-h-12 font-black leading-6 text-black">{product.name}</h3>
                     <div className="mt-4 flex items-center justify-between">
-                      <span className="text-2xl font-black text-primary">${card.price}</span>
-                      <span className="text-sm font-semibold text-neutral-600">{card.condition}</span>
+                      <Badge className="bg-amber-50 text-amber-700 border-amber-200">Featured</Badge>
+                      {product.rarity && <span className="text-sm font-semibold text-neutral-600">{product.rarity}</span>}
                     </div>
                   </CardContent>
                 </Card>

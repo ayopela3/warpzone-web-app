@@ -105,8 +105,9 @@ export async function GET(request: NextRequest) {
       conditions.push("approval_status = ?")
       params.push(approvalStatus)
     } else if (!showAll && !sellerId) {
-      // By default, only show approved products unless showAll is true or filtering by seller
+      // By default, only show approved and active products unless showAll is true or filtering by seller
       conditions.push("approval_status = 'approved'")
+      conditions.push("is_active = 1")
     }
 
     if (conditions.length > 0) {

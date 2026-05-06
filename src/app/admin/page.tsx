@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, ShoppingBag, Gavel, Trophy, Package, Check, X, Clock, Eye, Loader2 } from "lucide-react"
+import { Users, ShoppingBag, Gavel, Trophy, Package, Check, X, Clock, Loader2 } from "lucide-react"
 
 
 export default function AdminDashboard() {
@@ -29,7 +29,6 @@ export default function AdminDashboard() {
     seller_name: string
     seller_business: string
   }>>([])
-  const [selectedApproval, setSelectedApproval] = useState<typeof pendingApprovals[0] | null>(null)
   const [isLoadingApprovals, setIsLoadingApprovals] = useState(false)
   const [allProducts, setAllProducts] = useState<Array<{
     id: string
@@ -44,8 +43,10 @@ export default function AdminDashboard() {
     created_at: string
     seller_name: string
     seller_business: string
+    featured: number
+    is_active: number
   }>>([])
-  const [productsFilter, setProductsFilter] = useState<"all" | "approved" | "pending" | "rejected">("all")
+  const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest")
   const [isLoadingProducts, setIsLoadingProducts] = useState(false)
 
   // Tournament form state
@@ -99,12 +100,43 @@ export default function AdminDashboard() {
       })
       const data = await response.json()
       if (data.success) {
-        setSelectedApproval(null)
         fetchPendingApprovals()
         fetchAllProducts()
       }
     } catch (error) {
       console.error("Failed to approve/reject product:", error)
+    }
+  }
+
+  const handleToggleFeatured = async (productId: string, currentFeatured: number) => {
+    try {
+      const response = await fetch(`/api/admin/products/${productId}/toggle-featured`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ featured: currentFeatured === 1 ? 0 : 1 })
+      })
+      const data = await response.json()
+      if (data.success) {
+        fetchAllProducts()
+      }
+    } catch (error) {
+      console.error("Failed to toggle featured status:", error)
+    }
+  }
+
+  const handleToggleActive = async (productId: string, currentActive: number) => {
+    try {
+      const response = await fetch(`/api/admin/products/${productId}/toggle-active`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_active: currentActive === 1 ? 0 : 1 })
+      })
+      const data = await response.json()
+      if (data.success) {
+        fetchAllProducts()
+      }
+    } catch (error) {
+      console.error("Failed to toggle active status:", error)
     }
   }
 
@@ -264,137 +296,80 @@ export default function AdminDashboard() {
             <TabsTrigger value="users">Users</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="approvals" className="space-y-6">
-            {isLoadingApprovals ? (
-              <Card className="bg-white shadow-lg">
-                <CardContent className="p-12 text-center">
-                  <Loader2 className="h-8 w-8 text-gray-400 mx-auto animate-spin" />
-                  <p className="mt-4 text-sm text-gray-600">Loading pending approvals...</p>
-                </CardContent>
-              </Card>
-            ) : pendingApprovals.length === 0 ? (
-              <Card className="bg-white shadow-lg">
-                <CardContent className="p-12 text-center">
-                  <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
-                    <Package className="h-8 w-8 text-gray-400" />
+          <TabsContent value="approvals">
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle>Pending Product Approvals</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoadingApprovals ? (
+                  <div className="p-12 text-center">
+                    <Loader2 className="h-8 w-8 text-gray-400 mx-auto animate-spin" />
+                    <p className="mt-4 text-sm text-gray-600">Loading pending approvals...</p>
                   </div>
-                  <h3 className="mt-6 text-xl font-semibold text-gray-900">No pending approvals</h3>
-                  <p className="mt-2 text-sm text-gray-600">All product submissions have been reviewed</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-1 space-y-4">
-                  <p className="text-sm font-medium text-gray-600">Pending Submissions</p>
-                  {pendingApprovals.map((approval) => (
-                    <Card
-                      key={approval.id}
-                      className={`cursor-pointer transition-all hover:shadow-lg ${
-                        selectedApproval?.id === approval.id ? "border-primary border-2" : "border-gray-200"
-                      }`}
-                      onClick={() => setSelectedApproval(approval)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 truncate">{approval.name}</h3>
-                            <p className="text-sm text-gray-600">{approval.category}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge variant="secondary" className="text-xs">{approval.sku}</Badge>
-                              {approval.rarity && <Badge variant="outline" className="text-xs">{approval.rarity}</Badge>}
+                ) : pendingApprovals.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
+                      <Package className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="mt-6 text-xl font-semibold text-gray-900">No pending approvals</h3>
+                    <p className="mt-2 text-sm text-gray-600">All product submissions have been reviewed</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingApprovals.map((product) => (
+                      <Card key={product.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-4 flex-1">
+                              {product.image_url && (
+                                <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                  <img
+                                    src={product.image_url}
+                                    alt={product.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-gray-900 truncate">{product.name}</h3>
+                                <p className="text-sm text-gray-600">SKU: {product.sku}</p>
+                                <p className="text-sm text-gray-600">{product.category}</p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Seller: {product.seller_name || product.seller_business || 'Unknown'}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Created: {new Date(product.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2 flex-shrink-0">
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                onClick={() => handleApproval(product.id, "approved")}
+                              >
+                                <Check className="mr-1 h-3 w-3" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-red-200 text-red-600 hover:bg-red-50"
+                                onClick={() => handleApproval(product.id, "rejected")}
+                              >
+                                <X className="mr-1 h-3 w-3" />
+                                Reject
+                              </Button>
                             </div>
                           </div>
-                          <Eye className="h-4 w-4 text-gray-400 ml-2 flex-shrink-0" />
-                        </div>
-                        <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-                          <span>{approval.seller_name || approval.seller_business || 'Unknown'}</span>
-                          <span>{new Date(approval.created_at).toLocaleDateString()}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-
-                <div className="lg:col-span-2">
-                  {selectedApproval && (
-                    <Card className="bg-white shadow-lg sticky top-4">
-                      <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                          <span>Review Submission</span>
-                          <Badge variant="outline" className="text-xs">Pending</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-6">
-                        <div className="space-y-4">
-                          <div>
-                            <p className="text-sm font-medium text-gray-600">Product Name</p>
-                            <p className="text-lg font-semibold text-gray-900">{selectedApproval.name}</p>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">SKU</p>
-                              <p className="text-gray-900">{selectedApproval.sku}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Category</p>
-                              <p className="text-gray-900">{selectedApproval.category}</p>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Rarity</p>
-                              <p className="text-gray-900">{selectedApproval.rarity || "N/A"}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Status</p>
-                              <p className="text-gray-900 capitalize">{selectedApproval.approval_status}</p>
-                            </div>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-600">Description</p>
-                            <p className="text-gray-900 mt-1">{selectedApproval.description || "No description provided"}</p>
-                          </div>
-                          {selectedApproval.image_url && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Product Image</p>
-                              <img src={selectedApproval.image_url} alt={selectedApproval.name} className="mt-2 max-w-full h-48 object-cover rounded-lg" />
-                            </div>
-                          )}
-                          <div className="pt-4 border-t space-y-2">
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Submitted By</p>
-                              <p className="text-gray-900">{selectedApproval.seller_name || selectedApproval.seller_business || 'Unknown'}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Submitted At</p>
-                              <p className="text-gray-900">{new Date(selectedApproval.created_at).toLocaleString()}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-4 pt-4 border-t">
-                          <Button 
-                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                            onClick={() => handleApproval(selectedApproval.id, "approved")}
-                          >
-                            <Check className="mr-2 h-4 w-4" />
-                            Approve
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            className="flex-1 border-red-200 text-red-600 hover:bg-red-50"
-                            onClick={() => handleApproval(selectedApproval.id, "rejected")}
-                          >
-                            <X className="mr-2 h-4 w-4" />
-                            Reject
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </div>
-            )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="products">
@@ -404,32 +379,18 @@ export default function AdminDashboard() {
                   <CardTitle>Manage Products</CardTitle>
                   <div className="flex gap-2">
                     <Button
-                      variant={productsFilter === "all" ? "default" : "outline"}
+                      variant={sortOrder === "latest" ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setProductsFilter("all")}
+                      onClick={() => setSortOrder("latest")}
                     >
-                      All
+                      Latest
                     </Button>
                     <Button
-                      variant={productsFilter === "approved" ? "default" : "outline"}
+                      variant={sortOrder === "oldest" ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setProductsFilter("approved")}
+                      onClick={() => setSortOrder("oldest")}
                     >
-                      Approved
-                    </Button>
-                    <Button
-                      variant={productsFilter === "pending" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setProductsFilter("pending")}
-                    >
-                      Pending
-                    </Button>
-                    <Button
-                      variant={productsFilter === "rejected" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setProductsFilter("rejected")}
-                    >
-                      Rejected
+                      Oldest
                     </Button>
                   </div>
                 </div>
@@ -451,9 +412,10 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="space-y-4">
                     {allProducts
-                      .filter(product => {
-                        if (productsFilter === "all") return true
-                        return product.approval_status === productsFilter
+                      .sort((a, b) => {
+                        const dateA = new Date(a.created_at).getTime()
+                        const dateB = new Date(b.created_at).getTime()
+                        return sortOrder === "latest" ? dateB - dateA : dateA - dateB
                       })
                       .map((product) => (
                         <Card key={product.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -482,6 +444,16 @@ export default function AdminDashboard() {
                                     >
                                       {product.approval_status}
                                     </Badge>
+                                    {product.featured === 1 && (
+                                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                                        Featured
+                                      </Badge>
+                                    )}
+                                    {product.is_active === 0 && (
+                                      <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-300">
+                                        Disabled
+                                      </Badge>
+                                    )}
                                   </div>
                                   <p className="text-sm text-gray-600">SKU: {product.sku}</p>
                                   <p className="text-sm text-gray-600">{product.category}</p>
@@ -493,27 +465,45 @@ export default function AdminDashboard() {
                                   </p>
                                 </div>
                               </div>
-                              {product.approval_status === "pending" && (
-                                <div className="flex gap-2 flex-shrink-0">
+                              <div className="flex flex-col gap-2 flex-shrink-0">
+                                {product.approval_status === "pending" && (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      className="bg-green-600 hover:bg-green-700 text-white"
+                                      onClick={() => handleApproval(product.id, "approved")}
+                                    >
+                                      <Check className="mr-1 h-3 w-3" />
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="border-red-200 text-red-600 hover:bg-red-50"
+                                      onClick={() => handleApproval(product.id, "rejected")}
+                                    >
+                                      <X className="mr-1 h-3 w-3" />
+                                      Reject
+                                    </Button>
+                                  </div>
+                                )}
+                                <div className="flex gap-2">
                                   <Button
                                     size="sm"
-                                    className="bg-green-600 hover:bg-green-700 text-white"
-                                    onClick={() => handleApproval(product.id, "approved")}
+                                    variant={product.featured === 1 ? "default" : "outline"}
+                                    onClick={() => handleToggleFeatured(product.id, product.featured)}
                                   >
-                                    <Check className="mr-1 h-3 w-3" />
-                                    Approve
+                                    {product.featured === 1 ? "Unfeature" : "Feature"}
                                   </Button>
                                   <Button
                                     size="sm"
-                                    variant="outline"
-                                    className="border-red-200 text-red-600 hover:bg-red-50"
-                                    onClick={() => handleApproval(product.id, "rejected")}
+                                    variant={product.is_active === 1 ? "outline" : "destructive"}
+                                    onClick={() => handleToggleActive(product.id, product.is_active)}
                                   >
-                                    <X className="mr-1 h-3 w-3" />
-                                    Reject
+                                    {product.is_active === 1 ? "Disable" : "Enable"}
                                   </Button>
                                 </div>
-                              )}
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
