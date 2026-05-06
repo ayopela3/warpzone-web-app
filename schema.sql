@@ -166,6 +166,15 @@ CREATE TABLE IF NOT EXISTS tournament_registrations (
   UNIQUE(tournament_id, user_id)
 );
 
+-- Settings table (for app-wide configuration)
+CREATE TABLE IF NOT EXISTS settings (
+  id TEXT PRIMARY KEY,
+  key TEXT UNIQUE NOT NULL,
+  value TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_sessions_id ON sessions(id);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);

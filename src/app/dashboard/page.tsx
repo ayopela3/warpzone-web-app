@@ -53,7 +53,7 @@ type SellerProduct = {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { isAuthenticated, userRole, userId } = useApp()
+  const { isAuthenticated, userRole, userId, requireAuth, fiatSymbol } = useApp()
   const [sellerProducts, setSellerProducts] = useState<SellerProduct[]>([])
   const [isLoadingProducts, setIsLoadingProducts] = useState(false)
   const [editingProduct, setEditingProduct] = useState<SellerProduct | null>(null)
@@ -232,7 +232,7 @@ export default function DashboardPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Revenue</p>
-                      <p className="text-4xl font-bold mt-2 text-gray-900">$0</p>
+                      <p className="text-4xl font-bold mt-2 text-gray-900">{fiatSymbol}0</p>
                       <p className="text-xs text-emerald-600 mt-1">+0% from last month</p>
                     </div>
                     <div className="p-3 bg-emerald-100 rounded-xl">
@@ -418,7 +418,7 @@ export default function DashboardPage() {
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="text-2xl font-bold text-gray-900">${order.total.toFixed(2)}</p>
+                              <p className="text-2xl font-bold text-gray-900">{fiatSymbol}{order.total.toFixed(2)}</p>
                               <Badge variant={
                                 order.status === "delivered" ? "secondary" :
                                   order.status === "shipped" ? "outline" : "default"
@@ -595,7 +595,7 @@ export default function DashboardPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Spent</p>
-                    <p className="text-4xl font-bold mt-2 text-gray-900">$2,439</p>
+                    <p className="text-4xl font-bold mt-2 text-gray-900">{fiatSymbol}2,439</p>
                     <p className="text-xs text-blue-600 mt-1">Lifetime</p>
                   </div>
                   <div className="p-3 bg-blue-100 rounded-xl">
@@ -651,7 +651,7 @@ export default function DashboardPage() {
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="text-2xl font-bold text-gray-900">${order.total.toFixed(2)}</p>
+                              <p className="text-2xl font-bold text-gray-900">{fiatSymbol}{order.total.toFixed(2)}</p>
                               <Badge variant={
                                 order.status === "delivered" ? "secondary" :
                                   order.status === "shipped" ? "outline" : "default"
@@ -709,7 +709,7 @@ export default function DashboardPage() {
                             </div>
                             <div className="text-right">
                               <p className="text-sm text-gray-600">Current Bid</p>
-                              <p className="text-2xl font-bold text-gray-900">${bid.currentBid.toLocaleString()}</p>
+                              <p className="text-2xl font-bold text-gray-900">{fiatSymbol}{bid.currentBid.toLocaleString()}</p>
                               <Badge variant={bid.status === "winning" ? "secondary" : "destructive"} className="text-sm">
                                 {bid.status === "winning" ? "Winning" : "Outbid"}
                               </Badge>

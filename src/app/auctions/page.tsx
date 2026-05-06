@@ -28,11 +28,11 @@ interface Auction {
 type AuctionFilter = "all" | "live" | "upcoming" | "ended"
 
 export default function AuctionsPage() {
+  const { isAuthenticated, requireAuth, fiatSymbol } = useApp()
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<AuctionFilter>("all")
   const [auctions, setAuctions] = useState<Auction[]>([])
   const [loading, setLoading] = useState(true)
-  const { requireAuth, isAuthenticated } = useApp()
 
   const fetchAuctions = async () => {
     try {
@@ -212,11 +212,11 @@ export default function AuctionsPage() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Current Bid</span>
-                      <span className="text-2xl font-bold text-primary">${auction.current_bid.toLocaleString()}</span>
+                      <span className="text-2xl font-bold text-primary">{fiatSymbol}{auction.current_bid.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Starting Bid</span>
-                      <span className="font-medium text-gray-900">${auction.starting_price.toLocaleString()}</span>
+                      <span className="font-medium text-gray-900">{fiatSymbol}{auction.starting_price.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600 flex items-center gap-1">

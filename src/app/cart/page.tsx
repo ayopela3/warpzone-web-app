@@ -8,15 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { useApp } from "@/components/shared/app-provider"
 
 export default function CartPage() {
-  const {
-    cartItems,
-    cartCount,
-    cartTotal,
-    clearCart,
-    removeFromCart,
-    updateCartQuantity,
-    requireAuth,
-  } = useApp()
+  const { cartItems, removeFromCart, updateCartQuantity, cartTotal, fiatSymbol } = useApp()
 
   return (
     <div className="min-h-screen bg-white text-black">
@@ -51,7 +43,7 @@ export default function CartPage() {
                       <div>
                         <Badge variant="outline">{item.category}</Badge>
                         <h2 className="mt-2 font-black text-black">{item.name}</h2>
-                        <p className="mt-1 text-sm text-neutral-600">${item.price.toLocaleString()} each</p>
+                        <p className="mt-1 text-sm text-neutral-600">{fiatSymbol}{item.price.toLocaleString()} each</p>
                       </div>
 
                       <div className="flex items-center gap-3">
@@ -74,7 +66,7 @@ export default function CartPage() {
                             <Plus className="h-4 w-4" />
                           </Button>
                         </div>
-                        <p className="w-24 text-right font-black">${(item.price * item.quantity).toLocaleString()}</p>
+                        <p className="w-24 text-right font-black">{fiatSymbol}{(item.price * item.quantity).toLocaleString()}</p>
                         <Button
                           variant="ghost"
                           size="icon"

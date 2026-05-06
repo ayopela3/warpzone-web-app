@@ -17,6 +17,7 @@ type AppContextValue = {
   isAuthenticated: boolean
   userId: string | null
   userRole: string | null
+  fiatSymbol: string
   addToCart: (item: Omit<CartItem, "quantity">, maxQuantity?: number) => void
   removeFromCart: (id: string) => void
   updateCartQuantity: (id: string, quantity: number) => void
@@ -64,6 +65,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     return window.localStorage.getItem(userRoleKey)
   })
+
+  const [fiatSymbol, setFiatSymbol] = useState("$")
+
+  useEffect(() => {
+    const fetchFiatSymbol = async () => {
+      try {
+        const response = await fetch("/api/settings/fiat")
+        const data = await response.json()
+        if (data.success && data.fiatSymbol) {
+          setFiatSymbol(data.fiatSymbol)
+        }
+      } catch (error) {
+        console.error("Failed to fetch fiat symbol:", error)
+      }
+    }
+    fetchFiatSymbol()
+  }, [])
 
   useEffect(() => {
     window.localStorage.setItem(cartStorageKey, JSON.stringify(cartItems))
@@ -194,6 +212,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated,
       userId,
       userRole,
+      fiatSymbol,
       addToCart,
       removeFromCart,
       updateCartQuantity,
@@ -203,7 +222,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       signOut,
       requireAuth,
     }
-  }, [cartItems, isAuthenticated, userId, userRole, addToCart, removeFromCart, updateCartQuantity, clearCart, signUp, signIn, signOut, requireAuth])
+  }, [cartItems, isAuthenticated, userId, userRole, fiatSymbol, addToCart, removeFromCart, updateCartQuantity, clearCart, signUp, signIn, signOut, requireAuth])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

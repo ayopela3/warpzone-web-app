@@ -55,12 +55,12 @@ const productsWithoutListings: Array<{
 type SortOption = "relevance" | "newest"
 
 export default function ShopPage() {
+  const { addToCart, fiatSymbol } = useApp()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [sortBy, setSortBy] = useState<SortOption>("relevance")
   const [isLoadingProducts, setIsLoadingProducts] = useState(false)
   const [productsData, setProductsData] = useState<Product[]>([])
-  const { addToCart } = useApp()
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -253,7 +253,7 @@ export default function ShopPage() {
                       )}
                       <div className="mt-auto flex items-center justify-between pt-4">
                         <div>
-                          <p className="text-xl font-black text-primary">${product.price.toLocaleString()}</p>
+                          <p className="text-xl font-black text-primary">{fiatSymbol}{product.price.toLocaleString()}</p>
                           <p className="text-xs text-neutral-500">Qty: {product.quantity}</p>
                         </div>
                       </div>

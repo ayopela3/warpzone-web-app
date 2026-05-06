@@ -11,12 +11,12 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Users, ShoppingBag, Gavel, Trophy, Package, Check, X, Clock, Loader2, LayoutGrid, List, Edit2 } from "lucide-react"
+import { Users, ShoppingBag, Gavel, Trophy, Package, Check, X, Clock, Loader2, LayoutGrid, List, Edit2, Settings } from "lucide-react"
 
 
 export default function AdminDashboard() {
   const router = useRouter()
-  const { isAuthenticated, userRole } = useApp()
+  const { isAuthenticated, userRole, fiatSymbol } = useApp()
   const [pendingApprovals, setPendingApprovals] = useState<Array<{
     id: string
     sku: string
@@ -78,6 +78,8 @@ export default function AdminDashboard() {
   })
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState("")
+  const [isSavingSettings, setIsSavingSettings] = useState(false)
+  const [editFiatSymbol, setEditFiatSymbol] = useState(fiatSymbol)
 
   // Tournament form state
   const [tournamentForm, setTournamentForm] = useState({
@@ -105,6 +107,27 @@ export default function AdminDashboard() {
       fetchPendingApprovals()
     }
   }, [isAuthenticated, userRole])
+
+  const handleSaveFiatSymbol = async () => {
+    setIsSavingSettings(true)
+    try {
+      const response = await fetch("/api/settings/fiat", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fiatSymbol: editFiatSymbol })
+      })
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error(data.error || "Failed to save fiat symbol")
+      }
+      setEditFiatSymbol(data.fiatSymbol)
+      window.location.reload()
+    } catch (error) {
+      console.error("Failed to save fiat symbol:", error)
+    } finally {
+      setIsSavingSettings(false)
+    }
+  }
 
   const fetchPendingApprovals = async () => {
     setIsLoadingApprovals(true)
@@ -448,12 +471,13 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs defaultValue="approvals" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
             <TabsTrigger value="approvals">Approvals</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="auctions">Auctions</TabsTrigger>
             <TabsTrigger value="tournaments">Tournaments</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="approvals">
@@ -717,7 +741,7 @@ export default function AdminDashboard() {
                                   </div>
                                   <div className="flex items-center justify-between text-sm">
                                     <span className="text-gray-500">Price:</span>
-                                    <span className="font-semibold text-gray-900">${product.price.toLocaleString()}</span>
+                                    <span className="font-semibold text-gray-900">{fiatSymbol}{product.price.toLocaleString()}</span>
                                   </div>
                                   <div className="flex items-center justify-between text-sm">
                                     <span className="text-gray-500">Quantity:</span>
@@ -830,7 +854,7 @@ export default function AdminDashboard() {
                                     </div>
                                     <p className="text-sm text-gray-600">SKU: {product.sku}</p>
                                     <p className="text-sm text-gray-600">{product.category}</p>
-                                    <p className="text-sm text-gray-600">Price: ${product.price.toLocaleString()}</p>
+                                    <p className="text-sm text-gray-600">Price: {fiatSymbol}{product.price.toLocaleString()}</p>
                                     <p className="text-xs text-gray-500 mt-1">
                                       Seller: {product.seller_name || product.seller_business || 'Unknown'}
                                     </p>
@@ -1050,6 +1074,48 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-600">User management coming soon</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle>App Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-primary/10 rounded-xl">
+                      <Settings className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Fiat Currency Symbol</h3>
+                      <p className="text-sm text-gray-600">Change the currency symbol used throughout the app</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fiatSymbol">Currency Symbol</Label>
+                    <Input
+                      id="fiatSymbol"
+                      value={editFiatSymbol}
+                      onChange={(e) => setEditFiatSymbol(e.target.value)}
+                      placeholder="Enter currency symbol (e.g., $, €, £, ¥)"
+                      maxLength={3}
+                    />
+                    <p className="text-xs text-gray-500">This will update all price displays across the platform</p>
+                  </div>
+                  <Button onClick={handleSaveFiatSymbol} disabled={isSavingSettings}>
+                    {isSavingSettings ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Settings"
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

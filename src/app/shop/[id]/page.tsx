@@ -1,10 +1,11 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, PackageCheck, ShieldCheck, ShoppingBag, Truck } from "lucide-react"
+import { ArrowLeft, PackageCheck, ShieldCheck, Truck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import AddToCartButton from "./add-to-cart-button"
+import ProductImageCarousel from "./product-image-carousel"
 import type { CloudflareEnv } from "@/types/cloudflare"
 
 export const runtime = 'edge'
@@ -81,19 +82,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-10 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
         <Card className="border-neutral-200 bg-white py-0 shadow-sm">
           <CardContent className="p-0">
-            <div className="flex min-h-[560px] items-center justify-center bg-[linear-gradient(135deg,#fff7cc,#ffffff)] p-10">
-              {product.image_url ? (
-                <img
-                  src={product.image_url}
-                  alt={product.name}
-                  className="h-80 w-56 object-contain"
-                />
-              ) : (
-                <div className="flex h-80 w-56 items-center justify-center rounded-3xl border-2 border-primary bg-white shadow-xl">
-                  <ShoppingBag className="h-20 w-20 text-primary" />
-                </div>
-              )}
-            </div>
+            <ProductImageCarousel imageUrl={product.image_url} productName={product.name} />
           </CardContent>
         </Card>
 
@@ -139,8 +128,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             <Card className="border-neutral-200 bg-white shadow-sm">
               <CardContent className="p-4">
                 <Truck className="h-6 w-6 text-primary" />
-                <h2 className="mt-3 font-black">Pickup or ship</h2>
-                <p className="mt-1 text-sm text-neutral-600">Choose local pickup or secure delivery.</p>
+                <h2 className="mt-3 font-black">Pickup on our shop</h2>
+                <p className="mt-1 text-sm text-neutral-600">You&apos;ll be able to conviniently pick up your items at our shop.</p>
               </CardContent>
             </Card>
             <Card className="border-neutral-200 bg-white shadow-sm">

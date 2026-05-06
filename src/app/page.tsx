@@ -280,7 +280,7 @@ export default function HomePage() {
                     </div>
                     <div className="mt-5">
                       <Button className="w-full bg-black text-white hover:bg-neutral-800" asChild>
-                        <Link href="/shop">
+                        <Link href={`/shop/${activeFeaturedProduct?.id}`}>
                           View product
                           <ArrowRight className="h-4 w-4" />
                         </Link>
@@ -358,29 +358,31 @@ export default function HomePage() {
             </div>
             <div className="grid gap-6 md:grid-cols-3">
               {featuredProducts.map((product) => (
-                <Card key={product.id} className="overflow-hidden border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-black hover:shadow-xl">
-                  <div className="flex aspect-4/3 items-center justify-center bg-[linear-gradient(135deg,#fff7cc,#ffffff)]">
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="h-32 w-32 object-contain"
-                      />
-                    ) : (
-                      <div className="rounded-2xl border-2 border-primary bg-white p-5 shadow-sm">
-                        <ShoppingBag className="h-12 w-12 text-primary" />
-                      </div>
-                    )}
-                  </div>
-                  <CardContent className="p-5">
-                    <Badge variant="outline">{product.category}</Badge>
-                    <h3 className="mt-3 min-h-12 font-black leading-6 text-black">{product.name}</h3>
-                    <div className="mt-4 flex items-center justify-between">
-                      <Badge className="bg-amber-50 text-amber-700 border-amber-200">Featured</Badge>
-                      {product.rarity && <span className="text-sm font-semibold text-neutral-600">{product.rarity}</span>}
+                <Link key={product.id} href={`/shop/${product.id}`}>
+                  <Card className="overflow-hidden border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-black hover:shadow-xl">
+                    <div className="flex aspect-4/3 items-center justify-center bg-[linear-gradient(135deg,#fff7cc,#ffffff)]">
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="h-32 w-32 object-contain"
+                        />
+                      ) : (
+                        <div className="rounded-2xl border-2 border-primary bg-white p-5 shadow-sm">
+                          <ShoppingBag className="h-12 w-12 text-primary" />
+                        </div>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
+                    <CardContent className="p-5">
+                      <Badge variant="outline">{product.category}</Badge>
+                      <h3 className="mt-3 min-h-12 font-black leading-6 text-black">{product.name}</h3>
+                      <div className="mt-4 flex items-center justify-between">
+                        <Badge className="bg-amber-50 text-amber-700 border-amber-200">Featured</Badge>
+                        {product.rarity && <span className="text-sm font-semibold text-neutral-600">{product.rarity}</span>}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           </div>
