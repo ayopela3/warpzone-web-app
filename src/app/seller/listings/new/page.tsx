@@ -40,6 +40,7 @@ export default function NewListingPage() {
   // Product form state
   const [productForm, setProductForm] = useState({
     name: "",
+    sku: "",
     category: "",
     price: "",
     quantity: "",
@@ -142,8 +143,10 @@ export default function NewListingPage() {
         throw new Error("Please upload at least one product image")
       }
 
-      // Generate SKU from name
-      const sku = productForm.name.toLowerCase().replace(/\s+/g, "-").substring(0, 50)
+      // Validate SKU is provided
+      if (!productForm.sku.trim()) {
+        throw new Error("SKU is required")
+      }
 
       // Use the first uploaded image as the main image
       const imageUrl = imageUrls[0]
@@ -152,7 +155,7 @@ export default function NewListingPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sku,
+          sku: productForm.sku.trim(),
           name: productForm.name,
           category: productForm.category,
           setName: "",
@@ -179,6 +182,7 @@ export default function NewListingPage() {
         setSearchQuery("")
         setProductForm({
           name: "",
+          sku: "",
           category: "",
           price: "",
           quantity: "",
@@ -481,6 +485,18 @@ export default function NewListingPage() {
                       value={productForm.name}
                       onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                       className="placeholder:text-gray-400"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="sku">SKU *</Label>
+                    <Input
+                      id="sku"
+                      placeholder="e.g., PKM-CHAR-001"
+                      value={productForm.sku}
+                      onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })}
+                      className="placeholder:text-gray-400 font-mono"
                       required
                     />
                   </div>

@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, ShoppingBag, Gavel, Trophy, Package, Check, X, Clock, Loader2 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Users, ShoppingBag, Gavel, Trophy, Package, Check, X, Clock, Loader2, LayoutGrid, List } from "lucide-react"
 
 
 export default function AdminDashboard() {
@@ -50,6 +51,11 @@ export default function AdminDashboard() {
   }>>([])
   const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest")
   const [isLoadingProducts, setIsLoadingProducts] = useState(false)
+  const [totalUsers, setTotalUsers] = useState(0)
+  const [totalProducts, setTotalProducts] = useState(0)
+  const [activeAuctions, setActiveAuctions] = useState(0)
+  const [approvalsView, setApprovalsView] = useState<"grid" | "list">("list")
+  const [productsView, setProductsView] = useState<"grid" | "list">("grid")
 
   // Tournament form state
   const [tournamentForm, setTournamentForm] = useState({
@@ -142,12 +148,12 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleUpdateQuantity = async (productId: string, newQuantity: number) => {
+  const handleUpdateQuantity = async (productId: string, quantity: number) => {
     try {
       const response = await fetch(`/api/admin/products/${productId}/update-quantity`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quantity: newQuantity })
+        body: JSON.stringify({ quantity })
       })
       const data = await response.json()
       if (data.success) {
@@ -158,6 +164,24 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm("Are you sure you want to delete this product? This action cannot be undone.")) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/products/${productId}?userRole=admin`, {
+        method: "DELETE"
+      })
+      const data = await response.json()
+      if (data.success) {
+        fetchAllProducts()
+      }
+    } catch (error) {
+      console.error("Failed to delete product:", error)
+    }
+  }
+
   const fetchAllProducts = async () => {
     setIsLoadingProducts(true)
     try {
@@ -165,6 +189,7 @@ export default function AdminDashboard() {
       const data = await response.json()
       if (data.success) {
         setAllProducts(data.products || [])
+        setTotalProducts(data.products?.length || 0)
       }
     } catch (error) {
       console.error("Failed to fetch all products:", error)
@@ -173,9 +198,30 @@ export default function AdminDashboard() {
     }
   }
 
+  const fetchAnalytics = async () => {
+    try {
+      // Fetch total users
+      const usersResponse = await fetch("/api/admin/analytics/users")
+      const usersData = await usersResponse.json()
+      if (usersData.success) {
+        setTotalUsers(usersData.count || 0)
+      }
+
+      // Fetch active auctions
+      const auctionsResponse = await fetch("/api/admin/analytics/auctions")
+      const auctionsData = await auctionsResponse.json()
+      if (auctionsData.success) {
+        setActiveAuctions(auctionsData.count || 0)
+      }
+    } catch (error) {
+      console.error("Failed to fetch analytics:", error)
+    }
+  }
+
   useEffect(() => {
     if (isAuthenticated && userRole === "admin") {
       fetchAllProducts()
+      fetchAnalytics()
     }
   }, [isAuthenticated, userRole])
 
@@ -249,7 +295,7 @@ export default function AdminDashboard() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-bold text-white/90">Total Users</p>
-                  <p className="text-4xl font-black mt-2">0</p>
+                  <p className="text-4xl font-black mt-2">{totalUsers}</p>
                   <p className="text-xs font-medium text-white/80 mt-1">Registered users</p>
                 </div>
                 <div className="p-3 bg-white/20 rounded-xl">
@@ -264,7 +310,7 @@ export default function AdminDashboard() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Products</p>
-                  <p className="text-4xl font-bold mt-2 text-gray-900">0</p>
+                  <p className="text-4xl font-bold mt-2 text-gray-900">{totalProducts}</p>
                   <p className="text-xs text-gray-500 mt-1">Total listings</p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-xl">
@@ -279,7 +325,7 @@ export default function AdminDashboard() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Active Auctions</p>
-                  <p className="text-4xl font-bold mt-2 text-gray-900">0</p>
+                  <p className="text-4xl font-bold mt-2 text-gray-900">{activeAuctions}</p>
                   <p className="text-xs text-gray-500 mt-1">Live auctions</p>
                 </div>
                 <div className="p-3 bg-purple-100 rounded-xl">
@@ -317,7 +363,25 @@ export default function AdminDashboard() {
           <TabsContent value="approvals">
             <Card className="bg-white shadow-lg">
               <CardHeader>
-                <CardTitle>Pending Product Approvals</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Pending Product Approvals</CardTitle>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={approvalsView === "grid" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setApprovalsView("grid")}
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={approvalsView === "list" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setApprovalsView("list")}
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {isLoadingApprovals ? (
@@ -334,57 +398,117 @@ export default function AdminDashboard() {
                     <p className="mt-2 text-sm text-gray-600">All product submissions have been reviewed</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {pendingApprovals.map((product) => (
-                      <Card key={product.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
-                        <CardContent className="p-6">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-start gap-4 flex-1">
-                              {product.image_url && (
-                                <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                                  <img
-                                    src={product.image_url}
-                                    alt={product.name}
-                                    className="w-full h-full object-cover"
-                                  />
+                  approvalsView === "grid" ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {pendingApprovals.map((product) => (
+                        <Card key={product.id} className="bg-white shadow-md hover:shadow-lg transition-all border border-gray-200">
+                          <CardContent className="p-0">
+                            <div className="relative">
+                              {product.image_url ? (
+                                <img
+                                  src={product.image_url}
+                                  alt={product.name}
+                                  className="w-full h-48 object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                                  <Package className="h-16 w-16 text-gray-400" />
                                 </div>
                               )}
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-gray-900 truncate">{product.name}</h3>
-                                <p className="text-sm text-gray-600">SKU: {product.sku}</p>
-                                <p className="text-sm text-gray-600">{product.category}</p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Seller: {product.seller_name || product.seller_business || 'Unknown'}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  Created: {new Date(product.created_at).toLocaleDateString()}
-                                </p>
+                            </div>
+                            <div className="p-5">
+                              <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-1">{product.name}</h3>
+                              <div className="space-y-2 mb-4">
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-500">SKU:</span>
+                                  <span className="font-mono text-gray-900">{product.sku}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-500">Category:</span>
+                                  <span className="text-gray-900">{product.category}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-500">Seller:</span>
+                                  <span className="text-gray-900 truncate">{product.seller_name || 'Unknown'}</span>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                  onClick={() => handleApproval(product.id, "approved")}
+                                >
+                                  <Check className="mr-1 h-3 w-3" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1 border-red-200 text-red-600 hover:bg-red-50"
+                                  onClick={() => handleApproval(product.id, "rejected")}
+                                >
+                                  <X className="mr-1 h-3 w-3" />
+                                  Reject
+                                </Button>
                               </div>
                             </div>
-                            <div className="flex gap-2 flex-shrink-0">
-                              <Button
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700 text-white"
-                                onClick={() => handleApproval(product.id, "approved")}
-                              >
-                                <Check className="mr-1 h-3 w-3" />
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-red-200 text-red-600 hover:bg-red-50"
-                                onClick={() => handleApproval(product.id, "rejected")}
-                              >
-                                <X className="mr-1 h-3 w-3" />
-                                Reject
-                              </Button>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {pendingApprovals.map((product) => (
+                        <Card key={product.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                          <CardContent className="p-6">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start gap-4 flex-1">
+                                {product.image_url && (
+                                  <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                    <img
+                                      src={product.image_url}
+                                      alt={product.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-semibold text-gray-900 truncate">{product.name}</h3>
+                                  <p className="text-sm text-gray-600">SKU: {product.sku}</p>
+                                  <p className="text-sm text-gray-600">{product.category}</p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Seller: {product.seller_name || product.seller_business || 'Unknown'}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    Created: {new Date(product.created_at).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex gap-2 flex-shrink-0">
+                                <Button
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                  onClick={() => handleApproval(product.id, "approved")}
+                                >
+                                  <Check className="mr-1 h-3 w-3" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-red-200 text-red-600 hover:bg-red-50"
+                                  onClick={() => handleApproval(product.id, "rejected")}
+                                >
+                                  <X className="mr-1 h-3 w-3" />
+                                  Reject
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )
                 )}
               </CardContent>
             </Card>
@@ -410,6 +534,20 @@ export default function AdminDashboard() {
                     >
                       Oldest
                     </Button>
+                    <Button
+                      variant={productsView === "grid" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setProductsView("grid")}
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={productsView === "list" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setProductsView("list")}
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -428,61 +566,197 @@ export default function AdminDashboard() {
                     <p className="mt-2 text-sm text-gray-600">Products will appear here once they are created</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {allProducts
-                      .sort((a, b) => {
-                        const dateA = new Date(a.created_at).getTime()
-                        const dateB = new Date(b.created_at).getTime()
-                        return sortOrder === "latest" ? dateB - dateA : dateA - dateB
-                      })
-                      .map((product) => (
-                        <Card key={product.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
-                          <CardContent className="p-6">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex items-start gap-4 flex-1">
-                                {product.image_url && (
-                                  <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                                    <img
-                                      src={product.image_url}
-                                      alt={product.name}
-                                      className="w-full h-full object-cover"
-                                    />
+                  productsView === "grid" ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {allProducts
+                        .sort((a, b) => {
+                          const dateA = new Date(a.created_at).getTime()
+                          const dateB = new Date(b.created_at).getTime()
+                          return sortOrder === "latest" ? dateB - dateA : dateA - dateB
+                        })
+                        .map((product) => (
+                          <Card key={product.id} className="bg-white shadow-md hover:shadow-lg transition-all border border-gray-200">
+                            <CardContent className="p-0">
+                              <div className="relative">
+                                {product.image_url ? (
+                                  <img
+                                    src={product.image_url}
+                                    alt={product.name}
+                                    className="w-full h-48 object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                                    <Package className="h-16 w-16 text-gray-400" />
                                   </div>
                                 )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <h3 className="font-semibold text-gray-900 truncate">{product.name}</h3>
-                                    <Badge
-                                      variant={
-                                        product.approval_status === "approved" ? "default" :
-                                        product.approval_status === "pending" ? "secondary" :
-                                        "destructive"
-                                      }
-                                      className="capitalize"
-                                    >
-                                      {product.approval_status}
+                                <div className="absolute top-3 right-3 flex gap-2">
+                                  <Badge
+                                    variant={
+                                      product.approval_status === "approved" ? "default" :
+                                      product.approval_status === "pending" ? "secondary" :
+                                      "destructive"
+                                    }
+                                    className="capitalize shadow-sm"
+                                  >
+                                    {product.approval_status}
+                                  </Badge>
+                                  {product.featured === 1 && (
+                                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 shadow-sm">
+                                      Featured
                                     </Badge>
-                                    {product.featured === 1 && (
-                                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                                        Featured
-                                      </Badge>
-                                    )}
-                                    {product.is_active === 0 && (
-                                      <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-300">
-                                        Disabled
-                                      </Badge>
-                                    )}
+                                  )}
+                                  {product.is_active === 0 && (
+                                    <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-300 shadow-sm">
+                                      Disabled
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="p-5">
+                                <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-1">{product.name}</h3>
+                                <div className="space-y-2 mb-4">
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">SKU:</span>
+                                    <span className="font-mono text-gray-900">{product.sku}</span>
                                   </div>
-                                  <p className="text-sm text-gray-600">SKU: {product.sku}</p>
-                                  <p className="text-sm text-gray-600">{product.category}</p>
-                                  <p className="text-sm text-gray-600">Price: ${product.price.toLocaleString()}</p>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    Seller: {product.seller_name || product.seller_business || 'Unknown'}
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Price:</span>
+                                    <span className="font-semibold text-gray-900">${product.price.toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Quantity:</span>
+                                    <span className="font-semibold text-gray-900">{product.quantity}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Category:</span>
+                                    <span className="text-gray-900">{product.category}</span>
+                                  </div>
+                                </div>
+                                <div className="pt-4 border-t border-gray-100">
+                                  <p className="text-xs text-gray-500 mb-2">
+                                    Seller: {product.seller_name || 'Unknown'}
                                   </p>
-                                  <p className="text-xs text-gray-500">
-                                    Created: {new Date(product.created_at).toLocaleDateString()}
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-2">
+                                  <div className="flex gap-2 mb-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="flex-1"
+                                      onClick={() => handleToggleFeatured(product.id, product.featured)}
+                                    >
+                                      {product.featured === 1 ? 'Unfeature' : 'Feature'}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      className="flex-1"
+                                      onClick={() => handleDeleteProduct(product.id)}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </div>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs text-gray-500">Enabled</span>
+                                    <Switch
+                                      checked={product.is_active === 1}
+                                      onCheckedChange={() => handleToggleActive(product.id, product.is_active)}
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">Quantity:</span>
+                                    <Input
+                                      type="number"
+                                      value={product.quantity}
+                                      onChange={(e) => handleUpdateQuantity(product.id, parseInt(e.target.value) || 0)}
+                                      className="h-8 text-xs"
+                                      min="0"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {allProducts
+                        .sort((a, b) => {
+                          const dateA = new Date(a.created_at).getTime()
+                          const dateB = new Date(b.created_at).getTime()
+                          return sortOrder === "latest" ? dateB - dateA : dateA - dateB
+                        })
+                        .map((product) => (
+                          <Card key={product.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                            <CardContent className="p-6">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-start gap-4 flex-1">
+                                  {product.image_url && (
+                                    <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                      <img
+                                        src={product.image_url}
+                                        alt={product.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <h3 className="font-semibold text-gray-900 truncate">{product.name}</h3>
+                                      <Badge
+                                        variant={
+                                          product.approval_status === "approved" ? "default" :
+                                          product.approval_status === "pending" ? "secondary" :
+                                          "destructive"
+                                        }
+                                        className="capitalize"
+                                      >
+                                        {product.approval_status}
+                                      </Badge>
+                                      {product.featured === 1 && (
+                                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                                          Featured
+                                        </Badge>
+                                      )}
+                                      {product.is_active === 0 && (
+                                        <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-300">
+                                          Disabled
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-gray-600">SKU: {product.sku}</p>
+                                    <p className="text-sm text-gray-600">{product.category}</p>
+                                    <p className="text-sm text-gray-600">Price: ${product.price.toLocaleString()}</p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Seller: {product.seller_name || product.seller_business || 'Unknown'}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      Created: {new Date(product.created_at).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-2 flex-shrink-0">
+                                  <Button
+                                    size="sm"
+                                    variant={product.featured === 1 ? "default" : "outline"}
+                                    onClick={() => handleToggleFeatured(product.id, product.featured)}
+                                  >
+                                    {product.featured === 1 ? "Unfeature" : "Feature"}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleDeleteProduct(product.id)}
+                                  >
+                                    Delete
+                                  </Button>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">Enabled</span>
+                                    <Switch
+                                      checked={product.is_active === 1}
+                                      onCheckedChange={() => handleToggleActive(product.id, product.is_active)}
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-2">
                                     <span className="text-xs text-gray-500">Quantity:</span>
                                     <Input
                                       type="number"
@@ -510,50 +784,11 @@ export default function AdminDashboard() {
                                   </div>
                                 </div>
                               </div>
-                              <div className="flex flex-col gap-2 flex-shrink-0">
-                                {product.approval_status === "pending" && (
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      className="bg-green-600 hover:bg-green-700 text-white"
-                                      onClick={() => handleApproval(product.id, "approved")}
-                                    >
-                                      <Check className="mr-1 h-3 w-3" />
-                                      Approve
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="border-red-200 text-red-600 hover:bg-red-50"
-                                      onClick={() => handleApproval(product.id, "rejected")}
-                                    >
-                                      <X className="mr-1 h-3 w-3" />
-                                      Reject
-                                    </Button>
-                                  </div>
-                                )}
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant={product.featured === 1 ? "default" : "outline"}
-                                    onClick={() => handleToggleFeatured(product.id, product.featured)}
-                                  >
-                                    {product.featured === 1 ? "Unfeature" : "Feature"}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant={product.is_active === 1 ? "outline" : "destructive"}
-                                    onClick={() => handleToggleActive(product.id, product.is_active)}
-                                  >
-                                    {product.is_active === 1 ? "Disable" : "Enable"}
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                  </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                    </div>
+                  )
                 )}
               </CardContent>
             </Card>

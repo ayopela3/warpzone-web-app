@@ -349,8 +349,8 @@ export default function HomePage() {
           <div className="mx-auto max-w-7xl px-4 lg:px-8">
             <div className="mb-8 flex items-end justify-between gap-4">
               <div>
-                <Badge variant="secondary">Featured singles</Badge>
-                <h2 className="mt-3 text-3xl font-black text-black">Cards ready for your binder</h2>
+                <Badge variant="secondary">Featured products</Badge>
+                <h2 className="mt-3 text-3xl font-black text-black">Products that would make great additions to your collection</h2>
               </div>
               <Button variant="outline" asChild>
                 <Link href="/shop">View shop</Link>
