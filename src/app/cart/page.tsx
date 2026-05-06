@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { useApp } from "@/components/shared/app-provider"
 
 export default function CartPage() {
-  const { cartItems, removeFromCart, updateCartQuantity, cartTotal, fiatSymbol } = useApp()
+  const { cartItems, cartCount, removeFromCart, updateCartQuantity, cartTotal, fiatSymbol, requireAuth, clearCart } = useApp()
 
   return (
     <div className="min-h-screen bg-white text-black">
