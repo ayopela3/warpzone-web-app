@@ -219,62 +219,82 @@ export default function HomePage() {
           </div>
 
           {!isSeller && (
-            <Card className="border-2 border-black bg-white py-0 shadow-[10px_10px_0_#0a0a0a]">
-              <CardContent className="p-5">
-                <div className="flex flex-col gap-4">
-                  <div className="rounded-2xl border bg-[linear-gradient(135deg,#fff3b0,#ffffff)] p-5">
-                    <div className="flex h-64 items-center justify-center rounded-xl bg-white/60">
-                      {activeFeaturedProduct?.image_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={activeFeaturedProduct.image_url}
-                          alt={activeFeaturedProduct.name}
-                          className="h-52 w-36 object-contain"
-                        />
-                      ) : (
-                        <div className="flex h-52 w-36 items-center justify-center rounded-2xl border-2 border-primary bg-white shadow-md">
-                          <ShoppingBag className="h-16 w-16 text-primary" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col justify-between">
-                    <div>
-                      <p className="text-sm font-bold text-neutral-500">{activeFeaturedProduct?.category || 'TCG'} · Featured</p>
-                      <h3 className="mt-2 line-clamp-3 min-h-[108px] text-3xl font-black leading-9 text-black">
-                        {activeFeaturedProduct?.name || 'Featured Product'}
-                      </h3>
-                      <p className="mt-3 line-clamp-2 min-h-12 text-sm leading-6 text-neutral-600">
-                        {activeFeaturedProduct?.description || 'Verified condition, ready for binder pickup or secure shipping.'}
-                      </p>
-                    </div>
-                    <div className="mt-5">
-                      <Button className="w-full bg-black text-white hover:bg-neutral-800" asChild>
-                        <Link href={`/shop/${activeFeaturedProduct?.id}`}>
-                          View product
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-5 flex justify-center gap-2">
-                  {featuredProducts.map((product, index) => (
-                    <button
-                      key={product.id}
-                      type="button"
-                      aria-label={`Show featured product ${index + 1}`}
-                      className={`h-2 rounded-full transition-all ${
-                        activeFeaturedIndex === index ? "w-6 bg-black" : "w-2 bg-neutral-300"
-                      }`}
-                      onClick={() => setActiveFeaturedIndex(index)}
+            <div className="relative flex flex-col">
+              {/* Main product display */}
+              <div className="relative">
+                <div className="flex aspect-[4/5] items-center justify-center">
+                  {activeFeaturedProduct?.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={activeFeaturedProduct.image_url}
+                      alt={activeFeaturedProduct.name}
+                      className="h-full w-full object-contain drop-shadow-2xl"
                     />
-                  ))}
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <ShoppingBag className="h-24 w-24 text-primary" />
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Floating info card */}
+                <div className="absolute -bottom-4 left-6 right-6 rounded-2xl border border-white/50 bg-white/90 p-4 shadow-xl backdrop-blur-sm">
+                  <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">{activeFeaturedProduct?.category || 'TCG'} · Featured</p>
+                  <h3 className="mt-1 text-xl font-black text-black line-clamp-2">
+                    {activeFeaturedProduct?.name || 'Featured Product'}
+                  </h3>
+                  <Button className="mt-3 w-full bg-black text-white hover:bg-neutral-800" asChild>
+                    <Link href={`/shop/${activeFeaturedProduct?.id}`}>
+                      View product
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Navigation arrows */}
+              {/* <div className="absolute -left-4 top-1/2 -translate-y-1/2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 rounded-full border-2 border-black bg-white shadow-lg hover:bg-neutral-100"
+                  onClick={() => setActiveFeaturedIndex((current) =>
+                    current === 0 ? featuredProducts.length - 1 : current - 1
+                  )}
+                  aria-label="Previous featured product"
+                >
+                  <span className="text-lg">‹</span>
+                </Button>
+              </div>
+              <div className="absolute -right-4 top-1/2 -translate-y-1/2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 rounded-full border-2 border-black bg-white shadow-lg hover:bg-neutral-100"
+                  onClick={() => setActiveFeaturedIndex((current) =>
+                    current === featuredProducts.length - 1 ? 0 : current + 1
+                  )}
+                  aria-label="Next featured product"
+                >
+                  <span className="text-lg">›</span>
+                </Button>
+              </div> */}
+
+              {/* Stepper dots */}
+              <div className="mt-5 flex justify-center gap-2">
+                {featuredProducts.map((product, index) => (
+                  <button
+                    key={product.id}
+                    type="button"
+                    aria-label={`Show featured product ${index + 1}`}
+                    className={`h-2 rounded-full transition-all ${
+                      activeFeaturedIndex === index ? "w-6 bg-black" : "w-2 bg-black"
+                    }`}
+                    onClick={() => setActiveFeaturedIndex(index)}
+                  />
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </section>
