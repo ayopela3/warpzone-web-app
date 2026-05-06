@@ -132,13 +132,6 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                 <p className="mt-1 text-sm text-neutral-600">You&apos;ll be able to conviniently pick up your items at our shop.</p>
               </CardContent>
             </Card>
-            <Card className="border-neutral-200 bg-white shadow-sm">
-              <CardContent className="p-4">
-                <PackageCheck className="h-6 w-6 text-primary" />
-                <h2 className="mt-3 font-black">Protected packaging</h2>
-                <p className="mt-1 text-sm text-neutral-600">Cards are packed safely for collectors.</p>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>

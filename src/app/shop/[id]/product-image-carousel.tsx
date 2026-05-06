@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react"
+import { ShoppingBag } from "lucide-react"
 
 interface ProductImageCarouselProps {
   imageUrl: string | null
@@ -15,25 +14,40 @@ export default function ProductImageCarousel({ imageUrl, productName }: ProductI
   // For now, we only have one image, but the carousel is ready for multiple images
   const images = imageUrl ? [imageUrl] : []
   
-  const handlePrevious = () => {
-    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
-  }
-
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
-  }
-
   const handleThumbnailClick = (index: number) => {
     setCurrentIndex(index)
   }
 
-  // Only show carousel controls if there are multiple images
-  const showControls = images.length > 1
+  // Only show thumbnails if there are multiple images
+  const showThumbnails = images.length > 1
 
   return (
-    <div className={`flex flex-col ${showControls ? 'h-full' : 'h-full'}`}>
+    <div className="flex h-full gap-4">
+      {/* Thumbnails - Vertical on the left (Amazon style) */}
+      {showThumbnails && (
+        <div className="flex flex-col gap-2 w-20 flex-shrink-0">
+          {images.map((image, index) => (
+            <button
+              key={index}
+              onClick={() => handleThumbnailClick(index)}
+              className={`h-20 w-20 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
+                index === currentIndex 
+                  ? 'border-primary ring-2 ring-primary/20' 
+                  : 'border-neutral-200 hover:border-neutral-400'
+              }`}
+            >
+              <img
+                src={image}
+                alt={`${productName} thumbnail ${index + 1}`}
+                className="h-full w-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Main Image */}
-      <div className={`flex ${showControls ? 'flex-1' : 'flex-1'} items-center justify-start bg-[linear-gradient(135deg,#fff7cc,#ffffff)] p-8`}>
+      <div className="flex-1 flex items-center justify-center bg-[linear-gradient(135deg,#fff7cc,#ffffff)] p-8 rounded-2xl">
         {images.length > 0 && images[currentIndex] ? (
           <img
             src={images[currentIndex]}
@@ -46,52 +60,6 @@ export default function ProductImageCarousel({ imageUrl, productName }: ProductI
           </div>
         )}
       </div>
-
-      {/* Carousel Controls - Only show if there are multiple images */}
-      {showControls && (
-        <div className="flex items-center justify-center gap-2 p-3 border-t border-neutral-200">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handlePrevious}
-            disabled={images.length <= 1}
-            className="h-8 w-8"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          
-          {/* Thumbnails */}
-          <div className="flex gap-2">
-            {images.map((image, index) => (
-              <button
-                key={index}
-                onClick={() => handleThumbnailClick(index)}
-                className={`h-16 w-16 rounded-lg border-2 overflow-hidden transition-all ${
-                  index === currentIndex 
-                    ? 'border-primary ring-2 ring-primary/20' 
-                    : 'border-neutral-200 hover:border-neutral-400'
-                }`}
-              >
-                <img
-                  src={image}
-                  alt={`${productName} thumbnail ${index + 1}`}
-                  className="h-full w-full object-cover"
-                />
-              </button>
-            ))}
-          </div>
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleNext}
-            disabled={images.length <= 1}
-            className="h-8 w-8"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
     </div>
   )
 }

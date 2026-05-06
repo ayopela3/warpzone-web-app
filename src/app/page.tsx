@@ -104,7 +104,7 @@ export default function HomePage() {
                 {!isSeller && (
                   <Button size="lg" className="bg-black text-white hover:bg-neutral-800" asChild>
                     <Link href="/shop">
-                      Shop cards
+                      Browse products
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   </Button>
@@ -213,7 +213,7 @@ export default function HomePage() {
               {!isSeller && (
                 <Button size="lg" className="bg-black text-white hover:bg-neutral-800" asChild>
                   <Link href="/shop">
-                    Shop cards
+                    Browse products
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -255,6 +255,7 @@ export default function HomePage() {
                   <div className="rounded-2xl border bg-[linear-gradient(135deg,#fff3b0,#ffffff)] p-5">
                     <div className="flex h-56 items-center justify-center rounded-xl bg-white/60">
                       {activeFeaturedProduct?.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={activeFeaturedProduct.image_url}
                           alt={activeFeaturedProduct.name}
@@ -350,7 +351,7 @@ export default function HomePage() {
             <div className="mb-8 flex items-end justify-between gap-4">
               <div>
                 <Badge variant="secondary">Featured products</Badge>
-                <h2 className="mt-3 text-3xl font-black text-black">Products that would make great additions to your collection</h2>
+                <h2 className="mt-3 text-3xl font-black text-black">Great additions to your collection</h2>
               </div>
               <Button variant="outline" asChild>
                 <Link href="/shop">View shop</Link>
@@ -362,6 +363,7 @@ export default function HomePage() {
                   <Card className="overflow-hidden border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-black hover:shadow-xl">
                     <div className="flex aspect-4/3 items-center justify-center bg-[linear-gradient(135deg,#fff7cc,#ffffff)]">
                       {product.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={product.image_url}
                           alt={product.name}
@@ -415,6 +417,7 @@ export default function HomePage() {
                 <CalendarDays className="h-6 w-6 text-primary" />
                 Upcoming tournaments
               </CardTitle>
+              <p className="mb-6 text-neutral-600">Join our community events and tournaments.</p>
             </CardHeader>
             <CardContent className="space-y-4">
               {upcomingEvents.map((event) => (
