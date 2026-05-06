@@ -24,8 +24,9 @@ export async function GET() {
     const result = await db.prepare("SELECT value FROM settings WHERE key = 'fiat_symbol'").first()
     
     if (!result) {
-      // Insert default fiat symbol
-      await db.prepare("INSERT INTO settings (key, value) VALUES ('fiat_symbol', '$')").run()
+      // Insert default fiat symbol with generated id
+      const id = crypto.randomUUID()
+      await db.prepare("INSERT INTO settings (id, key, value) VALUES (?, 'fiat_symbol', '$')").bind(id).run()
       return NextResponse.json({ success: true, fiatSymbol: "$" })
     }
 
@@ -72,8 +73,9 @@ export async function PUT(request: NextRequest) {
       // Update existing setting
       await db.prepare("UPDATE settings SET value = ? WHERE key = 'fiat_symbol'").bind(fiatSymbol).run()
     } else {
-      // Insert new setting
-      await db.prepare("INSERT INTO settings (key, value) VALUES ('fiat_symbol', ?)").bind(fiatSymbol).run()
+      // Insert new setting with generated id
+      const id = crypto.randomUUID()
+      await db.prepare("INSERT INTO settings (id, key, value) VALUES (?, 'fiat_symbol', ?)").bind(id, fiatSymbol).run()
     }
 
     return NextResponse.json({ success: true, fiatSymbol })

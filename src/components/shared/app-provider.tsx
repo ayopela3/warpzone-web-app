@@ -18,6 +18,7 @@ type AppContextValue = {
   userId: string | null
   userRole: string | null
   fiatSymbol: string
+  setFiatSymbol: (symbol: string) => void
   addToCart: (item: Omit<CartItem, "quantity">, maxQuantity?: number) => void
   removeFromCart: (id: string) => void
   updateCartQuantity: (id: string, quantity: number) => void
@@ -213,6 +214,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       userId,
       userRole,
       fiatSymbol,
+      setFiatSymbol,
       addToCart,
       removeFromCart,
       updateCartQuantity,
@@ -222,7 +224,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       signOut,
       requireAuth,
     }
-  }, [cartItems, isAuthenticated, userId, userRole, fiatSymbol, addToCart, removeFromCart, updateCartQuantity, clearCart, signUp, signIn, signOut, requireAuth])
+  }, [cartItems, isAuthenticated, userId, userRole, fiatSymbol, setFiatSymbol, addToCart, removeFromCart, updateCartQuantity, clearCart, signUp, signIn, signOut, requireAuth])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

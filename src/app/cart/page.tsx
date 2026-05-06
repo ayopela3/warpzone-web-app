@@ -93,12 +93,12 @@ export default function CartPage() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-neutral-600">Subtotal</span>
-                  <span className="font-black">${cartTotal.toLocaleString()}</span>
+                  <span className="font-black">{fiatSymbol}{cartTotal.toLocaleString()}</span>
                 </div>
                 <div className="border-t pt-4">
                   <div className="flex items-center justify-between">
                     <span className="font-black">Total</span>
-                    <span className="text-2xl font-black">${cartTotal.toLocaleString()}</span>
+                    <span className="text-2xl font-black">{fiatSymbol}{cartTotal.toLocaleString()}</span>
                   </div>
                 </div>
                 <Button

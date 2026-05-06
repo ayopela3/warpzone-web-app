@@ -78,6 +78,12 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
   const product = productResult as Product
 
+  // Fetch fiat symbol from settings
+  const fiatResult = await db
+    .prepare("SELECT value FROM settings WHERE key = 'fiat_symbol'")
+    .first<{ value: string }>()
+  const fiatSymbol = fiatResult?.value || "$"
+
   return (
     <div className="min-h-screen bg-white text-black">
       <div className="border-b border-neutral-200 bg-neutral-50">
@@ -113,7 +119,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="text-sm font-bold text-neutral-500">Price</p>
-                <p className="text-4xl font-black text-black">${product.price.toLocaleString()}</p>
+                <p className="text-4xl font-black text-black">{fiatSymbol}{product.price.toLocaleString()}</p>
               </div>
               <Badge variant={product.quantity > 0 ? "default" : "secondary"}>
                 {product.quantity > 0 ? `In stock (${product.quantity})` : "Out of stock"}

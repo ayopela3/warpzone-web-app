@@ -26,7 +26,7 @@ type PreOrderFilter = "all" | "confirmed" | "processing" | "shipped" | "delivere
 export default function PreOrderPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<PreOrderFilter>("all")
-  const { addToCart, requireAuth } = useApp()
+  const { addToCart, requireAuth, fiatSymbol } = useApp()
 
   const filteredPreOrders = useMemo(() => {
     let result = [...preOrders]
@@ -147,7 +147,7 @@ export default function PreOrderPage() {
                         <div>
                           <h3 className="text-lg font-black">{order.product}</h3>
                           <p className="text-2xl font-black text-black mt-1">
-                            ${order.price.toLocaleString()}
+                            {fiatSymbol}{order.price.toLocaleString()}
                           </p>
                         </div>
                         <Badge 

@@ -136,14 +136,15 @@ export function Navbar() {
       </nav>
       
       {/* Mobile menu */}
-      <div className={cn("lg:hidden", mobileMenuOpen ? "block" : "hidden")}>
-        <div className="fixed inset-0 z-50 bg-background">
-          <div className="flex items-center justify-between p-4">
-            <Link href="/" className="-m-1.5 p-1.5 flex items-center gap-2">
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-white lg:hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-neutral-200 p-4">
+            <Link href="/" className="-m-1.5 p-1.5 flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                 <span className="text-white font-bold text-sm">WZ</span>
               </div>
-              <span className="text-xl font-bold">The Warpzone</span>
+              <span className="text-xl font-black text-primary">The Warpzone</span>
             </Link>
             <button
               type="button"
@@ -154,13 +155,15 @@ export function Navbar() {
               <X className="h-6 w-6" aria-hidden="true" />
             </button>
           </div>
-          <div className="mt-6 flow-root px-4">
-            <div className="space-y-2 py-6">
+
+          {/* Navigation Links */}
+          <div className="flex-1 overflow-y-auto px-4 py-6">
+            <div className="space-y-1">
               {showShoppingFeatures && navigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-foreground hover:bg-accent"
+                  className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground bg-white hover:bg-neutral-100"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.name}
@@ -169,19 +172,34 @@ export function Navbar() {
               {showSellButton && (
                 <Link
                   href="/auth/become-seller"
-                  className="block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-foreground hover:bg-accent"
+                  className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground bg-white hover:bg-neutral-100"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Sell with us
                 </Link>
               )}
             </div>
-            <div className="border-t py-6 space-y-2">
+
+            <div className="mt-8 border-t border-neutral-200 pt-6">
               {isAuthenticated ? (
-                <>
+                <div className="space-y-1">
+                  <Link
+                    href="/dashboard"
+                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground bg-white hover:bg-neutral-100"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    href="/dashboard/orders"
+                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground bg-white hover:bg-neutral-100"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    My Orders
+                  </Link>
                   <button
                     type="button"
-                    className="block w-full rounded-lg px-3 py-2 text-left text-base font-semibold leading-7 text-foreground hover:bg-accent"
+                    className="block w-full rounded-lg px-3 py-3 text-left text-lg font-semibold text-foreground bg-white hover:bg-neutral-100"
                     onClick={async () => {
                       await signOut()
                       setMobileMenuOpen(false)
@@ -189,43 +207,29 @@ export function Navbar() {
                   >
                     Sign out
                   </button>
-                  <Link
-                    href="/dashboard"
-                    className="block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-foreground hover:bg-accent"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                  <Link
-                    href="/dashboard/orders"
-                    className="block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-foreground hover:bg-accent"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    My Orders
-                  </Link>
-                </>
+                </div>
               ) : (
-                <>
+                <div className="space-y-1">
                   <Link
                     href="/auth/signin"
-                    className="block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-foreground hover:bg-accent"
+                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground bg-white hover:bg-neutral-100"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign in
                   </Link>
                   <Link
                     href="/auth/signup"
-                    className="block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-foreground hover:bg-accent"
+                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground bg-white hover:bg-neutral-100"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign up
                   </Link>
-                </>
+                </div>
               )}
             </div>
           </div>
         </div>
-      </div>
+      )}
     </header>
   )
 }

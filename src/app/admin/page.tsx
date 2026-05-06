@@ -16,7 +16,7 @@ import { Users, ShoppingBag, Gavel, Trophy, Package, Check, X, Clock, Loader2, L
 
 export default function AdminDashboard() {
   const router = useRouter()
-  const { isAuthenticated, userRole, fiatSymbol } = useApp()
+  const { isAuthenticated, userRole, fiatSymbol, setFiatSymbol } = useApp()
   const [pendingApprovals, setPendingApprovals] = useState<Array<{
     id: string
     sku: string
@@ -81,6 +81,10 @@ export default function AdminDashboard() {
   const [isSavingSettings, setIsSavingSettings] = useState(false)
   const [editFiatSymbol, setEditFiatSymbol] = useState(fiatSymbol)
 
+  useEffect(() => {
+    setEditFiatSymbol(fiatSymbol)
+  }, [fiatSymbol])
+
   // Tournament form state
   const [tournamentForm, setTournamentForm] = useState({
     name: "",
@@ -120,8 +124,8 @@ export default function AdminDashboard() {
       if (!data.success) {
         throw new Error(data.error || "Failed to save fiat symbol")
       }
+      setFiatSymbol(data.fiatSymbol)
       setEditFiatSymbol(data.fiatSymbol)
-      window.location.reload()
     } catch (error) {
       console.error("Failed to save fiat symbol:", error)
     } finally {

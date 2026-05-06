@@ -282,7 +282,7 @@ export default function HomePage() {
 
               {/* Stepper dots */}
               <div className="mt-5 flex justify-center gap-2">
-                {featuredProducts.map((product, index) => (
+                {featuredProducts.length !== 1 && featuredProducts.map((product, index) => (
                   <button
                     key={product.id}
                     type="button"
@@ -325,31 +325,33 @@ export default function HomePage() {
                 <Link href="/shop">View shop</Link>
               </Button>
             </div>
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {featuredProducts.map((product) => (
-                <Link key={product.id} href={`/shop/${product.id}`}>
-                  <Card className="overflow-hidden border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-black hover:shadow-xl">
-                    <div className="flex aspect-4/3 items-center justify-center bg-[linear-gradient(135deg,#fff7cc,#ffffff)]">
+                <Link key={product.id} href={`/shop/${product.id}`} className="group">
+                  <Card className="overflow-hidden border-neutral-200 bg-white shadow-md transition-all duration-300 hover:-translate-y-2 hover:border-black hover:shadow-2xl">
+                    <div className="flex aspect-square items-center justify-center bg-gradient-to-br from-amber-50 via-white to-amber-100 p-6">
                       {product.image_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={product.image_url}
                           alt={product.name}
-                          className="h-32 w-32 object-contain"
+                          className="h-full w-full max-h-56 object-contain drop-shadow-lg group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
-                        <div className="rounded-2xl border-2 border-primary bg-white p-5 shadow-sm">
-                          <ShoppingBag className="h-12 w-12 text-primary" />
+                        <div className="flex h-48 w-48 items-center justify-center rounded-2xl border-2 border-primary bg-white shadow-md">
+                          <ShoppingBag className="h-20 w-20 text-primary" />
                         </div>
                       )}
                     </div>
-                    <CardContent className="p-5">
-                      <Badge variant="outline">{product.category}</Badge>
-                      <h3 className="mt-3 min-h-12 font-black leading-6 text-black">{product.name}</h3>
-                      <div className="mt-4 flex items-center justify-between">
-                        <Badge className="bg-amber-50 text-amber-700 border-amber-200">Featured</Badge>
-                        {product.rarity && <span className="text-sm font-semibold text-neutral-600">{product.rarity}</span>}
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">{product.category}</Badge>
+                        <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-xs">Featured</Badge>
                       </div>
+                      <h3 className="mt-3 text-lg font-black leading-tight text-black line-clamp-2">{product.name}</h3>
+                      {product.rarity && (
+                        <p className="mt-2 text-sm font-medium text-neutral-500">{product.rarity}</p>
+                      )}
                     </CardContent>
                   </Card>
                 </Link>
