@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -90,14 +91,26 @@ export function AuctionCard({ auction, fiatSymbol, isAuthenticated, onJoin }: Pr
           <Clock className="h-3 w-3" />
           {getTimeRemaining(auction.end_time)}
         </div>
-        <Button
-          className="w-full mt-2"
-          disabled={!isJoinable}
-          onClick={() => onJoin(auction.id)}
-        >
-          {isAuthenticated ? (isLive ? "Join Auction" : "Get Notified") : "Sign In to Join"}
-          <ArrowUpRight className="ml-2 h-4 w-4" />
-        </Button>
+        {isLive ? (
+          <Button className="w-full mt-2" asChild>
+            <Link href={`/auctions/${auction.id}`}>
+              Place a Bid <ArrowUpRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        ) : isJoinable ? (
+          <Button
+            className="w-full mt-2"
+            variant="outline"
+            onClick={() => onJoin(auction.id)}
+          >
+            {isAuthenticated ? "Get Notified" : "Sign In to Join"}
+            <ArrowUpRight className="ml-2 h-4 w-4" />
+          </Button>
+        ) : (
+          <Button className="w-full mt-2" disabled>
+            Auction Ended
+          </Button>
+        )}
       </CardContent>
     </Card>
   )
