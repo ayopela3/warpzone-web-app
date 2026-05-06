@@ -34,8 +34,12 @@ CREATE TABLE IF NOT EXISTS products (
   rarity TEXT,
   description TEXT,
   image_url TEXT,
+  condition TEXT NOT NULL DEFAULT 'NEW',
   approval_status TEXT NOT NULL DEFAULT 'pending',
   created_by TEXT,
+  price REAL NOT NULL DEFAULT 0,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  is_active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
