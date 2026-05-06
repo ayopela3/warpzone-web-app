@@ -1,5 +1,7 @@
 "use client"
 
+export const runtime = "edge"
+
 import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
@@ -22,6 +24,7 @@ type Bid = {
 
 type AuctionDetail = {
   id: string
+  seller_id: string
   title: string
   description: string | null
   category: string
@@ -77,6 +80,7 @@ export default function AuctionDetailPage() {
   const [placing, setPlacing] = useState(false)
   const [timeRemaining, setTimeRemaining] = useState("")
   const [sniped, setSniped] = useState(false)
+  const [isSeller, setIsSeller] = useState(false)
 
   const fetchAuction = useCallback(async () => {
     try {
@@ -97,6 +101,19 @@ export default function AuctionDetailPage() {
   }, [id, router])
 
   useEffect(() => { fetchAuction() }, [fetchAuction])
+
+  // Determine if the current user is the seller
+  useEffect(() => {
+    if (!auction || !isAuthenticated) return
+    fetch("/api/user/profile", {
+      headers: { Authorization: `Bearer ${localStorage.getItem("warpzone-session-id") ?? ""}` },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && d.profile?.id === auction.seller_id) setIsSeller(true)
+      })
+      .catch(() => {})
+  }, [auction, isAuthenticated])
 
   // 1-second countdown ticker
   useEffect(() => {
@@ -270,8 +287,37 @@ export default function AuctionDetailPage() {
                   ) : null
                 })()}
 
-                {/* Bid Form — only for active auctions */}
-                {isActive && (
+                {/* Seller view — no bidding on own auction */}
+                {isSeller && (
+                  <div className="pt-2 border-t space-y-3">
+                    <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/20 px-3 py-2 text-sm text-primary font-medium">
+                      <Gavel className="h-4 w-4 shrink-0" />
+                      You are selling this item
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <span className="text-gray-500">Total bids</span>
+                      <span className="font-semibold text-gray-900">{bids.length}</span>
+                      <span className="text-gray-500">Leading bid</span>
+                      <span className="font-semibold text-primary">
+                        {bids[0] ? `${fiatSymbol}${bids[0].bid_amount.toLocaleString()}` : "No bids yet"}
+                      </span>
+                      {bids[0] && (
+                        <>
+                          <span className="text-gray-500">Leading bidder</span>
+                          <span className="font-semibold text-gray-900">{bids[0].bidder_name ?? "Anonymous"}</span>
+                        </>
+                      )}
+                    </div>
+                    {isActive && (
+                      <Button asChild variant="outline" className="w-full" size="sm">
+                        <Link href="/dashboard">View in Dashboard</Link>
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Bid Form — only for active auctions and non-sellers */}
+                {isActive && !isSeller && (
                   <div className="space-y-3 pt-2 border-t">
                     <div className="space-y-1">
                       <Label htmlFor="bid_amount" className="text-sm font-medium">

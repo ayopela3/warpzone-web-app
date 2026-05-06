@@ -37,12 +37,13 @@ export async function GET(request: NextRequest) {
       db.prepare("SELECT email FROM users WHERE id = ?").bind(userId).first<{ email: string }>(),
       db
         .prepare(
-          `SELECT full_name, phone_number, street, city, province, country, zip_code,
+          `SELECT id, full_name, phone_number, street, city, province, country, zip_code,
                   business_name, profile_picture, role
            FROM profiles WHERE user_id = ?`
         )
         .bind(userId)
         .first<{
+          id: string
           full_name: string
           phone_number: string | null
           street: string

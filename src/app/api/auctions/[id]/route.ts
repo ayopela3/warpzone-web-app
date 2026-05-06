@@ -21,7 +21,7 @@ export async function GET(
       db
         .prepare(
           `SELECT
-             a.id, a.title, a.description, a.category, a.condition, a.rarity, a.image_url,
+             a.id, a.seller_id, a.title, a.description, a.category, a.condition, a.rarity, a.image_url,
              a.starting_price, a.current_bid, a.min_bid_increment, a.start_time, a.end_time,
              CASE
                WHEN datetime('now') < a.start_time THEN 'upcoming'
