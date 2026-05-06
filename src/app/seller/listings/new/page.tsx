@@ -45,9 +45,20 @@ export default function NewListingPage() {
     price: "",
     quantity: "",
     rarity: "",
+    condition: "NEW",
     description: "",
     imageUrl: ""
   })
+
+  // Condition display mapping
+  const conditionOptions = [
+    { value: "NEW", label: "BRAND NEW" },
+    { value: "LIKE NEW", label: "NEAR MINT CONDITION" },
+    { value: "GOOD", label: "LIGHTLY PLAYED" },
+    { value: "FAIR", label: "MODERATELY PLAYED" },
+    { value: "POOR", label: "HEAVILY PLAYED" },
+    { value: "DAMAGED", label: "DAMAGED OR DEFECTS" }
+  ]
 
   // Image upload state
   const [imageFiles, setImageFiles] = useState<File[]>([])
@@ -160,6 +171,7 @@ export default function NewListingPage() {
           category: productForm.category,
           setName: "",
           rarity: productForm.rarity,
+          condition: productForm.condition,
           description: productForm.description,
           imageUrl,
           sellerId: localStorage.getItem("warpzone-user-id"),
@@ -187,6 +199,7 @@ export default function NewListingPage() {
           price: "",
           quantity: "",
           rarity: "",
+          condition: "NEW",
           description: "",
           imageUrl: ""
         })
@@ -528,6 +541,22 @@ export default function NewListingPage() {
                       onChange={(e) => setProductForm({ ...productForm, rarity: e.target.value })}
                       className="placeholder:text-gray-400"
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="condition">Condition *</Label>
+                    <Select value={productForm.condition} onValueChange={(value) => setProductForm({ ...productForm, condition: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select condition" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {conditionOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">

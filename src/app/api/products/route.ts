@@ -6,7 +6,7 @@ export const runtime = "edge"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { sku, name, category, setName, rarity, description, imageUrl, sellerId, price, quantity } = body
+    const { sku, name, category, setName, rarity, condition, description, imageUrl, sellerId, price, quantity } = body
 
     // Get D1 database binding from Cloudflare context
     let db: CloudflareEnv["DB"] | null = null
@@ -39,10 +39,10 @@ export async function POST(request: NextRequest) {
     const productId = crypto.randomUUID()
     await db
       .prepare(
-        `INSERT INTO products (id, sku, name, category, set_name, rarity, description, image_url, approval_status, created_by, created_at, updated_at, price, quantity)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, datetime('now'), datetime('now'), ?, ?)`
+        `INSERT INTO products (id, sku, name, category, set_name, rarity, condition, description, image_url, approval_status, created_by, created_at, updated_at, price, quantity)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, datetime('now'), datetime('now'), ?, ?)`
       )
-      .bind(productId, sku, name, category, setName, rarity, description, imageUrl, sellerId, price || 0, quantity || 1)
+      .bind(productId, sku, name, category, setName, rarity, condition || 'NEW', description, imageUrl, sellerId, price || 0, quantity || 1)
       .run()
 
     return NextResponse.json({ success: true, productId })

@@ -21,11 +21,22 @@ type Product = {
   quantity: number
   price: number
   approval_status: string
+  condition: string
   created_at: string
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+
+  // Condition display mapping
+  const conditionLabels: Record<string, string> = {
+    "NEW": "BRAND NEW",
+    "LIKE NEW": "NEAR MINT CONDITION",
+    "GOOD": "LIGHTLY PLAYED",
+    "FAIR": "MODERATELY PLAYED",
+    "POOR": "HEAVILY PLAYED",
+    "DAMAGED": "DAMAGED OR DEFECTS"
+  }
 
   let db: CloudflareEnv["DB"] | null = null
   try {
@@ -53,6 +64,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         quantity,
         price,
         approval_status,
+        condition,
         created_at
       FROM products
       WHERE id = ? AND approval_status = 'approved' AND is_active = 1
@@ -91,6 +103,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             <Badge>{product.category}</Badge>
             <Badge variant="outline">SKU: {product.sku}</Badge>
             {product.rarity && <Badge variant="secondary">{product.rarity}</Badge>}
+            <Badge variant="outline">Condition: {conditionLabels[product.condition] || product.condition}</Badge>
           </div>
 
           <h1 className="mt-5 text-4xl font-black tracking-tight text-black lg:text-5xl">{product.name}</h1>
