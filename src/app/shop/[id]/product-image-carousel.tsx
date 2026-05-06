@@ -27,10 +27,13 @@ export default function ProductImageCarousel({ imageUrl, productName }: ProductI
     setCurrentIndex(index)
   }
 
+  // Only show carousel controls if there are multiple images
+  const showControls = images.length > 1
+
   return (
-    <div className="flex h-full flex-col">
+    <div className={`flex flex-col ${showControls ? 'h-full' : 'h-full'}`}>
       {/* Main Image */}
-      <div className="flex flex-1 items-center justify-start bg-[linear-gradient(135deg,#fff7cc,#ffffff)] p-8">
+      <div className={`flex ${showControls ? 'flex-1' : 'flex-1'} items-center justify-start bg-[linear-gradient(135deg,#fff7cc,#ffffff)] p-8`}>
         {images.length > 0 && images[currentIndex] ? (
           <img
             src={images[currentIndex]}
@@ -44,9 +47,9 @@ export default function ProductImageCarousel({ imageUrl, productName }: ProductI
         )}
       </div>
 
-      {/* Carousel Controls */}
-      {images.length > 0 && (
-        <div className="flex items-center justify-center gap-2 p-4 border-t border-neutral-200">
+      {/* Carousel Controls - Only show if there are multiple images */}
+      {showControls && (
+        <div className="flex items-center justify-center gap-2 p-3 border-t border-neutral-200">
           <Button
             variant="outline"
             size="icon"
@@ -63,7 +66,7 @@ export default function ProductImageCarousel({ imageUrl, productName }: ProductI
               <button
                 key={index}
                 onClick={() => handleThumbnailClick(index)}
-                className={`h-12 w-12 rounded-lg border-2 overflow-hidden transition-all ${
+                className={`h-16 w-16 rounded-lg border-2 overflow-hidden transition-all ${
                   index === currentIndex 
                     ? 'border-primary ring-2 ring-primary/20' 
                     : 'border-neutral-200 hover:border-neutral-400'

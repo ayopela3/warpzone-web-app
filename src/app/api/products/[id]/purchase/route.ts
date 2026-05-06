@@ -5,10 +5,10 @@ export const runtime = "edge"
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ sku: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { sku } = await params
+    const { id } = await params
     const body = await request.json()
     const { userId, quantity } = body
 
@@ -29,10 +29,10 @@ export async function POST(
       return NextResponse.json({ success: false, error: "Database not available" }, { status: 500 })
     }
 
-    // Get product by SKU
+    // Get product by ID
     const product = await db
-      .prepare("SELECT id, name FROM products WHERE sku = ?")
-      .bind(sku)
+      .prepare("SELECT id, name FROM products WHERE id = ?")
+      .bind(id)
       .first<{ id: string; name: string }>()
 
     if (!product) {
