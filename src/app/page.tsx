@@ -238,8 +238,8 @@ export default function HomePage() {
                 </div>
 
                 {/* Floating info card */}
-                <div className="absolute -bottom-4 left-6 right-6 rounded-2xl border border-white/50 bg-white/90 p-4 shadow-xl backdrop-blur-sm">
-                  <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">{activeFeaturedProduct?.category || 'TCG'} · Featured</p>
+                <div className="absolute -bottom-4 left-4 right-4 rounded-2xl border border-white/30 bg-white/60 p-4 shadow-2xl backdrop-blur-md">
+                  <p className="text-xs font-bold uppercase tracking-wider text-neutral-600">{activeFeaturedProduct?.category || 'TCG'} · Featured</p>
                   <h3 className="mt-1 text-xl font-black text-black line-clamp-2">
                     {activeFeaturedProduct?.name || 'Featured Product'}
                   </h3>
