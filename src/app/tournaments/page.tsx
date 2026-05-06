@@ -1,34 +1,88 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Trophy, MapPin, Calendar, Users, DollarSign, Search, X } from "lucide-react"
+import { Trophy, MapPin, Calendar, Users, DollarSign, Search, X, Loader2 } from "lucide-react"
 import { useApp } from "@/components/shared/app-provider"
 
 interface Tournament {
-  id: number
+  id: string
   name: string
-  date: string
+  tournament_date: string
   location: string
   format: string
-  prizePool: string
-  registered: number
-  maxPlayers: number
+  prize_pool: string
+  registered_players: number
+  player_size: number
   status: string
+  preregistration_fee: number
+  description: string
 }
-
-const tournaments: Tournament[] = []
 
 type TournamentFilter = "all" | "upcoming" | "open" | "past"
 
 export default function TournamentsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<TournamentFilter>("all")
-  const { requireAuth } = useApp()
+  const [tournaments, setTournaments] = useState<Tournament[]>([])
+  const [loading, setLoading] = useState(true)
+  const [registeringTournamentId, setRegisteringTournamentId] = useState<string | null>(null)
+  const [registrationError, setRegistrationError] = useState<string | null>(null)
+  const { requireAuth, userId } = useApp()
+
+  useEffect(() => {
+    fetchTournaments()
+  }, [])
+
+  const fetchTournaments = async () => {
+    try {
+      const response = await fetch("/api/tournaments")
+      const data = await response.json()
+      if (data.success) {
+        setTournaments(data.tournaments)
+      }
+    } catch (error) {
+      console.error("Failed to fetch tournaments:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRegister = async (tournamentId: string, tournamentName: string) => {
+    if (!requireAuth()) {
+      return
+    }
+
+    setRegisteringTournamentId(tournamentId)
+    setRegistrationError(null)
+
+    try {
+      const response = await fetch(`/api/tournaments/${tournamentId}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to register for tournament")
+      }
+
+      // Refresh tournaments to update registered count
+      await fetchTournaments()
+      alert(`Successfully registered for ${tournamentName}!`)
+    } catch (error) {
+      setRegistrationError(error instanceof Error ? error.message : "Failed to register")
+      alert(error instanceof Error ? error.message : "Failed to register for tournament")
+    } finally {
+      setRegisteringTournamentId(null)
+    }
+  }
 
   const filteredTournaments = useMemo(() => {
     let result = [...tournaments]
@@ -38,8 +92,8 @@ export default function TournamentsPage() {
       result = result.filter(
         (t) =>
           t.name.toLowerCase().includes(query) ||
-          t.location.toLowerCase().includes(query) ||
-          t.format.toLowerCase().includes(query)
+          (t.location && t.location.toLowerCase().includes(query)) ||
+          (t.format && t.format.toLowerCase().includes(query))
       )
     }
 
@@ -48,7 +102,7 @@ export default function TournamentsPage() {
     }
 
     return result
-  }, [searchQuery, activeTab])
+  }, [searchQuery, activeTab, tournaments])
 
   const hasActiveFilters = searchQuery.trim() !== "" || activeTab !== "all"
 
@@ -102,8 +156,13 @@ export default function TournamentsPage() {
           </p>
         </div>
 
-        {/* Tournament Grid */}
-        {filteredTournaments.length === 0 ? (
+        {/* Loading State */}
+        {loading ? (
+          <div className="text-center py-12">
+            <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-4 animate-spin" />
+            <p className="text-sm text-muted-foreground">Loading tournaments...</p>
+          </div>
+        ) : filteredTournaments.length === 0 ? (
           <div className="text-center py-12">
             <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold">No tournaments found</h3>
@@ -143,39 +202,45 @@ export default function TournamentsPage() {
                         <Calendar className="h-3 w-3" />
                         Date
                       </span>
-                      <span className="font-medium">{tournament.date}</span>
+                      <span className="font-medium">{new Date(tournament.tournament_date).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground flex items-center gap-1">
                         <DollarSign className="h-3 w-3" />
                         Prize Pool
                       </span>
-                      <span className="font-black text-black">{tournament.prizePool}</span>
+                      <span className="font-black text-black">{tournament.prize_pool || "TBD"}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground flex items-center gap-1">
                         <Users className="h-3 w-3" />
                         Registered
                       </span>
-                      <span className="font-medium">{tournament.registered} / {tournament.maxPlayers}</span>
+                      <span className="font-medium">{tournament.registered_players} / {tournament.player_size}</span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-2 mt-2">
                       <div 
                         className="bg-primary h-2 rounded-full" 
-                        style={{ width: `${(tournament.registered / tournament.maxPlayers) * 100}%` }}
+                        style={{ width: `${(tournament.registered_players / tournament.player_size) * 100}%` }}
                       ></div>
                     </div>
                     <Button
                       className="w-full mt-2"
-                      onClick={() => {
-                        if (!requireAuth()) {
-                          return
-                        }
-
-                        window.alert(`Registration flow opened for ${tournament.name}.`)
-                      }}
+                      disabled={registeringTournamentId === tournament.id || tournament.registered_players >= tournament.player_size}
+                      onClick={() => handleRegister(tournament.id, tournament.name)}
                     >
-                      {tournament.status === "open" ? "Register Now" : "View Details"}
+                      {registeringTournamentId === tournament.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Registering...
+                        </>
+                      ) : tournament.registered_players >= tournament.player_size ? (
+                        "Full"
+                      ) : tournament.status === "open" ? (
+                        "Register Now"
+                      ) : (
+                        "View Details"
+                      )}
                     </Button>
                   </div>
                 </CardContent>

@@ -9,8 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useApp } from "@/components/shared/app-provider"
 
-const featuredCards: Array<{ id: number; name: string; game: string; price: number; condition: string }> = []
-
 type FeaturedProduct = {
   id: string
   sku: string
@@ -39,8 +37,6 @@ export default function HomePage() {
   const router = useRouter()
   const [activeFeaturedIndex, setActiveFeaturedIndex] = useState(0)
   const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([])
-  const [isLoadingFeatured, setIsLoadingFeatured] = useState(false)
-  const activeFeaturedCard = featuredCards[activeFeaturedIndex]
   const isSeller = userRole === "seller"
 
   useEffect(() => {
@@ -51,7 +47,6 @@ export default function HomePage() {
 
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
-      setIsLoadingFeatured(true)
       try {
         const response = await fetch("/api/products/featured")
         const data = await response.json()
@@ -60,25 +55,11 @@ export default function HomePage() {
         }
       } catch (error) {
         console.error("Failed to fetch featured products:", error)
-      } finally {
-        setIsLoadingFeatured(false)
       }
     }
 
     fetchFeaturedProducts()
   }, [])
-
-  const showPreviousFeaturedCard = () => {
-    setActiveFeaturedIndex((currentIndex) =>
-      currentIndex === 0 ? featuredProducts.length - 1 : currentIndex - 1
-    )
-  }
-
-  const showNextFeaturedCard = () => {
-    setActiveFeaturedIndex((currentIndex) =>
-      currentIndex === featuredProducts.length - 1 ? 0 : currentIndex + 1
-    )
-  }
 
   const activeFeaturedProduct = featuredProducts[activeFeaturedIndex]
 
@@ -240,30 +221,19 @@ export default function HomePage() {
           {!isSeller && (
             <Card className="border-2 border-black bg-white py-0 shadow-[10px_10px_0_#0a0a0a]">
               <CardContent className="p-5">
-                <div className="mb-5 flex items-center justify-between">
-                  <div>
-                    <Badge className="border-black bg-primary text-black">Featured products</Badge>
-                    <h2 className="mt-2 text-2xl font-black text-black">This week at The Warpzone</h2>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="icon" aria-label="Previous featured product" onClick={showPreviousFeaturedCard}>‹</Button>
-                    <Button variant="outline" size="icon" aria-label="Next featured product" onClick={showNextFeaturedCard}>›</Button>
-                  </div>
-                </div>
-
                 <div className="grid min-h-[290px] gap-4 md:grid-cols-[1.1fr_0.9fr]">
                   <div className="rounded-2xl border bg-[linear-gradient(135deg,#fff3b0,#ffffff)] p-5">
-                    <div className="flex h-56 items-center justify-center rounded-xl bg-white/60">
+                    <div className="flex h-64 items-center justify-center rounded-xl bg-white/60">
                       {activeFeaturedProduct?.image_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={activeFeaturedProduct.image_url}
                           alt={activeFeaturedProduct.name}
-                          className="h-40 w-28 object-contain"
+                          className="h-52 w-36 object-contain"
                         />
                       ) : (
-                        <div className="flex h-40 w-28 items-center justify-center rounded-2xl border-2 border-primary bg-white shadow-md">
-                          <ShoppingBag className="h-12 w-12 text-primary" />
+                        <div className="flex h-52 w-36 items-center justify-center rounded-2xl border-2 border-primary bg-white shadow-md">
+                          <ShoppingBag className="h-16 w-16 text-primary" />
                         </div>
                       )}
                     </div>
@@ -288,28 +258,6 @@ export default function HomePage() {
                       </Button>
                     </div>
                   </div>
-                </div>
-
-                <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                  {featuredProducts.map((product, index) => (
-                    <button
-                      type="button"
-                      key={product.id}
-                      className={`rounded-xl border p-3 text-left transition hover:border-black ${
-                        activeFeaturedIndex === index
-                          ? "border-black bg-primary/15"
-                          : "border-neutral-200 bg-neutral-50"
-                      }`}
-                      onClick={() => setActiveFeaturedIndex(index)}
-                    >
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="text-xs font-black uppercase text-neutral-500">0{index + 1}</span>
-                        <span className="text-xs font-bold text-neutral-500">{product.category}</span>
-                      </div>
-                      <p className="line-clamp-2 h-10 text-sm font-black leading-5 text-black">{product.name}</p>
-                      <p className="mt-2 text-sm font-black text-primary">Featured</p>
-                    </button>
-                  ))}
                 </div>
 
                 <div className="mt-5 flex justify-center gap-2">
