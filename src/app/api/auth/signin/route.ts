@@ -47,12 +47,27 @@ export async function POST(request: NextRequest) {
       .bind(sessionId, user.id, expiresAt)
       .run()
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       sessionId,
       userId: user.id,
       userRole,
     })
+
+    const cookieOptions = {
+      httpOnly: false, // must be readable by middleware (edge), not JS
+      secure: true,
+      sameSite: "lax" as const,
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+    }
+
+    // wz_role: role for middleware route-guarding
+    response.cookies.set("wz_role", userRole, cookieOptions)
+    // wz_session: session ID for API auth (replaces Authorization header pattern)
+    response.cookies.set("wz_session", sessionId, { ...cookieOptions, httpOnly: true })
+
+    return response
   } catch (error) {
     console.error("Signin error:", error)
     return NextResponse.json({ success: false, error: "Failed to sign in" }, { status: 500 })
