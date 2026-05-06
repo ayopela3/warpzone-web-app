@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Gavel, Search, X } from "lucide-react"
+import { toast } from "sonner"
 import { useApp } from "@/components/shared/app-provider"
 import { AuctionCard } from "@/features/auctions/components/AuctionCard"
 import { auctionsApi } from "@/lib/api-client"
@@ -36,8 +37,17 @@ export default function AuctionsPage() {
   const handleJoin = async (auctionId: string) => {
     if (!requireAuth()) return
     const data = await auctionsApi.join(auctionId)
-    if (data.success) fetchAuctions()
-    else console.error(data.error)
+    if (data.success) {
+      toast.success("You're registered! We'll notify you when the auction goes live.")
+      fetchAuctions()
+    } else {
+      const msg = data.error ?? "Failed to register"
+      if (msg.includes("already participating")) {
+        toast.info("You're already registered for this auction.")
+      } else {
+        toast.error(msg)
+      }
+    }
   }
 
   const filtered = useMemo(() => {
@@ -45,7 +55,10 @@ export default function AuctionsPage() {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       result = result.filter(
-        (a) => a.title.toLowerCase().includes(q) || a.product_name.toLowerCase().includes(q) || a.seller_name.toLowerCase().includes(q)
+        (a) =>
+          a.title.toLowerCase().includes(q) ||
+          a.category.toLowerCase().includes(q) ||
+          (a.seller_name ?? "").toLowerCase().includes(q)
       )
     }
     if (activeTab !== "all") result = result.filter((a) => a.status === activeTab)

@@ -96,14 +96,16 @@ CREATE TABLE IF NOT EXISTS sessions (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Auctions table
+-- Auctions table (standalone — not linked to product listings)
 CREATE TABLE IF NOT EXISTS auctions (
   id TEXT PRIMARY KEY,
   seller_id TEXT NOT NULL,
-  product_id TEXT NOT NULL,
-  listing_id TEXT NOT NULL,
   title TEXT NOT NULL,
   description TEXT,
+  category TEXT NOT NULL DEFAULT '',
+  condition TEXT NOT NULL DEFAULT 'NEW',
+  rarity TEXT,
+  image_url TEXT,
   starting_price REAL NOT NULL,
   current_bid REAL NOT NULL DEFAULT 0,
   min_bid_increment REAL NOT NULL DEFAULT 1,
@@ -112,9 +114,7 @@ CREATE TABLE IF NOT EXISTS auctions (
   status TEXT NOT NULL DEFAULT 'upcoming',
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY (seller_id) REFERENCES profiles(id) ON DELETE CASCADE,
-  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-  FOREIGN KEY (listing_id) REFERENCES product_listings(id) ON DELETE CASCADE
+  FOREIGN KEY (seller_id) REFERENCES profiles(id) ON DELETE CASCADE
 );
 
 -- Auction bids table

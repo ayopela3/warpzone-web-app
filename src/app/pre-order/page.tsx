@@ -21,7 +21,7 @@ interface PreOrder {
 
 const preOrders: PreOrder[] = []
 
-type PreOrderFilter = "all" | "confirmed" | "processing" | "shipped" | "delivered"
+type PreOrderFilter = "all" | "active" | "closed"
 
 export default function PreOrderPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -95,10 +95,8 @@ export default function PreOrderPage() {
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PreOrderFilter)} className="w-auto">
             <TabsList>
               <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="confirmed">Confirmed</TabsTrigger>
-              <TabsTrigger value="processing">Processing</TabsTrigger>
-              <TabsTrigger value="shipped">Shipped</TabsTrigger>
-              <TabsTrigger value="delivered">Delivered</TabsTrigger>
+              <TabsTrigger value="active">Active</TabsTrigger>
+              <TabsTrigger value="closed">Closed</TabsTrigger>
             </TabsList>
           </Tabs>
           {hasActiveFilters && (

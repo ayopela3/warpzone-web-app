@@ -10,7 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
 import { useApp } from "@/components/shared/app-provider"
 
 const navigation = [
@@ -29,14 +28,25 @@ export function Navbar() {
     setMounted(true)
   }, [])
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+    return () => { document.body.style.overflow = "" }
+  }, [mobileMenuOpen])
+
   // Show Sell with Us button only for unauthenticated users or regular users
   const showSellButton = !isAuthenticated || userRole === "regular-user"
-  // Show Admin Dashboard only for admin users
-  const showAdminDashboard = userRole === "admin"
-  // Show cart button and shopping features only for non-seller users
+  // Show cart button and shopping features only for non-seller, non-admin users
   const showShoppingFeatures = !isAuthenticated || userRole === "regular-user"
+  // Dashboard href depends on role: admin → /admin, everyone else → /dashboard
+  const dashboardHref = userRole === "admin" ? "/admin" : "/dashboard"
 
   return (
+    <>
     <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <nav className="mx-auto flex max-w-7xl items-center justify-between p-4 lg:px-8" aria-label="Global">
         <div className="flex lg:flex-1">
@@ -112,13 +122,8 @@ export function Navbar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {showAdminDashboard && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin">Admin Dashboard</Link>
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard">Dashboard</Link>
+                  <Link href={dashboardHref}>Dashboard</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => signOut()}>
                   Sign out
@@ -135,11 +140,13 @@ export function Navbar() {
         </div>
       </nav>
       
-      {/* Mobile menu */}
+    </header>
+
+      {/* Mobile menu — outside <header> to escape its stacking context */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-white lg:hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-neutral-200 p-4">
+        <div className="fixed inset-0 z-9999 flex flex-col bg-white overflow-hidden lg:hidden">
+          {/* Header row */}
+          <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 p-4">
             <Link href="/" className="-m-1.5 p-1.5 flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                 <span className="text-white font-bold text-sm">WZ</span>
@@ -163,7 +170,7 @@ export function Navbar() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground bg-white hover:bg-neutral-100"
+                  className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.name}
@@ -172,7 +179,7 @@ export function Navbar() {
               {showSellButton && (
                 <Link
                   href="/auth/become-seller"
-                  className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground bg-white hover:bg-neutral-100"
+                  className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Sell with us
@@ -184,22 +191,24 @@ export function Navbar() {
               {isAuthenticated ? (
                 <div className="space-y-1">
                   <Link
-                    href="/dashboard"
-                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground bg-white hover:bg-neutral-100"
+                    href={dashboardHref}
+                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Dashboard
                   </Link>
-                  <Link
-                    href="/dashboard/orders"
-                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground bg-white hover:bg-neutral-100"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    My Orders
-                  </Link>
+                  {userRole !== "admin" && (
+                    <Link
+                      href="/dashboard/orders"
+                      className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      My Orders
+                    </Link>
+                  )}
                   <button
                     type="button"
-                    className="block w-full rounded-lg px-3 py-3 text-left text-lg font-semibold text-foreground bg-white hover:bg-neutral-100"
+                    className="block w-full rounded-lg px-3 py-3 text-left text-lg font-semibold text-foreground hover:bg-neutral-100"
                     onClick={async () => {
                       await signOut()
                       setMobileMenuOpen(false)
@@ -212,14 +221,14 @@ export function Navbar() {
                 <div className="space-y-1">
                   <Link
                     href="/auth/signin"
-                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground bg-white hover:bg-neutral-100"
+                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign in
                   </Link>
                   <Link
                     href="/auth/signup"
-                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground bg-white hover:bg-neutral-100"
+                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign up
@@ -230,6 +239,6 @@ export function Navbar() {
           </div>
         </div>
       )}
-    </header>
+    </>
   )
 }

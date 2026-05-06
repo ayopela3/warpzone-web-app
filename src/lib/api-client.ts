@@ -94,9 +94,12 @@ export const auctionsApi = {
     }),
 
   create: (body: {
-    listing_id: string
     title: string
     description: string
+    category: string
+    condition: string
+    rarity?: string | null
+    image_url?: string | null
     starting_price: number
     min_bid_increment: number
     start_time: string

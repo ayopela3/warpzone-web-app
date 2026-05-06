@@ -13,13 +13,15 @@ import {
 import { productsApi } from "@/lib/api-client"
 import { SellerProductEditDialog } from "./SellerProductEditDialog"
 import type { EditForm } from "./SellerProductEditDialog"
-import type { Product } from "@/types"
+import type { Product, Auction } from "@/types"
 
 type Props = { userId: string | null; fiatSymbol: string }
 
 export function SellerDashboard({ userId, fiatSymbol }: Props) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
+  const [auctions, setAuctions] = useState<Auction[]>([])
+  const [auctionsLoading, setAuctionsLoading] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ name: "", category: "", rarity: "", description: "", price: "", quantity: "" })
   const [saving, setSaving] = useState(false)
@@ -39,7 +41,23 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
     }
   }, [userId])
 
+  const fetchAuctions = useCallback(async () => {
+    setAuctionsLoading(true)
+    try {
+      const res = await fetch("/api/seller/auctions", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("warpzone-session-id") ?? ""}` },
+      })
+      const data = await res.json()
+      if (data.success) setAuctions(data.auctions ?? [])
+    } catch (error) {
+      console.error("Failed to fetch seller auctions:", error)
+    } finally {
+      setAuctionsLoading(false)
+    }
+  }, [])
+
   useEffect(() => { fetchProducts() }, [fetchProducts])
+  useEffect(() => { fetchAuctions() }, [fetchAuctions])
 
   const openEdit = (product: Product) => {
     setEditingProduct(product)
@@ -135,7 +153,9 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
               <CardContent className="p-6 flex items-start justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Active Auctions</p>
-                  <p className="text-4xl font-bold mt-2 text-gray-900">0</p>
+                  <p className="text-4xl font-bold mt-2 text-gray-900">
+                    {auctions.filter((a) => a.status === "active").length}
+                  </p>
                   <p className="text-xs text-amber-600 mt-1">Currently live</p>
                 </div>
                 <div className="p-3 bg-amber-100 rounded-xl"><Gavel className="h-6 w-6 text-amber-600" /></div>
@@ -231,18 +251,62 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
                   <Link href="/seller/auctions/new"><Plus className="mr-2 h-4 w-4" />Create Auction</Link>
                 </Button>
               </div>
-              <Card className="bg-white shadow-md">
-                <CardContent className="p-12 text-center">
-                  <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
-                    <Gavel className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <h3 className="mt-6 text-xl font-semibold text-gray-900">No auctions yet</h3>
-                  <p className="mt-2 text-gray-600">Create your first auction to start bidding wars on your products</p>
-                  <Button asChild className="mt-6 bg-primary hover:bg-primary/90 text-white">
-                    <Link href="/seller/auctions/new"><Plus className="mr-2 h-4 w-4" />Create Your First Auction</Link>
-                  </Button>
-                </CardContent>
-              </Card>
+              {auctionsLoading ? (
+                <Card className="bg-white shadow-md">
+                  <CardContent className="p-12 text-center">
+                    <Loader2 className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
+                    <p className="text-gray-600">Loading auctions...</p>
+                  </CardContent>
+                </Card>
+              ) : auctions.length === 0 ? (
+                <Card className="bg-white shadow-md">
+                  <CardContent className="p-12 text-center">
+                    <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
+                      <Gavel className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="mt-6 text-xl font-semibold text-gray-900">No auctions yet</h3>
+                    <p className="mt-2 text-gray-600">Create your first auction to start bidding wars on your products</p>
+                    <Button asChild className="mt-6 bg-primary hover:bg-primary/90 text-white">
+                      <Link href="/seller/auctions/new"><Plus className="mr-2 h-4 w-4" />Create Your First Auction</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {auctions.map((auction) => (
+                    <Card key={auction.id} className="bg-white shadow-md hover:shadow-lg transition-shadow">
+                      <div className="h-36 bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center overflow-hidden rounded-t-lg">
+                        {auction.image_url
+                          ? <img src={auction.image_url} alt={auction.title} className="h-full w-full object-cover" />
+                          : <Gavel className="h-12 w-12 text-amber-400" />}
+                      </div>
+                      <CardContent className="p-4 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-bold text-gray-900 leading-tight">{auction.title}</p>
+                          <Badge
+                            variant={auction.status === "active" ? "default" : "secondary"}
+                            className="shrink-0 text-xs"
+                          >
+                            {auction.status === "active" ? "Live" : auction.status === "upcoming" ? "Upcoming" : "Ended"}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-gray-500 capitalize">{auction.category} · {auction.condition}</p>
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-sm text-gray-600">Starting bid</span>
+                          <span className="font-bold text-primary">{fiatSymbol}{(auction.starting_price ?? 0).toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Current bid</span>
+                          <span className="font-semibold text-gray-900">{fiatSymbol}{(auction.current_bid ?? auction.starting_price ?? 0).toLocaleString()}</span>
+                        </div>
+                        <p className="text-xs text-gray-400">
+                          Ends: {new Date(auction.end_time).toLocaleString()}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="orders" className="space-y-4">

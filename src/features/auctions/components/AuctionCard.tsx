@@ -5,6 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Gavel, Clock, ArrowUpRight } from "lucide-react"
 import type { Auction } from "@/types"
+import type { ProductCondition } from "@/types"
+
+const CONDITION_LABELS: Record<ProductCondition, string> = {
+  NEW: "Brand New",
+  "LIKE NEW": "Near Mint",
+  GOOD: "Lightly Played",
+  FAIR: "Moderately Played",
+  POOR: "Heavily Played",
+  DAMAGED: "Damaged",
+}
 
 type Props = {
   auction: Auction
@@ -16,9 +26,13 @@ type Props = {
 function getTimeRemaining(endTime: string): string {
   const diff = new Date(endTime).getTime() - Date.now()
   if (diff <= 0) return "Ended"
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-  return `${hours}h ${minutes}m`
+  const totalMinutes = Math.floor(diff / (1000 * 60))
+  const days = Math.floor(totalMinutes / (60 * 24))
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60)
+  const minutes = totalMinutes % 60
+  if (days > 0) return `${days}d ${hours}h`
+  if (hours > 0) return `${hours}h ${minutes}m`
+  return `${minutes}m`
 }
 
 export function AuctionCard({ auction, fiatSymbol, isAuthenticated, onJoin }: Props) {
@@ -29,7 +43,7 @@ export function AuctionCard({ auction, fiatSymbol, isAuthenticated, onJoin }: Pr
     <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
       <div className="h-48 bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center relative overflow-hidden">
         {auction.image_url ? (
-          <img src={auction.image_url} alt={auction.title} className="h-full w-full object-cover" />
+          <img src={auction.image_url} alt={auction.title} className="h-full w-full object-contain" />
         ) : (
           <Gavel className="h-16 w-16 text-amber-400" />
         )}
@@ -49,9 +63,16 @@ export function AuctionCard({ auction, fiatSymbol, isAuthenticated, onJoin }: Pr
         )}
       </div>
 
-      <CardHeader className="pt-5">
+      <CardHeader className="pt-5 pb-2">
         <CardTitle className="text-lg text-gray-900">{auction.title}</CardTitle>
-        <CardDescription className="text-gray-600">
+        <div className="flex flex-wrap gap-1.5 mt-1">
+          <Badge variant="outline" className="text-xs capitalize">{auction.category}</Badge>
+          <Badge variant="secondary" className="text-xs">
+            {CONDITION_LABELS[auction.condition as ProductCondition] ?? auction.condition}
+          </Badge>
+          {auction.rarity && <Badge variant="outline" className="text-xs">{auction.rarity}</Badge>}
+        </div>
+        <CardDescription className="text-gray-500 text-xs mt-1">
           {auction.business_name ?? auction.seller_name ?? "Unknown seller"}
         </CardDescription>
       </CardHeader>

@@ -12,24 +12,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
     }
 
-    // Get user from session
-    const sessionToken = request.cookies.get("session")?.value
-    if (!sessionToken) {
+    // Get user from session cookie or Authorization header
+    const sessionId =
+      request.cookies.get("wz_session")?.value ??
+      request.headers.get("Authorization")?.replace("Bearer ", "")
+
+    if (!sessionId) {
       return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
     }
 
     const sessionResult = await db
       .prepare("SELECT user_id, expires_at FROM sessions WHERE id = ?")
-      .bind(sessionToken)
+      .bind(sessionId)
       .first<{ user_id: string; expires_at: string }>()
 
-    if (!sessionResult) {
-      return NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 })
-    }
-
-    // Check if session is expired
-    if (new Date(sessionResult.expires_at) < new Date()) {
-      return NextResponse.json({ success: false, error: "Session expired" }, { status: 401 })
+    if (!sessionResult || new Date(sessionResult.expires_at) < new Date()) {
+      return NextResponse.json({ success: false, error: "Invalid or expired session" }, { status: 401 })
     }
 
     // Check if auction exists and is active

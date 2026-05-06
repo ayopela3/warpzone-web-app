@@ -51,16 +51,18 @@ export type Auction = {
   id: string
   title: string
   description: string | null
+  category: string
+  condition: string
+  rarity: string | null
+  image_url: string | null
   starting_price: number
   current_bid: number
   min_bid_increment: number
   start_time: string
   end_time: string
   status: AuctionStatus
-  /** Joined */
-  product_name: string
-  image_url: string | null
-  seller_name: string
+  /** Joined from profiles */
+  seller_name: string | null
   business_name: string | null
 }
 
