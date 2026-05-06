@@ -239,7 +239,7 @@ export default function ShopPage() {
                           <ShoppingBag className="h-12 w-12 text-primary" />
                         </div>
                       )}
-                      <Badge className="absolute top-3 left-3">{product.category}</Badge>
+                      <Badge className="absolute top-3 left-3 text-white">{product.category}</Badge>
                       {product.quantity === 0 && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                           <Badge variant="secondary" className="text-sm">Out of Stock</Badge>
@@ -256,11 +256,10 @@ export default function ShopPage() {
                           <p className="text-xl font-black text-primary">${product.price.toLocaleString()}</p>
                           <p className="text-xs text-neutral-500">Qty: {product.quantity}</p>
                         </div>
-                        <Badge variant="outline">SKU: {product.sku}</Badge>
                       </div>
                       <div className="flex gap-2 mt-3">
                         <Button
-                          className="flex-1"
+                          className="flex-1 text-white cursor-pointer"
                           disabled={product.quantity === 0}
                           onClick={(event) => {
                             event.preventDefault()

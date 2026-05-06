@@ -10,7 +10,7 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { name, category, rarity, description, imageUrl, price, quantity, sellerId } = body
+    const { name, category, rarity, description, imageUrl, price, quantity, sellerId, sku, userRole } = body
 
     let db: CloudflareEnv["DB"] | null = null
     try {
@@ -28,14 +28,14 @@ export async function PUT(
       return NextResponse.json({ success: false, error: "Database not available" }, { status: 500 })
     }
 
-    // Verify the product belongs to the seller
+    // Verify the product belongs to the seller (or admin can edit any product)
     const product = await db.prepare("SELECT created_by FROM products WHERE id = ?").bind(id).first()
     if (!product) {
       return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 })
     }
 
     const createdBy = (product as { created_by: string }).created_by
-    if (createdBy !== sellerId) {
+    if (userRole !== "admin" && createdBy !== sellerId) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 })
     }
 
@@ -43,6 +43,11 @@ export async function PUT(
     const updates: string[] = []
     const values: (string | number)[] = []
 
+    // Only admins can update SKU
+    if (sku !== undefined && userRole === "admin") {
+      updates.push("sku = ?")
+      values.push(sku)
+    }
     if (name !== undefined) {
       updates.push("name = ?")
       values.push(name)

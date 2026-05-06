@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
-import { Users, ShoppingBag, Gavel, Trophy, Package, Check, X, Clock, Loader2, LayoutGrid, List } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Users, ShoppingBag, Gavel, Trophy, Package, Check, X, Clock, Loader2, LayoutGrid, List, Edit2 } from "lucide-react"
 
 
 export default function AdminDashboard() {
@@ -56,6 +57,27 @@ export default function AdminDashboard() {
   const [activeAuctions, setActiveAuctions] = useState(0)
   const [approvalsView, setApprovalsView] = useState<"grid" | "list">("list")
   const [productsView, setProductsView] = useState<"grid" | "list">("grid")
+  const [editingProduct, setEditingProduct] = useState<{
+    id: string
+    sku: string
+    name: string
+    category: string
+    rarity: string | null
+    description: string | null
+    price: number
+    quantity: number
+  } | null>(null)
+  const [editForm, setEditForm] = useState({
+    sku: "",
+    name: "",
+    category: "",
+    rarity: "",
+    description: "",
+    price: "",
+    quantity: ""
+  })
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState("")
 
   // Tournament form state
   const [tournamentForm, setTournamentForm] = useState({
@@ -180,6 +202,80 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error("Failed to delete product:", error)
     }
+  }
+
+  const handleEditProduct = (product: {
+    id: string
+    sku: string
+    name: string
+    category: string
+    rarity: string | null
+    description: string | null
+    price: number
+    quantity: number
+  }) => {
+    setEditingProduct(product)
+    setEditForm({
+      sku: product.sku,
+      name: product.name,
+      category: product.category,
+      rarity: product.rarity || "",
+      description: product.description || "",
+      price: product.price.toString(),
+      quantity: product.quantity.toString()
+    })
+    setSaveError("")
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingProduct) return
+
+    setIsSaving(true)
+    setSaveError("")
+
+    try {
+      const response = await fetch(`/api/products/${editingProduct.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sku: editForm.sku,
+          name: editForm.name,
+          category: editForm.category,
+          rarity: editForm.rarity,
+          description: editForm.description,
+          price: parseFloat(editForm.price) || 0,
+          quantity: parseInt(editForm.quantity) || 0,
+          userRole: "admin"
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to update product")
+      }
+
+      setEditingProduct(null)
+      fetchAllProducts()
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Failed to update product")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingProduct(null)
+    setEditForm({
+      sku: "",
+      name: "",
+      category: "",
+      rarity: "",
+      description: "",
+      price: "",
+      quantity: ""
+    })
+    setSaveError("")
   }
 
   const fetchAllProducts = async () => {
@@ -641,6 +737,15 @@ export default function AdminDashboard() {
                                       size="sm"
                                       variant="outline"
                                       className="flex-1"
+                                      onClick={() => handleEditProduct(product)}
+                                    >
+                                      <Edit2 className="h-3 w-3 mr-1" />
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="flex-1"
                                       onClick={() => handleToggleFeatured(product.id, product.featured)}
                                     >
                                       {product.featured === 1 ? 'Unfeature' : 'Feature'}
@@ -735,6 +840,14 @@ export default function AdminDashboard() {
                                   </div>
                                 </div>
                                 <div className="flex flex-col gap-2 flex-shrink-0">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleEditProduct(product)}
+                                  >
+                                    <Edit2 className="h-3 w-3 mr-1" />
+                                    Edit
+                                  </Button>
                                   <Button
                                     size="sm"
                                     variant={product.featured === 1 ? "default" : "outline"}
@@ -942,6 +1055,99 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={!!editingProduct} onOpenChange={(open) => !open && handleCancelEdit()}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+          </DialogHeader>
+          {editingProduct && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="sku">SKU</Label>
+                <Input
+                  id="sku"
+                  value={editForm.sku}
+                  onChange={(e) => setEditForm({ ...editForm, sku: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Product Name</Label>
+                <Input
+                  id="name"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Input
+                  id="category"
+                  value={editForm.category}
+                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rarity">Rarity</Label>
+                <Input
+                  id="rarity"
+                  value={editForm.rarity}
+                  onChange={(e) => setEditForm({ ...editForm, rarity: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  value={editForm.price}
+                  onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  value={editForm.quantity}
+                  onChange={(e) => setEditForm({ ...editForm, quantity: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <textarea
+                  id="description"
+                  className="w-full min-h-[100px] p-3 border rounded-md text-sm"
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                />
+              </div>
+              {saveError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-800">{saveError}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelEdit}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
