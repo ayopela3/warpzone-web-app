@@ -221,7 +221,7 @@ export default function HomePage() {
           {!isSeller && (
             <Card className="border-2 border-black bg-white py-0 shadow-[10px_10px_0_#0a0a0a]">
               <CardContent className="p-5">
-                <div className="grid min-h-[290px] gap-4 md:grid-cols-[1.1fr_0.9fr]">
+                <div className="flex flex-col gap-4">
                   <div className="rounded-2xl border bg-[linear-gradient(135deg,#fff3b0,#ffffff)] p-5">
                     <div className="flex h-64 items-center justify-center rounded-xl bg-white/60">
                       {activeFeaturedProduct?.image_url ? (
@@ -239,8 +239,8 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  <div className="flex min-h-[290px] flex-col justify-between">
-                    <div className="min-h-[170px]">
+                  <div className="flex flex-col justify-between">
+                    <div>
                       <p className="text-sm font-bold text-neutral-500">{activeFeaturedProduct?.category || 'TCG'} · Featured</p>
                       <h3 className="mt-2 line-clamp-3 min-h-[108px] text-3xl font-black leading-9 text-black">
                         {activeFeaturedProduct?.name || 'Featured Product'}
