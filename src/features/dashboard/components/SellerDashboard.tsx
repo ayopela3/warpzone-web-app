@@ -420,15 +420,15 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
                     <Card key={auction.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
                         <div className="flex gap-4 items-center">
-                          <div className="w-20 h-20 shrink-0 rounded-md overflow-hidden bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center">
+                          <Link href={`/auctions/${auction.id}`} className="w-20 h-20 shrink-0 rounded-md overflow-hidden bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center">
                             {auction.image_url
                               ? <img src={auction.image_url} alt={auction.title} className="w-full h-full object-contain" />
                               : <Gavel className="h-8 w-8 text-amber-400" />}
-                          </div>
+                          </Link>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <div>
-                                <p className="font-bold text-gray-900">{auction.title}</p>
+                                <Link href={`/auctions/${auction.id}`} className="font-bold text-gray-900 hover:text-primary transition-colors">{auction.title}</Link>
                                 <p className="text-sm text-gray-500 capitalize">{auction.category} · {auction.condition}</p>
                                 <p className="text-sm font-semibold text-primary">{fiatSymbol}{(auction.current_bid ?? auction.starting_price ?? 0).toLocaleString()}</p>
                               </div>
@@ -453,7 +453,8 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {auctions.map((auction) => (
-                    <Card key={auction.id} className="bg-white shadow-md hover:shadow-lg transition-shadow">
+                    <Link key={auction.id} href={`/auctions/${auction.id}`}>
+                    <Card className="bg-white shadow-md hover:shadow-lg transition-shadow cursor-pointer">
                       <div className="h-36 bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center overflow-hidden rounded-t-lg">
                         {auction.image_url
                           ? <img src={auction.image_url} alt={auction.title} className="h-full w-full object-contain" />
@@ -495,6 +496,7 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
                         </p>
                       </CardContent>
                     </Card>
+                    </Link>
                   ))}
                 </div>
               )}

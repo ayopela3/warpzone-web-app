@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       profile: {
+        id: profile.id,
         email: user.email,
         full_name: profile.full_name,
         phone_number: profile.phone_number ?? "",
