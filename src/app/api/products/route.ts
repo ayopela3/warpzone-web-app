@@ -6,7 +6,7 @@ export const runtime = "edge"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { sku, name, category, setName, rarity, description, imageUrl, sellerId } = body
+    const { sku, name, category, setName, rarity, description, imageUrl, sellerId, price, quantity } = body
 
     // Get D1 database binding from Cloudflare context
     let db: CloudflareEnv["DB"] | null = null
@@ -39,10 +39,10 @@ export async function POST(request: NextRequest) {
     const productId = crypto.randomUUID()
     await db
       .prepare(
-        `INSERT INTO products (id, sku, name, category, set_name, rarity, description, image_url, approval_status, created_by, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, datetime('now'), datetime('now'))`
+        `INSERT INTO products (id, sku, name, category, set_name, rarity, description, image_url, approval_status, created_by, created_at, updated_at, price, quantity)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, datetime('now'), datetime('now'), ?, ?)`
       )
-      .bind(productId, sku, name, category, setName, rarity, description, imageUrl, sellerId)
+      .bind(productId, sku, name, category, setName, rarity, description, imageUrl, sellerId, price || 0, quantity || 1)
       .run()
 
     return NextResponse.json({ success: true, productId })
@@ -92,29 +92,29 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query based on filters
-    let query = "SELECT * FROM products"
+    let query = "SELECT p.*, pr.full_name as seller_name FROM products p LEFT JOIN profiles pr ON p.created_by = pr.user_id"
     const conditions: string[] = []
     const params: (string | number)[] = []
 
     if (sellerId) {
-      conditions.push("created_by = ?")
+      conditions.push("p.created_by = ?")
       params.push(sellerId)
     }
 
     if (approvalStatus) {
-      conditions.push("approval_status = ?")
+      conditions.push("p.approval_status = ?")
       params.push(approvalStatus)
     } else if (!showAll && !sellerId) {
       // By default, only show approved and active products unless showAll is true or filtering by seller
-      conditions.push("approval_status = 'approved'")
-      conditions.push("is_active = 1")
+      conditions.push("p.approval_status = 'approved'")
+      conditions.push("p.is_active = 1")
     }
 
     if (conditions.length > 0) {
       query += " WHERE " + conditions.join(" AND ")
     }
 
-    query += " ORDER BY created_at DESC"
+    query += " ORDER BY p.created_at DESC"
 
     let products
     if (params.length > 0) {

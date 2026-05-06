@@ -9,9 +9,10 @@ type AddToCartButtonProps = {
   price: number
   category: string
   inStock: boolean
+  quantity: number
 }
 
-export default function AddToCartButton({ productId, name, price, category, inStock }: AddToCartButtonProps) {
+export default function AddToCartButton({ productId, name, price, category, inStock, quantity }: AddToCartButtonProps) {
   const { addToCart } = useApp()
 
   return (
@@ -25,7 +26,7 @@ export default function AddToCartButton({ productId, name, price, category, inSt
           name,
           price,
           category,
-        })
+        }, quantity)
       }}
     >
       {inStock ? "Add to cart" : "Out of stock"}

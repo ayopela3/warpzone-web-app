@@ -159,7 +159,9 @@ export default function NewListingPage() {
           rarity: productForm.rarity,
           description: productForm.description,
           imageUrl,
-          sellerId: localStorage.getItem("warpzone-user-id")
+          sellerId: localStorage.getItem("warpzone-user-id"),
+          price: parseFloat(productForm.price) || 0,
+          quantity: parseInt(productForm.quantity) || 1
         })
       })
 
@@ -510,6 +512,34 @@ export default function NewListingPage() {
                       onChange={(e) => setProductForm({ ...productForm, rarity: e.target.value })}
                       className="placeholder:text-gray-400"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="price">Price *</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        step="0.01"
+                        placeholder="299.99"
+                        value={productForm.price}
+                        onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+                        className="placeholder:text-gray-400"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="quantity">Quantity *</Label>
+                      <Input
+                        id="quantity"
+                        type="number"
+                        placeholder="1"
+                        value={productForm.quantity}
+                        onChange={(e) => setProductForm({ ...productForm, quantity: e.target.value })}
+                        className="placeholder:text-gray-400"
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">

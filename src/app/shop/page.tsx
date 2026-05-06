@@ -14,14 +14,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Search, ShoppingBag, ArrowUpDown, X, Loader2 } from "lucide-react"
+import { useApp } from "@/components/shared/app-provider"
 
 interface Category {
-  id: string
-  name: string
-  slug: string
-}
-
-interface Condition {
   id: string
   name: string
   slug: string
@@ -37,6 +32,8 @@ interface Product {
   sku: string
   approval_status: string
   created_at: string
+  quantity: number
+  price: number
 }
 
 const categories: Category[] = [
@@ -44,14 +41,6 @@ const categories: Category[] = [
   { id: "mtg", name: "Magic: The Gathering", slug: "mtg" },
   { id: "yugioh", name: "Yu-Gi-Oh!", slug: "yugioh" },
   { id: "sealed", name: "Sealed Product", slug: "sealed" },
-]
-
-const conditions: Condition[] = [
-  { id: "mint", name: "Mint", slug: "mint" },
-  { id: "near-mint", name: "Near Mint", slug: "near-mint" },
-  { id: "light-played", name: "Lightly Played", slug: "light-played" },
-  { id: "played", name: "Played", slug: "played" },
-  { id: "poor", name: "Poor", slug: "poor" },
 ]
 
 const productsWithoutListings: Array<{
@@ -68,10 +57,10 @@ type SortOption = "relevance" | "newest"
 export default function ShopPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
-  const [selectedCondition, setSelectedCondition] = useState<string>("all")
   const [sortBy, setSortBy] = useState<SortOption>("relevance")
   const [isLoadingProducts, setIsLoadingProducts] = useState(false)
   const [productsData, setProductsData] = useState<Product[]>([])
+  const { addToCart } = useApp()
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -105,7 +94,16 @@ export default function ShopPage() {
     }
 
     if (selectedCategory !== "all") {
-      result = result.filter((p) => p.category.toLowerCase() === selectedCategory.toLowerCase())
+      result = result.filter((p) => {
+        const categoryMap: Record<string, string> = {
+          pokemon: "Pokemon",
+          mtg: "Magic: The Gathering",
+          yugioh: "Yu-Gi-Oh!",
+          sealed: "Sealed Product",
+        }
+        const categoryName = categoryMap[selectedCategory] || selectedCategory
+        return p.category.toLowerCase() === categoryName.toLowerCase()
+      })
     }
 
     if (sortBy === "newest") {
@@ -117,14 +115,12 @@ export default function ShopPage() {
 
   const activeFiltersCount = [
     selectedCategory !== "all",
-    selectedCondition !== "all",
     searchQuery.trim() !== "",
   ].filter(Boolean).length
 
   const clearFilters = () => {
     setSearchQuery("")
     setSelectedCategory("all")
-    setSelectedCondition("all")
     setSortBy("relevance")
   }
 
@@ -165,26 +161,6 @@ export default function ShopPage() {
                   categories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedCondition} onValueChange={setSelectedCondition}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Conditions" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Conditions</SelectItem>
-                {conditions.length === 0 ? (
-                  <SelectItem value="_empty" disabled>
-                    No conditions available
-                  </SelectItem>
-                ) : (
-                  conditions.map((condition) => (
-                    <SelectItem key={condition.id} value={condition.id}>
-                      {condition.name}
                     </SelectItem>
                   ))
                 )}
@@ -264,6 +240,11 @@ export default function ShopPage() {
                         </div>
                       )}
                       <Badge className="absolute top-3 left-3">{product.category}</Badge>
+                      {product.quantity === 0 && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <Badge variant="secondary" className="text-sm">Out of Stock</Badge>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-1 flex-col p-4">
                       <h3 className="line-clamp-2 min-h-12 font-black leading-6 text-black">{product.name}</h3>
@@ -271,17 +252,37 @@ export default function ShopPage() {
                         <p className="mt-1 line-clamp-1 text-sm text-neutral-600">{product.rarity}</p>
                       )}
                       <div className="mt-auto flex items-center justify-between pt-4">
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Approved</Badge>
+                        <div>
+                          <p className="text-xl font-black text-primary">${product.price.toLocaleString()}</p>
+                          <p className="text-xs text-neutral-500">Qty: {product.quantity}</p>
+                        </div>
                         <Badge variant="outline">SKU: {product.sku}</Badge>
                       </div>
-                      <Button
-                        className="w-full mt-3"
-                        onClick={(event) => {
-                          event.preventDefault()
-                        }}
-                      >
-                        View Details
-                      </Button>
+                      <div className="flex gap-2 mt-3">
+                        <Button
+                          className="flex-1"
+                          disabled={product.quantity === 0}
+                          onClick={(event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            addToCart({
+                              id: product.id,
+                              name: product.name,
+                              price: product.price,
+                              category: product.category,
+                            }, product.quantity)
+                          }}
+                        >
+                          {product.quantity === 0 ? "Out of Stock" : "Add to Cart"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          disabled={product.quantity === 0}
+                        >
+                          View Details
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

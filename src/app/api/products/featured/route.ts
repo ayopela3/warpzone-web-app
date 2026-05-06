@@ -33,10 +33,9 @@ export async function GET() {
           p.image_url,
           p.approval_status,
           p.created_at,
-          pr.full_name as seller_name,
-          pr.business_name as seller_business
+          pr.full_name as seller_name
         FROM products p
-        LEFT JOIN profiles pr ON p.created_by = pr.id
+        LEFT JOIN profiles pr ON p.created_by = pr.user_id
         WHERE p.featured = 1 AND p.approval_status = 'approved' AND p.is_active = 1
         ORDER BY p.created_at DESC
       `)

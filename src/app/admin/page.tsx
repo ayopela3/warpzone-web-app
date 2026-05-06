@@ -42,9 +42,11 @@ export default function AdminDashboard() {
     created_by: string
     created_at: string
     seller_name: string
-    seller_business: string
+    seller_business: string | null
     featured: number
     is_active: number
+    quantity: number
+    price: number
   }>>([])
   const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest")
   const [isLoadingProducts, setIsLoadingProducts] = useState(false)
@@ -137,6 +139,22 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error("Failed to toggle active status:", error)
+    }
+  }
+
+  const handleUpdateQuantity = async (productId: string, newQuantity: number) => {
+    try {
+      const response = await fetch(`/api/admin/products/${productId}/update-quantity`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity: newQuantity })
+      })
+      const data = await response.json()
+      if (data.success) {
+        fetchAllProducts()
+      }
+    } catch (error) {
+      console.error("Failed to update quantity:", error)
     }
   }
 
@@ -457,12 +475,39 @@ export default function AdminDashboard() {
                                   </div>
                                   <p className="text-sm text-gray-600">SKU: {product.sku}</p>
                                   <p className="text-sm text-gray-600">{product.category}</p>
+                                  <p className="text-sm text-gray-600">Price: ${product.price.toLocaleString()}</p>
                                   <p className="text-xs text-gray-500 mt-1">
                                     Seller: {product.seller_name || product.seller_business || 'Unknown'}
                                   </p>
                                   <p className="text-xs text-gray-500">
                                     Created: {new Date(product.created_at).toLocaleDateString()}
                                   </p>
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <span className="text-xs text-gray-500">Quantity:</span>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      className="w-20 h-7 text-xs"
+                                      defaultValue={product.quantity}
+                                      onBlur={(e) => {
+                                        const newQuantity = parseInt(e.target.value)
+                                        if (!isNaN(newQuantity) && newQuantity >= 0 && newQuantity !== product.quantity) {
+                                          handleUpdateQuantity(product.id, newQuantity)
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          const newQuantity = parseInt(e.currentTarget.value)
+                                          if (!isNaN(newQuantity) && newQuantity >= 0 && newQuantity !== product.quantity) {
+                                            handleUpdateQuantity(product.id, newQuantity)
+                                          }
+                                        }
+                                      }}
+                                    />
+                                    {product.quantity === 0 && (
+                                      <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                               <div className="flex flex-col gap-2 flex-shrink-0">

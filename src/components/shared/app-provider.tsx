@@ -17,7 +17,7 @@ type AppContextValue = {
   isAuthenticated: boolean
   userId: string | null
   userRole: string | null
-  addToCart: (item: Omit<CartItem, "quantity">) => void
+  addToCart: (item: Omit<CartItem, "quantity">, maxQuantity?: number) => void
   removeFromCart: (id: string) => void
   updateCartQuantity: (id: string, quantity: number) => void
   clearCart: () => void
@@ -69,16 +69,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(cartStorageKey, JSON.stringify(cartItems))
   }, [cartItems])
 
-  const addToCart = useCallback((item: Omit<CartItem, "quantity">) => {
+  const addToCart = useCallback((item: Omit<CartItem, "quantity">, maxQuantity?: number) => {
     setCartItems((currentItems) => {
       const existingItem = currentItems.find((cartItem) => cartItem.id === item.id)
 
       if (existingItem) {
+        const newQuantity = existingItem.quantity + 1
+        if (maxQuantity !== undefined && newQuantity > maxQuantity) {
+          return currentItems
+        }
         return currentItems.map((cartItem) =>
           cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            ? { ...cartItem, quantity: newQuantity }
             : cartItem
         )
+      }
+
+      if (maxQuantity === 0) {
+        return currentItems
       }
 
       return [...currentItems, { ...item, quantity: 1 }]
