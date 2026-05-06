@@ -28,17 +28,17 @@ export default function ProductImageCarousel({ imageUrl, productName }: ProductI
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex h-full flex-col">
       {/* Main Image */}
-      <div className="flex min-h-[560px] items-center justify-center bg-[linear-gradient(135deg,#fff7cc,#ffffff)] p-10">
+      <div className="flex flex-1 items-center justify-start bg-[linear-gradient(135deg,#fff7cc,#ffffff)] p-8">
         {images.length > 0 && images[currentIndex] ? (
           <img
             src={images[currentIndex]}
             alt={productName}
-            className="h-80 w-56 object-contain transition-all duration-300"
+            className="max-h-[500px] w-full object-contain"
           />
         ) : (
-          <div className="flex h-80 w-56 items-center justify-center rounded-3xl border-2 border-primary bg-white shadow-xl">
+          <div className="flex h-[500px] w-full items-center justify-center rounded-3xl border-2 border-primary bg-white shadow-xl">
             <ShoppingBag className="h-20 w-20 text-primary" />
           </div>
         )}
