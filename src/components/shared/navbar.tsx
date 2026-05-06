@@ -125,6 +125,9 @@ export function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href={dashboardHref}>Dashboard</Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings">Settings</Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => signOut()}>
                   Sign out
                 </DropdownMenuItem>
@@ -206,6 +209,13 @@ export function Navbar() {
                       My Orders
                     </Link>
                   )}
+                  <Link
+                    href="/dashboard/settings"
+                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Settings
+                  </Link>
                   <button
                     type="button"
                     className="block w-full rounded-lg px-3 py-3 text-left text-lg font-semibold text-foreground hover:bg-neutral-100"

@@ -8,13 +8,49 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Package, Gavel, ShoppingBag, DollarSign,
-  Plus, CheckCircle2, XCircle, Hourglass, Loader2, Edit2,
+  Plus, CheckCircle2, XCircle, Hourglass, Loader2, Edit2, X, LayoutGrid, List,
 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "sonner"
 import { productsApi } from "@/lib/api-client"
 import { SellerProductEditDialog } from "./SellerProductEditDialog"
 import type { EditForm } from "./SellerProductEditDialog"
 import type { Product, Auction } from "@/types"
 
+const CATEGORY_OPTIONS = [
+  { value: "pokemon", label: "Pok\u00e9mon" },
+  { value: "mtg", label: "Magic: The Gathering" },
+  { value: "yugioh", label: "Yu-Gi-Oh!" },
+  { value: "plushies", label: "Plushies" },
+  { value: "stickers", label: "Stickers" },
+  { value: "accessories", label: "Accessories" },
+  { value: "other", label: "Other" },
+]
+
+const CONDITION_OPTIONS = [
+  { value: "NEW", label: "Brand New" },
+  { value: "LIKE NEW", label: "Near Mint" },
+  { value: "GOOD", label: "Lightly Played" },
+  { value: "FAIR", label: "Moderately Played" },
+  { value: "POOR", label: "Heavily Played" },
+  { value: "DAMAGED", label: "Damaged" },
+]
+
+type AuctionEditForm = {
+  title: string
+  description: string
+  category: string
+  condition: string
+  rarity: string
+  starting_price: string
+  min_bid_increment: string
+  start_time: string
+  end_time: string
+}
 type Props = { userId: string | null; fiatSymbol: string }
 
 export function SellerDashboard({ userId, fiatSymbol }: Props) {
@@ -22,6 +58,14 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
   const [loading, setLoading] = useState(false)
   const [auctions, setAuctions] = useState<Auction[]>([])
   const [auctionsLoading, setAuctionsLoading] = useState(false)
+  const [editingAuction, setEditingAuction] = useState<Auction | null>(null)
+  const [auctionEditForm, setAuctionEditForm] = useState<AuctionEditForm>({
+    title: "", description: "", category: "", condition: "NEW", rarity: "",
+    starting_price: "", min_bid_increment: "1", start_time: "", end_time: "",
+  })
+  const [savingAuction, setSavingAuction] = useState(false)
+  const [productViewMode, setProductViewMode] = useState<"list" | "grid">("list")
+  const [auctionViewMode, setAuctionViewMode] = useState<"list" | "grid">("list")
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ name: "", category: "", rarity: "", description: "", price: "", quantity: "" })
   const [saving, setSaving] = useState(false)
@@ -58,6 +102,62 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
 
   useEffect(() => { fetchProducts() }, [fetchProducts])
   useEffect(() => { fetchAuctions() }, [fetchAuctions])
+
+  const openAuctionEdit = (auction: Auction) => {
+    setEditingAuction(auction)
+    // Convert ISO times to datetime-local format (YYYY-MM-DDTHH:mm)
+    const toLocal = (iso: string) => {
+      const d = new Date(iso)
+      const pad = (n: number) => String(n).padStart(2, "0")
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    }
+    setAuctionEditForm({
+      title: auction.title,
+      description: auction.description ?? "",
+      category: auction.category,
+      condition: auction.condition,
+      rarity: auction.rarity ?? "",
+      starting_price: auction.starting_price.toString(),
+      min_bid_increment: auction.min_bid_increment.toString(),
+      start_time: toLocal(auction.start_time),
+      end_time: toLocal(auction.end_time),
+    })
+  }
+
+  const handleAuctionSave = async () => {
+    if (!editingAuction) return
+    setSavingAuction(true)
+    try {
+      const res = await fetch(`/api/seller/auctions/${editingAuction.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("warpzone-session-id") ?? ""}`,
+        },
+        body: JSON.stringify({
+          title: auctionEditForm.title,
+          description: auctionEditForm.description,
+          category: auctionEditForm.category,
+          condition: auctionEditForm.condition,
+          rarity: auctionEditForm.rarity || null,
+          image_url: editingAuction.image_url,
+          starting_price: parseFloat(auctionEditForm.starting_price),
+          min_bid_increment: parseFloat(auctionEditForm.min_bid_increment),
+          start_time: new Date(auctionEditForm.start_time).toISOString(),
+          end_time: new Date(auctionEditForm.end_time).toISOString(),
+        }),
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error ?? "Failed to update auction")
+      toast.success("Auction updated successfully")
+      setEditingAuction(null)
+      fetchAuctions()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update auction")
+    } finally {
+      setSavingAuction(false)
+    }
+  }
 
   const openEdit = (product: Product) => {
     setEditingProduct(product)
@@ -171,7 +271,21 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
             </TabsList>
 
             <TabsContent value="products" className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-900">Your Products</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">Your Products</h2>
+                <div className="flex items-center gap-1 border rounded-lg p-0.5 bg-white">
+                  <Button
+                    size="sm" variant={productViewMode === "list" ? "default" : "ghost"}
+                    className={`h-7 w-7 p-0 ${productViewMode === "list" ? "bg-primary text-white" : ""}`}
+                    onClick={() => setProductViewMode("list")}
+                  ><List className="h-4 w-4" /></Button>
+                  <Button
+                    size="sm" variant={productViewMode === "grid" ? "default" : "ghost"}
+                    className={`h-7 w-7 p-0 ${productViewMode === "grid" ? "bg-primary text-white" : ""}`}
+                    onClick={() => setProductViewMode("grid")}
+                  ><LayoutGrid className="h-4 w-4" /></Button>
+                </div>
+              </div>
               {loading ? (
                 <Card className="bg-white shadow-md">
                   <CardContent className="p-12 text-center">
@@ -192,50 +306,65 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
                     </Button>
                   </CardContent>
                 </Card>
+              ) : productViewMode === "list" ? (
+                <div className="space-y-3">
+                  {products.map((product) => (
+                    <Card key={product.id} className={`bg-white shadow-sm hover:shadow-md transition-shadow ${product.approval_status === "pending" ? "opacity-60" : ""}`}>
+                      <CardContent className="p-4">
+                        <div className="flex gap-4 items-center">
+                          <div className="w-20 h-20 shrink-0 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
+                            {product.image_url
+                              ? <img src={product.image_url} alt={product.name} className="w-full h-full object-contain" />
+                              : <Package className="h-8 w-8 text-gray-400" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="font-bold text-gray-900">{product.name}</p>
+                                <p className="text-sm text-gray-500">SKU: {product.sku}</p>
+                                <p className="text-sm text-gray-500 capitalize">{product.category}{product.rarity ? ` · ${product.rarity}` : ""}</p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {product.approval_status === "pending" && <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1"><Hourglass className="h-3 w-3" />Pending</Badge>}
+                                {product.approval_status === "approved" && <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Approved</Badge>}
+                                {product.approval_status === "rejected" && <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 flex items-center gap-1"><XCircle className="h-3 w-3" />Rejected</Badge>}
+                                <Button size="sm" variant="outline" onClick={() => openEdit(product)}><Edit2 className="h-3 w-3" /></Button>
+                              </div>
+                            </div>
+                            {product.approval_status === "pending" && (
+                              <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md mt-2">Pending admin approval.</p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {products.map((product) => (
                     <Card key={product.id} className={`bg-white shadow-md hover:shadow-lg transition-shadow ${product.approval_status === "pending" ? "opacity-60" : ""}`}>
-                      <CardContent className="p-6 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
+                      <div className="w-full h-48 bg-gray-50 rounded-t-lg overflow-hidden flex items-center justify-center">
+                        {product.image_url
+                          ? <img src={product.image_url} alt={product.name} className="w-full h-full object-contain" />
+                          : <Package className="h-12 w-12 text-gray-300" />}
+                      </div>
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
                             <p className="font-bold text-gray-900">{product.name}</p>
-                            <p className="text-sm text-gray-600">SKU: {product.sku}</p>
+                            <p className="text-xs text-gray-500">SKU: {product.sku}</p>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {product.approval_status === "pending" && (
-                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
-                                <Hourglass className="h-3 w-3" />Pending
-                              </Badge>
-                            )}
-                            {product.approval_status === "approved" && (
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
-                                <CheckCircle2 className="h-3 w-3" />Approved
-                              </Badge>
-                            )}
-                            {product.approval_status === "rejected" && (
-                              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 flex items-center gap-1">
-                                <XCircle className="h-3 w-3" />Rejected
-                              </Badge>
-                            )}
-                            <Button size="sm" variant="outline" onClick={() => openEdit(product)}>
-                              <Edit2 className="h-3 w-3" />
-                            </Button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {product.approval_status === "pending" && <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs flex items-center gap-1"><Hourglass className="h-3 w-3" />Pending</Badge>}
+                            {product.approval_status === "approved" && <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Approved</Badge>}
+                            {product.approval_status === "rejected" && <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs flex items-center gap-1"><XCircle className="h-3 w-3" />Rejected</Badge>}
+                            <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => openEdit(product)}><Edit2 className="h-3 w-3" /></Button>
                           </div>
                         </div>
-                        {product.image_url && (
-                          <div className="w-full h-32 rounded-md overflow-hidden bg-gray-100">
-                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-                          </div>
-                        )}
-                        <div className="pt-4 border-t">
-                          <p className="text-sm text-gray-600">{product.category}</p>
-                          {product.rarity && <p className="text-sm text-gray-500">Rarity: {product.rarity}</p>}
-                        </div>
+                        <p className="text-sm text-gray-500 capitalize">{product.category}{product.rarity ? ` · ${product.rarity}` : ""}</p>
                         {product.approval_status === "pending" && (
-                          <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md">
-                            Your product is pending admin approval. You&apos;ll be able to create listings once approved.
-                          </p>
+                          <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md">Pending admin approval.</p>
                         )}
                       </CardContent>
                     </Card>
@@ -247,9 +376,23 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
             <TabsContent value="auctions" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">Your Auctions</h2>
-                <Button asChild className="bg-primary hover:bg-primary/90 text-white">
-                  <Link href="/seller/auctions/new"><Plus className="mr-2 h-4 w-4" />Create Auction</Link>
-                </Button>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 border rounded-lg p-0.5 bg-white">
+                    <Button
+                      size="sm" variant={auctionViewMode === "list" ? "default" : "ghost"}
+                      className={`h-7 w-7 p-0 ${auctionViewMode === "list" ? "bg-primary text-white" : ""}`}
+                      onClick={() => setAuctionViewMode("list")}
+                    ><List className="h-4 w-4" /></Button>
+                    <Button
+                      size="sm" variant={auctionViewMode === "grid" ? "default" : "ghost"}
+                      className={`h-7 w-7 p-0 ${auctionViewMode === "grid" ? "bg-primary text-white" : ""}`}
+                      onClick={() => setAuctionViewMode("grid")}
+                    ><LayoutGrid className="h-4 w-4" /></Button>
+                  </div>
+                  <Button asChild className="bg-primary hover:bg-primary/90 text-white">
+                    <Link href="/seller/auctions/new"><Plus className="mr-2 h-4 w-4" />Create Auction</Link>
+                  </Button>
+                </div>
               </div>
               {auctionsLoading ? (
                 <Card className="bg-white shadow-md">
@@ -271,24 +414,72 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
                     </Button>
                   </CardContent>
                 </Card>
+              ) : auctionViewMode === "list" ? (
+                <div className="space-y-3">
+                  {auctions.map((auction) => (
+                    <Card key={auction.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex gap-4 items-center">
+                          <div className="w-20 h-20 shrink-0 rounded-md overflow-hidden bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center">
+                            {auction.image_url
+                              ? <img src={auction.image_url} alt={auction.title} className="w-full h-full object-contain" />
+                              : <Gavel className="h-8 w-8 text-amber-400" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="font-bold text-gray-900">{auction.title}</p>
+                                <p className="text-sm text-gray-500 capitalize">{auction.category} · {auction.condition}</p>
+                                <p className="text-sm font-semibold text-primary">{fiatSymbol}{(auction.current_bid ?? auction.starting_price ?? 0).toLocaleString()}</p>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Badge variant={auction.status === "active" ? "default" : "secondary"} className="text-xs">
+                                  {auction.status === "active" ? "Live" : auction.status === "upcoming" ? "Upcoming" : "Ended"}
+                                </Badge>
+                                {auction.status === "upcoming" && (
+                                  <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => openAuctionEdit(auction)}>
+                                    <Edit2 className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-1">Ends: {new Date(auction.end_time).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {auctions.map((auction) => (
                     <Card key={auction.id} className="bg-white shadow-md hover:shadow-lg transition-shadow">
                       <div className="h-36 bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center overflow-hidden rounded-t-lg">
                         {auction.image_url
-                          ? <img src={auction.image_url} alt={auction.title} className="h-full w-full object-cover" />
+                          ? <img src={auction.image_url} alt={auction.title} className="h-full w-full object-contain" />
                           : <Gavel className="h-12 w-12 text-amber-400" />}
                       </div>
                       <CardContent className="p-4 space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <p className="font-bold text-gray-900 leading-tight">{auction.title}</p>
-                          <Badge
-                            variant={auction.status === "active" ? "default" : "secondary"}
-                            className="shrink-0 text-xs"
-                          >
-                            {auction.status === "active" ? "Live" : auction.status === "upcoming" ? "Upcoming" : "Ended"}
-                          </Badge>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Badge
+                              variant={auction.status === "active" ? "default" : "secondary"}
+                              className="text-xs"
+                            >
+                              {auction.status === "active" ? "Live" : auction.status === "upcoming" ? "Upcoming" : "Ended"}
+                            </Badge>
+                            {auction.status === "upcoming" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 w-6 p-0"
+                                onClick={() => openAuctionEdit(auction)}
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                         <p className="text-xs text-gray-500 capitalize">{auction.category} · {auction.condition}</p>
                         <div className="flex items-center justify-between pt-1">
@@ -334,6 +525,73 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
         onSave={handleSave}
         onCancel={handleCancel}
       />
+
+      {/* Auction Edit Dialog */}
+      <Dialog open={!!editingAuction} onOpenChange={(open) => { if (!open) setEditingAuction(null) }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Auction</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label htmlFor="ea-title">Title *</Label>
+              <Input id="ea-title" value={auctionEditForm.title} onChange={(e) => setAuctionEditForm({ ...auctionEditForm, title: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="ea-category">Category *</Label>
+                <Select value={auctionEditForm.category} onValueChange={(v) => setAuctionEditForm({ ...auctionEditForm, category: v })}>
+                  <SelectTrigger id="ea-category"><SelectValue placeholder="Category" /></SelectTrigger>
+                  <SelectContent>{CATEGORY_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="ea-condition">Condition *</Label>
+                <Select value={auctionEditForm.condition} onValueChange={(v) => setAuctionEditForm({ ...auctionEditForm, condition: v })}>
+                  <SelectTrigger id="ea-condition"><SelectValue /></SelectTrigger>
+                  <SelectContent>{CONDITION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ea-rarity">Rarity <span className="text-gray-400 font-normal">(optional)</span></Label>
+              <Input id="ea-rarity" value={auctionEditForm.rarity} onChange={(e) => setAuctionEditForm({ ...auctionEditForm, rarity: e.target.value })} placeholder="e.g., Ultra Rare" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ea-desc">Description</Label>
+              <Textarea id="ea-desc" rows={3} value={auctionEditForm.description} onChange={(e) => setAuctionEditForm({ ...auctionEditForm, description: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="ea-price">Starting Bid *</Label>
+                <Input id="ea-price" type="number" step="0.01" min="0" value={auctionEditForm.starting_price} onChange={(e) => setAuctionEditForm({ ...auctionEditForm, starting_price: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="ea-increment">Min Increment *</Label>
+                <Input id="ea-increment" type="number" step="0.01" min="0.01" value={auctionEditForm.min_bid_increment} onChange={(e) => setAuctionEditForm({ ...auctionEditForm, min_bid_increment: e.target.value })} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="ea-start">Start Time *</Label>
+                <Input id="ea-start" type="datetime-local" value={auctionEditForm.start_time} onChange={(e) => setAuctionEditForm({ ...auctionEditForm, start_time: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="ea-end">End Time *</Label>
+                <Input id="ea-end" type="datetime-local" value={auctionEditForm.end_time} onChange={(e) => setAuctionEditForm({ ...auctionEditForm, end_time: e.target.value })} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingAuction(null)} disabled={savingAuction}>
+              <X className="h-4 w-4 mr-1" />Cancel
+            </Button>
+            <Button onClick={handleAuctionSave} disabled={savingAuction} className="bg-primary hover:bg-primary/90">
+              {savingAuction ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Saving…</> : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

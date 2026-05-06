@@ -29,6 +29,7 @@ Modularise the warpzone app for maintainability. Feature-based architecture, sha
 | Crash guard (try/catch) on fiat symbol query | `src/app/shop/[id]/page.tsx` |
 | `auctionsApi.create` added to typed API client | `src/lib/api-client.ts` |
 | `<Toaster>` wired globally | `src/app/layout.tsx` |
+| User settings page | `src/app/dashboard/settings/page.tsx` + `src/app/api/user/profile/route.ts` |
 
 ---
 
@@ -138,6 +139,52 @@ Full system access:
 | Manage fiat currency symbol | `SettingsTab` → PUT `/api/settings/fiat` |
 | Full product list visibility | All products regardless of approval/active status |
 | **Cannot** use shop/cart/auctions as buyer | Admin is operations-only; auto-redirected to `/admin` on home visit |
+
+---
+
+### 🛡️ Admin — User Management (Future Development)
+
+> **Status: Spec only — not yet implemented**
+
+These features are planned for a future admin `UsersTab` inside `/admin`. All actions are exclusive to admin role and require double-confirmation for destructive operations.
+
+#### User Listing & Search
+| Capability | Notes |
+|---|---|
+| View all registered users | Table with name, email, role, status, join date |
+| Search by name or email | Client-side filter or server `?q=` query param |
+| Filter by role | `all`, `regular-user`, `seller`, `admin` |
+| Filter by status | `active`, `banned` |
+
+#### User Detail Actions
+| Capability | Notes |
+|---|---|
+| **Change user role** | Dropdown: `regular-user` → `seller` → `admin`; `PUT /api/admin/users/:id/role` |
+| **Ban user** | Sets `is_banned = 1` in DB; banned users receive 403 on all protected API routes; `PUT /api/admin/users/:id/ban` |
+| **Unban user** | Reverses ban; `PUT /api/admin/users/:id/unban` |
+| **Delete user** | Hard delete with cascade (profile, sessions, listings); requires confirmation dialog; `DELETE /api/admin/users/:id` |
+
+#### Schema Changes Required
+```sql
+-- Add to users table
+ALTER TABLE users ADD COLUMN is_banned INTEGER NOT NULL DEFAULT 0;
+
+-- Add ban check to all protected API routes (sessions middleware)
+-- If user.is_banned = 1 → 403 Forbidden
+```
+
+#### API Routes Required
+| Method | Path | Action |
+|---|---|---|
+| `GET` | `/api/admin/users` | List all users with profile join |
+| `PUT` | `/api/admin/users/:id/role` | Change role (`regular-user`/`seller`/`admin`) |
+| `PUT` | `/api/admin/users/:id/ban` | Set `is_banned = 1`, invalidate all sessions |
+| `PUT` | `/api/admin/users/:id/unban` | Set `is_banned = 0` |
+| `DELETE` | `/api/admin/users/:id` | Delete user + cascade |
+
+#### UI Components Required
+- `src/features/admin/components/UsersTab.tsx` — table + search + filter + action buttons
+- `src/features/admin/components/UserActionDialog.tsx` — confirm dialog for ban/delete/role change
 
 ---
 
