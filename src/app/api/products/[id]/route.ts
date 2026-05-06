@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import type { CloudflareEnv } from "@/types/cloudflare"
+import { getDb } from "@/lib/db"
 
 export const runtime = "edge"
 
@@ -12,20 +12,9 @@ export async function PUT(
     const body = await request.json()
     const { name, category, rarity, description, imageUrl, price, quantity, sellerId, sku, userRole } = body
 
-    let db: CloudflareEnv["DB"] | null = null
-    try {
-      const { getRequestContext } = await import("@cloudflare/next-on-pages")
-      const { env } = getRequestContext()
-      db = (env as CloudflareEnv).DB
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Database connection failed. Ensure you're running in Cloudflare environment." },
-        { status: 500 }
-      )
-    }
-
+    const db = await getDb()
     if (!db) {
-      return NextResponse.json({ success: false, error: "Database not available" }, { status: 500 })
+      return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
     }
 
     // Verify the product belongs to the seller (or admin can edit any product)
@@ -107,20 +96,9 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: "Unauthorized. Admin only." }, { status: 403 })
     }
 
-    let db: CloudflareEnv["DB"] | null = null
-    try {
-      const { getRequestContext } = await import("@cloudflare/next-on-pages")
-      const { env } = getRequestContext()
-      db = (env as CloudflareEnv).DB
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Database connection failed. Ensure you're running in Cloudflare environment." },
-        { status: 500 }
-      )
-    }
-
+    const db = await getDb()
     if (!db) {
-      return NextResponse.json({ success: false, error: "Database not available" }, { status: 500 })
+      return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
     }
 
     // Check if product exists

@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Gavel } from "lucide-react"
+import { toast } from "sonner"
 import { useApp } from "@/components/shared/app-provider"
+import { auctionsApi } from "@/lib/api-client"
 
 export default function NewAuctionPage() {
   const router = useRouter()
@@ -34,25 +36,20 @@ export default function NewAuctionPage() {
     setLoading(true)
 
     try {
-      const response = await fetch("/api/auctions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          starting_price: parseFloat(formData.starting_price),
-          min_bid_increment: parseFloat(formData.min_bid_increment),
-        }),
+      const data = await auctionsApi.create({
+        ...formData,
+        starting_price: parseFloat(formData.starting_price),
+        min_bid_increment: parseFloat(formData.min_bid_increment),
       })
 
-      const data = await response.json()
-
       if (data.success) {
+        toast.success("Auction created successfully!")
         router.push("/dashboard")
       } else {
-        alert(data.error || "Failed to create auction")
+        toast.error(data.error || "Failed to create auction")
       }
-    } catch (error) {
-      alert("Failed to create auction")
+    } catch {
+      toast.error("Failed to create auction")
     } finally {
       setLoading(false)
     }

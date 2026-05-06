@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import type { CloudflareEnv } from "@/types/cloudflare"
+import { getDb } from "@/lib/db"
 
 export const runtime = "edge"
 
@@ -8,21 +8,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, playerSize, description, preregistrationFee, tournamentDate, location, format, prizePool } = body
 
-    // Get D1 database binding from Cloudflare context
-    let db: CloudflareEnv["DB"] | null = null
-    try {
-      const { getRequestContext } = await import("@cloudflare/next-on-pages")
-      const { env } = getRequestContext()
-      db = (env as CloudflareEnv).DB
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Database connection failed. Ensure you're running in Cloudflare environment." },
-        { status: 500 }
-      )
-    }
-
+    const db = await getDb()
     if (!db) {
-      return NextResponse.json({ success: false, error: "Database not available" }, { status: 500 })
+      return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
     }
 
     // Validate required fields
@@ -52,21 +40,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status")
 
-    // Get D1 database binding from Cloudflare context
-    let db: CloudflareEnv["DB"] | null = null
-    try {
-      const { getRequestContext } = await import("@cloudflare/next-on-pages")
-      const { env } = getRequestContext()
-      db = (env as CloudflareEnv).DB
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Database connection failed. Ensure you're running in Cloudflare environment." },
-        { status: 500 }
-      )
-    }
-
+    const db = await getDb()
     if (!db) {
-      return NextResponse.json({ success: false, error: "Database not available" }, { status: 500 })
+      return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
     }
 
     let query = "SELECT * FROM tournaments"

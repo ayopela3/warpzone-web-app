@@ -1,14 +1,9 @@
 "use client"
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
-
-type CartItem = {
-  id: string
-  name: string
-  price: number
-  category: string
-  quantity: number
-}
+import { toast } from "sonner"
+import type { CartItem } from "@/types"
+import { settingsApi } from "@/lib/api-client"
 
 type AppContextValue = {
   cartItems: CartItem[]
@@ -70,18 +65,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [fiatSymbol, setFiatSymbol] = useState("$")
 
   useEffect(() => {
-    const fetchFiatSymbol = async () => {
-      try {
-        const response = await fetch("/api/settings/fiat")
-        const data = await response.json()
-        if (data.success && data.fiatSymbol) {
-          setFiatSymbol(data.fiatSymbol)
-        }
-      } catch (error) {
-        console.error("Failed to fetch fiat symbol:", error)
-      }
-    }
-    fetchFiatSymbol()
+    settingsApi.getFiat()
+      .then((data) => { if (data.success && data.fiatSymbol) setFiatSymbol(data.fiatSymbol) })
+      .catch((err) => console.error("Failed to fetch fiat symbol:", err))
   }, [])
 
   useEffect(() => {
@@ -198,7 +184,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return true
     }
 
-    window.alert("Please sign in before continuing.")
+    toast.error("Please sign in before continuing.")
     return false
   }, [isAuthenticated])
 

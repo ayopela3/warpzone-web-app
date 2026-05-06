@@ -1,132 +1,59 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Search, ShoppingBag, ArrowUpDown, X, Loader2 } from "lucide-react"
+import { ShoppingBag, Loader2 } from "lucide-react"
 import { useApp } from "@/components/shared/app-provider"
+import { ProductCard } from "@/features/shop/components/ProductCard"
+import { ProductFilters } from "@/features/shop/components/ProductFilters"
+import { productsApi } from "@/lib/api-client"
+import type { Product } from "@/types"
+import type { SortOption } from "@/features/shop/components/ProductFilters"
 
-interface Category {
-  id: string
-  name: string
-  slug: string
+const CATEGORY_MAP: Record<string, string> = {
+  pokemon: "Pokemon",
+  mtg: "Magic: The Gathering",
+  yugioh: "Yu-Gi-Oh!",
+  sealed: "Sealed Product",
 }
-
-interface Product {
-  id: string
-  name: string
-  category: string
-  rarity: string
-  description: string
-  image_url: string
-  sku: string
-  approval_status: string
-  created_at: string
-  quantity: number
-  price: number
-}
-
-const categories: Category[] = [
-  { id: "pokemon", name: "Pokemon", slug: "pokemon" },
-  { id: "mtg", name: "Magic: The Gathering", slug: "mtg" },
-  { id: "yugioh", name: "Yu-Gi-Oh!", slug: "yugioh" },
-  { id: "sealed", name: "Sealed Product", slug: "sealed" },
-]
-
-const productsWithoutListings: Array<{
-  id: number
-  name: string
-  category: string
-  categoryId: string
-  setName: string
-  rarity: string
-}> = []
-
-type SortOption = "relevance" | "newest"
 
 export default function ShopPage() {
   const { addToCart, fiatSymbol } = useApp()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [search, setSearch] = useState("")
+  const [category, setCategory] = useState("all")
   const [sortBy, setSortBy] = useState<SortOption>("relevance")
-  const [isLoadingProducts, setIsLoadingProducts] = useState(false)
-  const [productsData, setProductsData] = useState<Product[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      setIsLoadingProducts(true)
-      try {
-        const response = await fetch("/api/products")
-        const data = await response.json()
-        if (data.success) {
-          setProductsData(data.products || [])
-        }
-      } catch (error) {
-        console.error("Failed to fetch products:", error)
-      } finally {
-        setIsLoadingProducts(false)
-      }
-    }
-
-    fetchProducts()
+    setLoading(true)
+    productsApi.list()
+      .then((d) => { if (d.success) setProducts(d.products) })
+      .catch(console.error)
+      .finally(() => setLoading(false))
   }, [])
 
-  const filteredProducts = useMemo(() => {
-    let result = [...productsData]
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.category.toLowerCase().includes(query)
-      )
+  const filtered = useMemo(() => {
+    let result = [...products]
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      result = result.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
     }
-
-    if (selectedCategory !== "all") {
-      result = result.filter((p) => {
-        const categoryMap: Record<string, string> = {
-          pokemon: "Pokemon",
-          mtg: "Magic: The Gathering",
-          yugioh: "Yu-Gi-Oh!",
-          sealed: "Sealed Product",
-        }
-        const categoryName = categoryMap[selectedCategory] || selectedCategory
-        return p.category.toLowerCase() === categoryName.toLowerCase()
-      })
+    if (category !== "all") {
+      const name = CATEGORY_MAP[category] ?? category
+      result = result.filter((p) => p.category.toLowerCase() === name.toLowerCase())
     }
-
     if (sortBy === "newest") {
       result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     }
-
     return result
-  }, [searchQuery, selectedCategory, sortBy, productsData])
+  }, [search, category, sortBy, products])
 
-  const activeFiltersCount = [
-    selectedCategory !== "all",
-    searchQuery.trim() !== "",
-  ].filter(Boolean).length
-
-  const clearFilters = () => {
-    setSearchQuery("")
-    setSelectedCategory("all")
-    setSortBy("relevance")
-  }
+  const activeFiltersCount = [category !== "all", search.trim() !== ""].filter(Boolean).length
+  const clearFilters = () => { setSearch(""); setCategory("all"); setSortBy("relevance") }
 
   return (
     <div className="min-h-screen bg-white text-black">
-      {/* Header */}
       <div className="border-b border-neutral-200 bg-neutral-50">
         <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
           <h1 className="text-3xl font-black">Shop cards and sealed products</h1>
@@ -135,201 +62,47 @@ export default function ShopPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        {/* Filters */}
-        <div className="flex flex-col lg:flex-row gap-4 mb-6">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search cards..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.length === 0 ? (
-                  <SelectItem value="_empty" disabled>
-                    No categories available
-                  </SelectItem>
-                ) : (
-                  categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+        <ProductFilters
+          search={search}
+          category={category}
+          sortBy={sortBy}
+          activeFiltersCount={activeFiltersCount}
+          onSearchChange={setSearch}
+          onCategoryChange={setCategory}
+          onSortChange={setSortBy}
+          onClear={clearFilters}
+        />
 
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-              <SelectTrigger className="w-[160px]">
-                <ArrowUpDown className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="relevance">Relevance</SelectItem>
-                <SelectItem value="newest">Newest</SelectItem>
-              </SelectContent>
-            </Select>
+        <p className="text-sm text-muted-foreground mb-4">
+          Showing <span className="font-medium">{filtered.length}</span> of {products.length} results
+        </p>
 
-            {activeFiltersCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="text-muted-foreground"
-              >
-                <X className="h-4 w-4 mr-1" />
-                Clear ({activeFiltersCount})
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Results */}
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-muted-foreground">
-            Showing <span className="font-medium">{filteredProducts.length}</span> of {productsData.length} results
-          </p>
-        </div>
-
-        {/* Product Grid */}
-        {isLoadingProducts ? (
+        {loading ? (
           <div className="text-center py-12">
             <Loader2 className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-spin" />
             <h3 className="text-lg font-semibold">Loading products...</h3>
           </div>
-        ) : filteredProducts.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="text-center py-12">
             <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold">No products found</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              {activeFiltersCount > 0
-                ? "Try adjusting your filters or search query"
-                : "Check back later for new listings"}
+              {activeFiltersCount > 0 ? "Try adjusting your filters" : "Check back later for new listings"}
             </p>
             {activeFiltersCount > 0 && (
-              <Button variant="outline" className="mt-4" onClick={clearFilters}>
-                Clear Filters
-              </Button>
+              <Button variant="outline" className="mt-4" onClick={clearFilters}>Clear Filters</Button>
             )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => (
-              <Link key={product.id} href={`/shop/${product.id}`}>
-                <Card className="group h-full cursor-pointer overflow-hidden border-neutral-200 bg-white py-0 shadow-sm transition hover:-translate-y-1 hover:border-black hover:shadow-xl">
-                  <CardContent className="flex h-full flex-col p-0">
-                    <div className="relative flex h-64 items-center justify-center overflow-hidden bg-[linear-gradient(135deg,#fff7cc,#ffffff)]">
-                      <div className="absolute inset-x-8 top-6 h-44 rounded-2xl border border-primary/30 bg-white/70 blur-xl" />
-                      {product.image_url ? (
-                        <img
-                          src={product.image_url}
-                          alt={product.name}
-                          className="relative h-40 w-28 object-contain transition-transform group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="relative flex h-40 w-28 items-center justify-center rounded-2xl border-2 border-primary bg-white shadow-lg transition-transform group-hover:scale-105">
-                          <ShoppingBag className="h-12 w-12 text-primary" />
-                        </div>
-                      )}
-                      <Badge className="absolute top-3 left-3 text-white">{product.category}</Badge>
-                      {product.quantity === 0 && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <Badge variant="secondary" className="text-sm">Out of Stock</Badge>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-1 flex-col p-4">
-                      <h3 className="line-clamp-2 min-h-12 font-black leading-6 text-black">{product.name}</h3>
-                      {product.rarity && (
-                        <p className="mt-1 line-clamp-1 text-sm text-neutral-600">{product.rarity}</p>
-                      )}
-                      <div className="mt-auto flex items-center justify-between pt-4">
-                        <div>
-                          <p className="text-xl font-black text-primary">{fiatSymbol}{product.price.toLocaleString()}</p>
-                          <p className="text-xs text-neutral-500">Qty: {product.quantity}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 mt-3">
-                        <Button
-                          className="flex-1 text-white cursor-pointer"
-                          disabled={product.quantity === 0}
-                          onClick={(event) => {
-                            event.preventDefault()
-                            event.stopPropagation()
-                            addToCart({
-                              id: product.id,
-                              name: product.name,
-                              price: product.price,
-                              category: product.category,
-                            }, product.quantity)
-                          }}
-                        >
-                          {product.quantity === 0 ? "Out of Stock" : "Add to Cart"}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="flex-1"
-                          disabled={product.quantity === 0}
-                        >
-                          View Details
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
+            {filtered.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                fiatSymbol={fiatSymbol}
+                onAddToCart={(p) => addToCart({ id: p.id, name: p.name, price: p.price, category: p.category }, p.quantity)}
+              />
             ))}
-          </div>
-        )}
-
-        {/* Products Without Listings */}
-        {productsWithoutListings.length > 0 && (
-          <div className="mt-12 border-t border-neutral-200 pt-10">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-black">Rare Finds</h2>
-                <p className="text-sm text-neutral-600">
-                  These cards are in our catalog but have no active listings.
-                  <Link href="/seller/listings/new" className="text-primary hover:underline ml-1">
-                    Be the first to sell!
-                  </Link>
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {productsWithoutListings.map((product) => (
-                <Card key={product.id} className="group h-full overflow-hidden border-dashed border-2 border-neutral-300 bg-white py-0 shadow-sm transition hover:-translate-y-1 hover:border-black hover:shadow-xl">
-                  <CardContent className="flex h-full flex-col p-0">
-                    <div className="relative flex h-64 items-center justify-center overflow-hidden bg-neutral-50">
-                      <div className="relative flex h-40 w-28 items-center justify-center rounded-2xl border-2 border-dashed border-neutral-300 bg-white">
-                        <ShoppingBag className="h-12 w-12 text-neutral-300 transition-transform group-hover:scale-105" />
-                      </div>
-                      <Badge className="absolute top-3 left-3" variant="secondary">{product.category}</Badge>
-                    </div>
-                    <div className="flex flex-1 flex-col p-4">
-                      <h3 className="line-clamp-2 min-h-12 font-black leading-6 text-black">{product.name}</h3>
-                      <p className="mt-1 line-clamp-1 text-sm text-neutral-600">{product.setName} &bull; {product.rarity}</p>
-                      <div className="mt-auto pt-4">
-                        <Badge variant="outline">No sellers yet</Badge>
-                      </div>
-                      <Link href="/seller/listings/new">
-                        <Button variant="outline" className="w-full mt-3">
-                          Sell This Card
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           </div>
         )}
       </div>

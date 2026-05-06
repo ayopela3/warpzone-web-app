@@ -5,6 +5,7 @@ import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
 import { useApp } from "@/components/shared/app-provider"
 
 export default function CartPage() {
@@ -108,7 +109,7 @@ export default function CartPage() {
                       return
                     }
 
-                    window.alert("Checkout flow opened.")
+                    toast.info("Checkout flow coming soon.")
                   }}
                 >
                   Continue to checkout

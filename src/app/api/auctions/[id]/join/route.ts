@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import type { CloudflareEnv } from "@/types/cloudflare"
+import { getDb } from "@/lib/db"
 
 export const runtime = "edge"
 
@@ -7,21 +7,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const { id: auctionId } = await params
 
-    // Get D1 database binding from Cloudflare context
-    let db: CloudflareEnv["DB"] | null = null
-    try {
-      const { getRequestContext } = await import("@cloudflare/next-on-pages")
-      const { env } = getRequestContext()
-      db = (env as CloudflareEnv).DB
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Database connection failed. Ensure you're running in Cloudflare environment." },
-        { status: 500 }
-      )
-    }
-
+    const db = await getDb()
     if (!db) {
-      return NextResponse.json({ success: false, error: "Database not available" }, { status: 500 })
+      return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
     }
 
     // Get user from session

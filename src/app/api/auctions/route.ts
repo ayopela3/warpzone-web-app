@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import type { CloudflareEnv } from "@/types/cloudflare"
+import { getDb } from "@/lib/db"
 
 export const runtime = "edge"
 
@@ -8,21 +8,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { listing_id, title, description, starting_price, min_bid_increment, start_time, end_time } = body
 
-    // Get D1 database binding from Cloudflare context
-    let db: CloudflareEnv["DB"] | null = null
-    try {
-      const { getRequestContext } = await import("@cloudflare/next-on-pages")
-      const { env } = getRequestContext()
-      db = (env as CloudflareEnv).DB
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Database connection failed. Ensure you're running in Cloudflare environment." },
-        { status: 500 }
-      )
-    }
-
+    const db = await getDb()
     if (!db) {
-      return NextResponse.json({ success: false, error: "Database not available" }, { status: 500 })
+      return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
     }
 
     // Get user from session
@@ -105,33 +93,33 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // Get D1 database binding from Cloudflare context
-    let db: CloudflareEnv["DB"] | null = null
-    try {
-      const { getRequestContext } = await import("@cloudflare/next-on-pages")
-      const { env } = getRequestContext()
-      db = (env as CloudflareEnv).DB
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Database connection failed. Ensure you're running in Cloudflare environment." },
-        { status: 500 }
-      )
-    }
-
+    const db = await getDb()
     if (!db) {
-      return NextResponse.json({ success: false, error: "Database not available" }, { status: 500 })
+      return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
     }
 
-    // Get active auctions
+    // Get all auctions with explicit columns to avoid wildcard collisions
     const auctions = await db
       .prepare(
-        `SELECT a.*, p.name as product_name, p.image_url, pr.full_name as seller_name, pr.business_name
+        `SELECT
+           a.id,
+           a.title,
+           a.description,
+           a.starting_price,
+           a.current_bid,
+           a.min_bid_increment,
+           a.start_time,
+           a.end_time,
+           a.status,
+           p.name   AS product_name,
+           p.image_url,
+           pr.full_name    AS seller_name,
+           pr.business_name
          FROM auctions a
-         JOIN products p ON a.product_id = p.id
-         JOIN profiles pr ON a.seller_id = pr.id
-         WHERE a.status IN ('upcoming', 'active')
+         LEFT JOIN products p  ON a.product_id = p.id
+         LEFT JOIN profiles pr ON a.seller_id  = pr.id
          ORDER BY a.start_time ASC`
       )
       .all()

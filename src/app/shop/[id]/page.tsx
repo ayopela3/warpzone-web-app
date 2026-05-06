@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, PackageCheck, ShieldCheck, Truck } from "lucide-react"
+import { ArrowLeft, ShieldCheck, Truck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -78,11 +78,16 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
   const product = productResult as Product
 
-  // Fetch fiat symbol from settings
-  const fiatResult = await db
-    .prepare("SELECT value FROM settings WHERE key = 'fiat_symbol'")
-    .first<{ value: string }>()
-  const fiatSymbol = fiatResult?.value || "$"
+  // Fetch fiat symbol from settings — gracefully degrade if table is missing
+  let fiatSymbol = "$"
+  try {
+    const fiatResult = await db
+      .prepare("SELECT value FROM settings WHERE key = 'fiat_symbol'")
+      .first<{ value: string }>()
+    if (fiatResult?.value) fiatSymbol = fiatResult.value
+  } catch {
+    // Settings table may not exist yet; fall back to "$"
+  }
 
   return (
     <div className="min-h-screen bg-white text-black">
