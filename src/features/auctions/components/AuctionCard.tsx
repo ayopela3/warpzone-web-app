@@ -8,6 +8,7 @@ import { Gavel, Clock, ArrowUpRight } from "lucide-react"
 import type { Auction } from "@/types"
 import type { ProductCondition } from "@/types"
 
+//todo: move this condition labels to a shared utility file
 const CONDITION_LABELS: Record<ProductCondition, string> = {
   NEW: "Brand New",
   "LIKE NEW": "Near Mint",
