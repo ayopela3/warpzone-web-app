@@ -10,9 +10,10 @@ import { ProductsTab } from "@/features/admin/components/ProductsTab"
 import { TournamentsTab } from "@/features/admin/components/TournamentsTab"
 import { PreOrdersTab } from "@/features/admin/components/PreOrdersTab"
 import { SettingsTab } from "@/features/admin/components/SettingsTab"
+import { UsersTab } from "@/features/admin/components/UsersTab"
+import { ReportsTab } from "@/features/admin/components/ReportsTab"
 import { adminApi, productsApi } from "@/lib/api-client"
 import type { Product } from "@/types"
-
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -35,7 +36,9 @@ export default function AdminDashboard() {
     try {
       const data = await adminApi.pendingProducts()
       if (data.success) setPendingProducts(data.products)
-    } finally { setApprovalsLoading(false) }
+    } finally {
+      setApprovalsLoading(false)
+    }
   }, [])
 
   const fetchAllProducts = useCallback(async () => {
@@ -43,7 +46,9 @@ export default function AdminDashboard() {
     try {
       const data = await productsApi.list({ showAll: true })
       if (data.success) setAllProducts(data.products)
-    } finally { setProductsLoading(false) }
+    } finally {
+      setProductsLoading(false)
+    }
   }, [])
 
   const fetchStats = useCallback(async () => {
@@ -84,12 +89,24 @@ export default function AdminDashboard() {
 
   const handleSaveEdit = async (
     id: string,
-    form: { sku: string; name: string; category: string; rarity: string; description: string; price: string; quantity: string }
+    form: {
+      sku: string
+      name: string
+      category: string
+      rarity: string
+      description: string
+      price: string
+      quantity: string
+    },
   ) => {
     const result = await productsApi.update(id, {
-      sku: form.sku, name: form.name, category: form.category,
-      rarity: form.rarity, description: form.description,
-      price: parseFloat(form.price), quantity: parseInt(form.quantity),
+      sku: form.sku,
+      name: form.name,
+      category: form.category,
+      rarity: form.rarity,
+      description: form.description,
+      price: parseFloat(form.price),
+      quantity: parseInt(form.quantity),
       userRole: "admin",
     })
     if (!result.success) throw new Error(result.error ?? "Failed to update")
@@ -99,11 +116,13 @@ export default function AdminDashboard() {
   if (!isAuthenticated || userRole !== "admin") return null
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-black text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-500 mt-1">Manage products, auctions, tournaments and settings</p>
+    <div className='min-h-screen bg-gray-50 p-6'>
+      <div className='max-w-7xl mx-auto'>
+        <div className='mb-8'>
+          <h1 className='text-3xl font-black text-gray-900'>Admin Dashboard</h1>
+          <p className='text-gray-500 mt-1'>
+            Manage products, auctions, tournaments and settings
+          </p>
         </div>
 
         <AdminStats
@@ -113,16 +132,18 @@ export default function AdminDashboard() {
           pendingCount={pendingProducts.length}
         />
 
-        <Tabs defaultValue="approvals" className="space-y-6">
-          <TabsList className="grid grid-cols-5 w-full max-w-3xl">
-            <TabsTrigger value="approvals">Approvals</TabsTrigger>
-            <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="pre-orders">Pre-Orders</TabsTrigger>
-            <TabsTrigger value="tournaments">Tournaments</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+        <Tabs defaultValue='approvals' className='space-y-6'>
+          <TabsList className='grid grid-cols-7 w-full max-w-5xl'>
+            <TabsTrigger value='approvals'>Approvals</TabsTrigger>
+            <TabsTrigger value='products'>Products</TabsTrigger>
+            <TabsTrigger value='pre-orders'>Pre-Orders</TabsTrigger>
+            <TabsTrigger value='tournaments'>Tournaments</TabsTrigger>
+            <TabsTrigger value='users'>Users</TabsTrigger>
+            <TabsTrigger value='reports'>Reports</TabsTrigger>
+            <TabsTrigger value='settings'>Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="approvals">
+          <TabsContent value='approvals'>
             <ApprovalsTab
               products={pendingProducts}
               loading={approvalsLoading}
@@ -132,7 +153,7 @@ export default function AdminDashboard() {
             />
           </TabsContent>
 
-          <TabsContent value="products">
+          <TabsContent value='products'>
             <ProductsTab
               products={allProducts}
               loading={productsLoading}
@@ -144,15 +165,23 @@ export default function AdminDashboard() {
             />
           </TabsContent>
 
-          <TabsContent value="pre-orders">
+          <TabsContent value='pre-orders'>
             <PreOrdersTab fiatSymbol={fiatSymbol} />
           </TabsContent>
 
-          <TabsContent value="tournaments">
+          <TabsContent value='tournaments'>
             <TournamentsTab />
           </TabsContent>
 
-          <TabsContent value="settings">
+          <TabsContent value='users'>
+            <UsersTab />
+          </TabsContent>
+
+          <TabsContent value='reports'>
+            <ReportsTab />
+          </TabsContent>
+
+          <TabsContent value='settings'>
             <SettingsTab fiatSymbol={fiatSymbol} onSaved={setFiatSymbol} />
           </TabsContent>
         </Tabs>

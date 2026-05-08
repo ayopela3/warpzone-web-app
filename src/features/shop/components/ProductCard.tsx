@@ -1,19 +1,25 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ShoppingBag } from "lucide-react"
+import { Minus, Plus, ShoppingBag } from "lucide-react"
 import type { Product } from "@/types"
 
 type Props = {
   product: Product
   fiatSymbol: string
-  onAddToCart: (product: Product) => void
+  onAddToCart: (product: Product, qty: number) => void
 }
 
 export function ProductCard({ product, fiatSymbol, onAddToCart }: Props) {
   const outOfStock = product.quantity === 0
+  const [qty, setQty] = useState(1)
+  const maxQty = product.quantity
+
+  const decrement = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); setQty((q) => Math.max(1, q - 1)) }
+  const increment = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); setQty((q) => Math.min(maxQty, q + 1)) }
 
   return (
     <div className="group bg-white rounded-2xl border border-border overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-[border-color,box-shadow] duration-150 hover:border-primary/40 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] flex flex-col">
@@ -71,26 +77,52 @@ export function ProductCard({ product, fiatSymbol, onAddToCart }: Props) {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2">
-          <Button
-            className="flex-1 h-9 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
-            disabled={outOfStock}
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onAddToCart(product)
-            }}
-          >
-            {outOfStock ? "Out of Stock" : "Add to Cart"}
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1 h-9 text-xs font-semibold rounded-xl"
-            asChild
-            disabled={outOfStock}
-          >
-            <Link href={`/shop/${product.id}`}>View Details</Link>
-          </Button>
+        <div className="flex flex-col gap-2">
+          {/* Quantity stepper */}
+          {!outOfStock && (
+            <div className="flex items-center justify-between border border-border rounded-xl px-3 h-9">
+              <button
+                type="button"
+                onClick={decrement}
+                className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                disabled={qty <= 1}
+                aria-label="Decrease quantity"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <span className="text-sm font-bold text-foreground tabular-nums">{qty}</span>
+              <button
+                type="button"
+                onClick={increment}
+                className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                disabled={qty >= maxQty}
+                aria-label="Increase quantity"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button
+              className="flex-1 h-9 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
+              disabled={outOfStock}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onAddToCart(product, qty)
+              }}
+            >
+              {outOfStock ? "Out of Stock" : "Add to Cart"}
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1 h-9 text-xs font-semibold rounded-xl"
+              asChild
+              disabled={outOfStock}
+            >
+              <Link href={`/shop/${product.id}`}>View Details</Link>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

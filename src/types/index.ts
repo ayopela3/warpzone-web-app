@@ -2,6 +2,42 @@
 
 export type UserRole = "regular-user" | "seller" | "admin"
 
+export type ReportReason = "joy_bidding" | "non_payment" | "other"
+
+export type ReportStatus = "pending" | "dismissed" | "banned"
+
+export type UserReport = {
+  id: string
+  reason: ReportReason
+  details: string | null
+  reference_type: string | null
+  reference_id: string | null
+  status: ReportStatus
+  admin_note: string | null
+  created_at: string
+  resolved_at: string | null
+  reporter_profile_id: string | null
+  reporter_name: string | null
+  reporter_email: string | null
+  reported_profile_id: string | null
+  reported_name: string | null
+  reported_is_banned: 0 | 1
+  reported_user_id: string
+  reported_email: string | null
+}
+
+export type AdminUser = {
+  user_id: string
+  email: string
+  created_at: string
+  profile_id: string | null
+  full_name: string | null
+  role: UserRole | null
+  business_name: string | null
+  is_banned: 0 | 1
+  ban_reason: string | null
+}
+
 export type ApprovalStatus = "pending" | "approved" | "rejected"
 
 export type AuctionStatus = "upcoming" | "active" | "ended"
@@ -30,7 +66,13 @@ export type OrderStatus =
 
 export type FulfillmentType = "pickup" | "shipping"
 
-export type ProductCondition = "NEW" | "LIKE NEW" | "GOOD" | "FAIR" | "POOR" | "DAMAGED"
+export type ProductCondition =
+  | "NEW"
+  | "LIKE NEW"
+  | "GOOD"
+  | "FAIR"
+  | "POOR"
+  | "DAMAGED"
 
 // ---------------------------------------------------------------------------
 // Product
@@ -60,7 +102,19 @@ export type Product = {
 
 export type ProductListItem = Pick<
   Product,
-  "id" | "sku" | "name" | "category" | "rarity" | "image_url" | "approval_status" | "created_at" | "price" | "quantity" | "featured" | "is_active" | "seller_name"
+  | "id"
+  | "sku"
+  | "name"
+  | "category"
+  | "rarity"
+  | "image_url"
+  | "approval_status"
+  | "created_at"
+  | "price"
+  | "quantity"
+  | "featured"
+  | "is_active"
+  | "seller_name"
 >
 
 // ---------------------------------------------------------------------------

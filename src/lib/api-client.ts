@@ -3,7 +3,7 @@
  * All fetch calls in pages/components go through here — one place to change URLs.
  */
 
-import type { Auction, Order, OrderStatus, PreOrder, PreOrderReservation, PreOrderReservationDetail, Product, Tournament } from "@/types"
+import type { AdminUser, Auction, Order, OrderStatus, PreOrder, PreOrderReservation, PreOrderReservationDetail, Product, Tournament, UserReport } from "@/types"
 
 // ---------------------------------------------------------------------------
 // helpers
@@ -78,6 +78,52 @@ export const adminApi = {
 
   analyticsAuctions: () =>
     apiFetch<{ success: boolean; count: number }>("/api/admin/analytics/auctions"),
+
+  listUsers: () =>
+    apiFetch<{ success: boolean; users: AdminUser[] }>("/api/admin/users"),
+
+  banUser: (userId: string, reason?: string) =>
+    apiFetch<{ success: boolean; error?: string }>(`/api/admin/users/${userId}/ban`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ banned: true, reason }),
+    }),
+
+  unbanUser: (userId: string) =>
+    apiFetch<{ success: boolean; error?: string }>(`/api/admin/users/${userId}/ban`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ banned: false }),
+    }),
+
+  listReports: (status: "pending" | "dismissed" | "banned" = "pending") =>
+    apiFetch<{ success: boolean; reports: UserReport[] }>(`/api/admin/reports?status=${status}`),
+
+  resolveReport: (reportId: string, action: "dismiss" | "ban", adminNote?: string, banReason?: string) =>
+    apiFetch<{ success: boolean; error?: string }>(`/api/admin/reports/${reportId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, admin_note: adminNote, ban_reason: banReason }),
+    }),
+}
+
+// ---------------------------------------------------------------------------
+// Reports — seller submits a report against a buyer
+// ---------------------------------------------------------------------------
+
+export const reportsApi = {
+  submit: (body: {
+    reported_user_id: string
+    reason: string
+    details?: string
+    reference_type?: string
+    reference_id?: string
+  }) =>
+    apiFetch<{ success: boolean; reportId?: string; error?: string }>("/api/reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
 }
 
 // ---------------------------------------------------------------------------

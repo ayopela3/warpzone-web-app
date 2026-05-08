@@ -1,7 +1,8 @@
 "use client"
 
+import { useRef, useState } from "react"
 import Link from "next/link"
-import { ArrowRight, Gavel, ShoppingBag, Sparkles, Trophy } from "lucide-react"
+import { ArrowRight, ChevronLeft, ChevronRight, Gavel, ShoppingBag, Sparkles, Trophy } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import type { Product } from "@/types"
@@ -13,8 +14,40 @@ type Props = {
   onDotClick: (index: number) => void
 }
 
+const DRAG_THRESHOLD = 40 // px needed to count as a swipe
+
 export function HeroSection({ isSeller, featuredProducts, activeFeaturedIndex, onDotClick }: Props) {
   const active = featuredProducts[activeFeaturedIndex]
+  const total   = featuredProducts.length
+
+  // Drag state
+  const dragStartX  = useRef<number | null>(null)
+  const [dragDelta, setDragDelta] = useState(0)
+  const [dragging, setDragging]   = useState(false)
+
+  const goTo = (index: number) => onDotClick((index + total) % total)
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    dragStartX.current = e.clientX
+    setDragging(true)
+    setDragDelta(0)
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  }
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragging || dragStartX.current === null) return
+    setDragDelta(e.clientX - dragStartX.current)
+  }
+
+  const handlePointerUp = () => {
+    if (dragStartX.current !== null) {
+      if (dragDelta < -DRAG_THRESHOLD)       goTo(activeFeaturedIndex + 1)
+      else if (dragDelta > DRAG_THRESHOLD)   goTo(activeFeaturedIndex - 1)
+    }
+    dragStartX.current = null
+    setDragging(false)
+    setDragDelta(0)
+  }
 
   return (
     <section className="relative overflow-hidden border-b border-black bg-primary text-black">
@@ -57,21 +90,57 @@ export function HeroSection({ isSeller, featuredProducts, activeFeaturedIndex, o
         </div>
 
         {!isSeller && featuredProducts.length > 0 && (
-          <div className="relative flex flex-col">
+          <div className="relative flex flex-col select-none">
             <div className="relative">
-              <div className="flex aspect-[4/5] items-center justify-center">
+
+              {/* Drag / swipe surface */}
+              <div
+                className="flex aspect-[4/5] items-center justify-center overflow-hidden rounded-2xl cursor-grab active:cursor-grabbing"
+                onPointerDown={total > 1 ? handlePointerDown : undefined}
+                onPointerMove={total > 1 ? handlePointerMove : undefined}
+                onPointerUp={total > 1 ? handlePointerUp : undefined}
+                onPointerCancel={total > 1 ? handlePointerUp : undefined}
+              >
                 {active?.image_url ? (
                   <img
                     src={active.image_url}
                     alt={active.name}
-                    className="h-full w-full object-contain drop-shadow-2xl"
+                    draggable={false}
+                    style={{
+                      transform: `scale(0.85) translateX(${dragging ? dragDelta * 0.15 : 0}px)`,
+                      transition: dragging ? "none" : "transform 0.3s ease",
+                    }}
+                    className="h-full w-full object-contain drop-shadow-2xl pointer-events-none"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
                     <ShoppingBag className="h-24 w-24 text-primary" />
                   </div>
                 )}
+
+                {/* Left / right arrow hints */}
+                {total > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Previous product"
+                      onClick={() => goTo(activeFeaturedIndex - 1)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/30 hover:bg-black/60 flex items-center justify-center text-white transition-colors backdrop-blur-sm"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Next product"
+                      onClick={() => goTo(activeFeaturedIndex + 1)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/30 hover:bg-black/60 flex items-center justify-center text-white transition-colors backdrop-blur-sm"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </>
+                )}
               </div>
+
               <div className="absolute -bottom-4 left-4 right-4 rounded-2xl border border-white/30 bg-white/60 p-4 shadow-2xl backdrop-blur-md">
                 <p className="text-xs font-bold uppercase tracking-wider text-neutral-600">{active?.category ?? "TCG"} · Featured</p>
                 <h3 className="mt-1 line-clamp-2 text-xl font-black text-black">{active?.name ?? "Featured Product"}</h3>
@@ -82,14 +151,17 @@ export function HeroSection({ isSeller, featuredProducts, activeFeaturedIndex, o
                 </Button>
               </div>
             </div>
-            {featuredProducts.length > 1 && (
+
+            {total > 1 && (
               <div className="mt-5 flex justify-center gap-2">
                 {featuredProducts.map((product, index) => (
                   <button
                     key={product.id}
                     type="button"
                     aria-label={`Show featured product ${index + 1}`}
-                    className={`h-2 rounded-full transition-all ${activeFeaturedIndex === index ? "w-6 bg-black" : "w-2 bg-black"}`}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      activeFeaturedIndex === index ? "w-6 bg-black" : "w-2 bg-black/40 hover:bg-black/70"
+                    }`}
                     onClick={() => onDotClick(index)}
                   />
                 ))}

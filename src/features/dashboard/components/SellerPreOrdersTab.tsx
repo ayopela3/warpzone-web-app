@@ -9,50 +9,83 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select"
 import {
-  Package, Plus, Loader2, CheckCircle2, Upload, Calendar, Users, Clock,
-  CheckCheck, X as XIcon, ChevronDown, ChevronUp,
+  Package,
+  Plus,
+  Loader2,
+  CheckCircle2,
+  Upload,
+  Calendar,
+  Users,
+  Clock,
+  CheckCheck,
+  X as XIcon,
+  ChevronDown,
+  ChevronUp,
+  Flag,
 } from "lucide-react"
 import { toast } from "sonner"
 import { preOrdersApi } from "@/lib/api-client"
 import type { PreOrder, PreOrderReservationDetail } from "@/types"
+import { ReportUserDialog } from "@/features/shared/components/ReportUserDialog"
 
-const GAME_OPTIONS = ["Pokemon", "MTG", "Yu-Gi-Oh!", "Plushies", "Accessories", "Other"]
+const GAME_OPTIONS = [
+  "Pokemon",
+  "MTG",
+  "Yu-Gi-Oh!",
+  "Plushies",
+  "Accessories",
+  "Other",
+]
 
 const INITIAL_FORM = {
-  title:        "",
-  description:  "",
-  game:         "Pokemon",
-  price:        "",
+  title: "",
+  description: "",
+  game: "Pokemon",
+  price: "",
   release_date: "",
-  max_slots:    "",
-  image_url:    "",
+  max_slots: "",
+  image_url: "",
 }
 
 type Props = { fiatSymbol: string }
 
 export function SellerPreOrdersTab({ fiatSymbol }: Props) {
-  const [preOrders, setPreOrders]         = useState<PreOrder[]>([])
-  const [loading, setLoading]             = useState(true)
-  const [showCreate, setShowCreate]       = useState(false)
-  const [form, setForm]                   = useState(INITIAL_FORM)
-  const [saving, setSaving]               = useState(false)
-  const [uploading, setUploading]         = useState(false)
-  const [sellerId, setSellerId]           = useState<string | null>(null)
+  const [preOrders, setPreOrders] = useState<PreOrder[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showCreate, setShowCreate] = useState(false)
+  const [form, setForm] = useState(INITIAL_FORM)
+  const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [sellerId, setSellerId] = useState<string | null>(null)
 
   /** Accordion expand state */
-  const [expandedId, setExpandedId]       = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   /** Per-pre-order reservation cache: id -> list */
-  const [reservationMap, setReservationMap] = useState<Record<string, PreOrderReservationDetail[]>>({})
+  const [reservationMap, setReservationMap] = useState<
+    Record<string, PreOrderReservationDetail[]>
+  >({})
   const [loadingDetailId, setLoadingDetailId] = useState<string | null>(null)
-  const [togglingId, setTogglingId]       = useState<string | null>(null)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
+  /** Report dialog state */
+  const [reportTarget, setReportTarget] = useState<{
+    userId: string
+    name: string
+    referenceId: string
+  } | null>(null)
 
   /** Resolve seller's profile id once */
   useEffect(() => {
     fetch("/api/user/profile", {
-      headers: { Authorization: `Bearer ${localStorage.getItem("warpzone-session-id") ?? ""}` },
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("warpzone-session-id") ?? ""}`,
+      },
     })
       .then((r) => r.json())
       .then((d: { success: boolean; profile?: { id: string } }) => {
@@ -74,7 +107,9 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
     }
   }, [sellerId])
 
-  useEffect(() => { fetchMyPreOrders() }, [fetchMyPreOrders])
+  useEffect(() => {
+    fetchMyPreOrders()
+  }, [fetchMyPreOrders])
 
   const toggleExpand = async (po: PreOrder) => {
     if (expandedId === po.id) {
@@ -97,7 +132,10 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
     }
   }
 
-  const togglePaid = async (preOrderId: string, r: PreOrderReservationDetail) => {
+  const togglePaid = async (
+    preOrderId: string,
+    r: PreOrderReservationDetail,
+  ) => {
     setTogglingId(r.id)
     try {
       const result = await preOrdersApi.markPaid(preOrderId, r.id, r.paid === 0)
@@ -105,7 +143,7 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
       setReservationMap((prev) => ({
         ...prev,
         [preOrderId]: (prev[preOrderId] ?? []).map((x) =>
-          x.id === r.id ? { ...x, paid: r.paid === 0 ? 1 : 0 } : x
+          x.id === r.id ? { ...x, paid: r.paid === 0 ? 1 : 0 } : x,
         ),
       }))
       toast.success(r.paid === 0 ? "Marked as paid" : "Marked as unpaid")
@@ -124,8 +162,13 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
       const fd = new FormData()
       fd.append("file", file)
       const res = await fetch("/api/upload", { method: "POST", body: fd })
-      const data = await res.json() as { success: boolean; url?: string; error?: string }
-      if (!data.success || !data.url) throw new Error(data.error ?? "Upload failed")
+      const data = (await res.json()) as {
+        success: boolean
+        url?: string
+        error?: string
+      }
+      if (!data.success || !data.url)
+        throw new Error(data.error ?? "Upload failed")
       setForm((f) => ({ ...f, image_url: data.url! }))
       toast.success("Image uploaded")
     } catch (err) {
@@ -144,13 +187,13 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
     setSaving(true)
     try {
       const result = await preOrdersApi.create({
-        title:        form.title.trim(),
-        description:  form.description || undefined,
-        game:         form.game,
-        image_url:    form.image_url || undefined,
-        price:        parseFloat(form.price) || 0,
+        title: form.title.trim(),
+        description: form.description || undefined,
+        game: form.game,
+        image_url: form.image_url || undefined,
+        price: parseFloat(form.price) || 0,
         release_date: form.release_date,
-        max_slots:    form.max_slots ? parseInt(form.max_slots, 10) : undefined,
+        max_slots: form.max_slots ? parseInt(form.max_slots, 10) : undefined,
       })
       if (!result.success) throw new Error(result.error ?? "Failed to submit")
       toast.success("Pre-order submitted for admin review")
@@ -158,7 +201,9 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
       setShowCreate(false)
       fetchMyPreOrders()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to submit pre-order")
+      toast.error(
+        err instanceof Error ? err.message : "Failed to submit pre-order",
+      )
     } finally {
       setSaving(false)
     }
@@ -172,241 +217,487 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
 
   // ── List view (with inline accordion) ─────────────────────────────────────
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl font-bold text-foreground">My Pre-Orders</h2>
-        <Button
-          onClick={() => setShowCreate(!showCreate)}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          {showCreate ? "Cancel" : "Submit Pre-Order"}
-        </Button>
-      </div>
+    <>
+      {reportTarget && (
+        <ReportUserDialog
+          open={!!reportTarget}
+          reportedUserId={reportTarget.userId}
+          reportedName={reportTarget.name}
+          referenceType='pre_order'
+          referenceId={reportTarget.referenceId}
+          onClose={() => setReportTarget(null)}
+        />
+      )}
+      <div className='space-y-5'>
+        <div className='flex items-center justify-between'>
+          <h2 className='font-display text-xl font-bold text-foreground'>
+            My Pre-Orders
+          </h2>
+          <Button
+            onClick={() => setShowCreate(!showCreate)}
+            className='bg-primary hover:bg-primary/90 text-primary-foreground'
+          >
+            <Plus className='mr-2 h-4 w-4' />
+            {showCreate ? "Cancel" : "Submit Pre-Order"}
+          </Button>
+        </div>
 
-      {/* Info notice */}
-      <div className="rounded-2xl bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-700">
-        <strong>How it works:</strong> Submit a pre-order listing and an admin will review it.
-        Once approved, customers can reserve their slots. Click any listing to see reservations and mark payments.
-      </div>
+        {/* Info notice */}
+        <div className='rounded-2xl bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-700'>
+          <strong>How it works:</strong> Submit a pre-order listing and an admin
+          will review it. Once approved, customers can reserve their slots.
+          Click any listing to see reservations and mark payments.
+        </div>
 
-      {/* Create form */}
-      {showCreate && (
-        <Card className="bg-white shadow-sm border-primary/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg text-primary">Submit New Pre-Order</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="sel-po-title">Title *</Label>
-                <Input id="sel-po-title" placeholder="e.g. Scarlet & Violet Booster Box" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="sel-po-game">Game *</Label>
-                <Select value={form.game} onValueChange={(v) => setForm({ ...form, game: v })}>
-                  <SelectTrigger id="sel-po-game"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {GAME_OPTIONS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="sel-po-price">Price ({fiatSymbol}) *</Label>
-                <Input id="sel-po-price" type="number" min="0" placeholder="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="sel-po-date">Release Date *</Label>
-                <Input id="sel-po-date" type="date" value={form.release_date} onChange={(e) => setForm({ ...form, release_date: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="sel-po-slots">Max Slots (blank = unlimited)</Label>
-                <Input id="sel-po-slots" type="number" min="1" placeholder="Unlimited" value={form.max_slots} onChange={(e) => setForm({ ...form, max_slots: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Product Image</Label>
-                <div className="flex items-center gap-2">
-                  <Label
-                    htmlFor="sel-po-img"
-                    className="flex items-center gap-2 cursor-pointer px-3 py-2 border rounded-md text-sm text-gray-600 hover:border-primary hover:text-primary transition"
+        {/* Create form */}
+        {showCreate && (
+          <Card className='bg-white shadow-sm border-primary/20'>
+            <CardHeader className='pb-3'>
+              <CardTitle className='text-lg text-primary'>
+                Submit New Pre-Order
+              </CardTitle>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='space-y-1.5'>
+                  <Label htmlFor='sel-po-title'>Title *</Label>
+                  <Input
+                    id='sel-po-title'
+                    placeholder='e.g. Scarlet & Violet Booster Box'
+                    value={form.title}
+                    onChange={(e) =>
+                      setForm({ ...form, title: e.target.value })
+                    }
+                  />
+                </div>
+                <div className='space-y-1.5'>
+                  <Label htmlFor='sel-po-game'>Game *</Label>
+                  <Select
+                    value={form.game}
+                    onValueChange={(v) => setForm({ ...form, game: v })}
                   >
-                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    {uploading ? "Uploading…" : "Upload"}
+                    <SelectTrigger id='sel-po-game'>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GAME_OPTIONS.map((g) => (
+                        <SelectItem key={g} value={g}>
+                          {g}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className='space-y-1.5'>
+                  <Label htmlFor='sel-po-price'>Price ({fiatSymbol}) *</Label>
+                  <Input
+                    id='sel-po-price'
+                    type='number'
+                    min='0'
+                    placeholder='0'
+                    value={form.price}
+                    onChange={(e) =>
+                      setForm({ ...form, price: e.target.value })
+                    }
+                  />
+                </div>
+                <div className='space-y-1.5'>
+                  <Label htmlFor='sel-po-date'>Release Date *</Label>
+                  <Input
+                    id='sel-po-date'
+                    type='date'
+                    value={form.release_date}
+                    onChange={(e) =>
+                      setForm({ ...form, release_date: e.target.value })
+                    }
+                  />
+                </div>
+                <div className='space-y-1.5'>
+                  <Label htmlFor='sel-po-slots'>
+                    Max Slots (blank = unlimited)
                   </Label>
-                  <input id="sel-po-img" type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
-                  {form.image_url && <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Uploaded</span>}
+                  <Input
+                    id='sel-po-slots'
+                    type='number'
+                    min='1'
+                    placeholder='Unlimited'
+                    value={form.max_slots}
+                    onChange={(e) =>
+                      setForm({ ...form, max_slots: e.target.value })
+                    }
+                  />
+                </div>
+                <div className='space-y-1.5'>
+                  <Label>Product Image</Label>
+                  <div className='flex items-center gap-2'>
+                    <Label
+                      htmlFor='sel-po-img'
+                      className='flex items-center gap-2 cursor-pointer px-3 py-2 border rounded-md text-sm text-gray-600 hover:border-primary hover:text-primary transition'
+                    >
+                      {uploading ? (
+                        <Loader2 className='h-4 w-4 animate-spin' />
+                      ) : (
+                        <Upload className='h-4 w-4' />
+                      )}
+                      {uploading ? "Uploading…" : "Upload"}
+                    </Label>
+                    <input
+                      id='sel-po-img'
+                      type='file'
+                      accept='image/*'
+                      className='hidden'
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                    />
+                    {form.image_url && (
+                      <span className='text-xs text-green-600 flex items-center gap-1'>
+                        <CheckCircle2 className='h-3 w-3' />
+                        Uploaded
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="sel-po-desc">Description</Label>
-              <Textarea id="sel-po-desc" placeholder="Optional description..." rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="resize-none" />
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={handleSubmit} disabled={saving} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Submitting…</> : "Submit for Review"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              <div className='space-y-1.5'>
+                <Label htmlFor='sel-po-desc'>Description</Label>
+                <Textarea
+                  id='sel-po-desc'
+                  placeholder='Optional description...'
+                  rows={3}
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm({ ...form, description: e.target.value })
+                  }
+                  className='resize-none'
+                />
+              </div>
+              <div className='flex justify-end'>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={saving}
+                  className='bg-primary hover:bg-primary/90 text-primary-foreground'
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                      Submitting…
+                    </>
+                  ) : (
+                    "Submit for Review"
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Pre-order list */}
-      {loading ? (
-        <div className="py-10 flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : preOrders.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-border py-10 text-center">
-          <Package className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No pre-orders submitted yet.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {preOrders.map((po) => {
-            const isOpen       = expandedId === po.id
-            const isLoadingRow = loadingDetailId === po.id
-            const rows         = reservationMap[po.id] ?? []
-            const totalQty     = rows.reduce((s, r) => s + r.quantity, 0)
-            const paidCount    = rows.filter((r) => r.paid === 1).length
+        {/* Pre-order list */}
+        {loading ? (
+          <div className='py-10 flex justify-center'>
+            <Loader2 className='h-8 w-8 animate-spin text-primary' />
+          </div>
+        ) : preOrders.length === 0 ? (
+          <div className='bg-white rounded-2xl border border-border py-10 text-center'>
+            <Package className='h-10 w-10 text-muted-foreground mx-auto mb-3' />
+            <p className='text-sm text-muted-foreground'>
+              No pre-orders submitted yet.
+            </p>
+          </div>
+        ) : (
+          <div className='space-y-3'>
+            {preOrders.map((po) => {
+              const isOpen = expandedId === po.id
+              const isLoadingRow = loadingDetailId === po.id
+              const rows = reservationMap[po.id] ?? []
+              const totalQty = rows.reduce((s, r) => s + r.quantity, 0)
+              const paidCount = rows.filter((r) => r.paid === 1).length
 
-            return (
-              <div key={po.id} className={`bg-white rounded-2xl border transition-all ${
-                isOpen ? "border-primary/40 shadow-md" : "border-border shadow-sm"
-              }`}>
-                {/* ── Row header — click to expand ── */}
-                <div className="p-5 flex items-center gap-4">
-                  {/* Thumbnail */}
-                  <div className="relative h-16 w-16 shrink-0 rounded-xl bg-muted overflow-hidden flex items-center justify-center">
-                    {po.image_url
-                      ? <Image src={po.image_url} alt={po.title} fill className="object-contain" />
-                      : <Package className="h-7 w-7 text-muted-foreground" />}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-base text-foreground truncate">{po.title}</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {fiatSymbol}{po.price.toLocaleString()}
-                      {" · "}
-                      <span className="inline-flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(po.release_date).toLocaleDateString()}
-                      </span>
-                      {" · "}
-                      <span className="inline-flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {po.reservation_count ?? 0} reserved{po.max_slots ? ` / ${po.max_slots}` : ""}
-                      </span>
-                    </p>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <Badge variant="outline" className="text-xs">{po.game}</Badge>
-                      <Badge variant="outline" className={`text-xs capitalize ${approvalColor(po.approval_status)}`}>
-                        {po.approval_status}
-                      </Badge>
-                      {po.status === "closed" && (
-                        <Badge variant="secondary" className="text-xs">Closed</Badge>
+              return (
+                <div
+                  key={po.id}
+                  className={`bg-white rounded-2xl border transition-all ${
+                    isOpen
+                      ? "border-primary/40 shadow-md"
+                      : "border-border shadow-sm"
+                  }`}
+                >
+                  {/* ── Row header — click to expand ── */}
+                  <div className='p-5 flex items-center gap-4'>
+                    {/* Thumbnail */}
+                    <div className='relative h-16 w-16 shrink-0 rounded-xl bg-muted overflow-hidden flex items-center justify-center'>
+                      {po.image_url ? (
+                        <Image
+                          src={po.image_url}
+                          alt={po.title}
+                          fill
+                          className='object-contain'
+                        />
+                      ) : (
+                        <Package className='h-7 w-7 text-muted-foreground' />
                       )}
                     </div>
+
+                    {/* Info */}
+                    <div className='flex-1 min-w-0'>
+                      <p className='font-bold text-base text-foreground truncate'>
+                        {po.title}
+                      </p>
+                      <p className='text-sm text-muted-foreground mt-0.5'>
+                        {fiatSymbol}
+                        {po.price.toLocaleString()}
+                        {" · "}
+                        <span className='inline-flex items-center gap-1'>
+                          <Calendar className='h-3 w-3' />
+                          {new Date(po.release_date).toLocaleDateString()}
+                        </span>
+                        {" · "}
+                        <span className='inline-flex items-center gap-1'>
+                          <Users className='h-3 w-3' />
+                          {po.reservation_count ?? 0} reserved
+                          {po.max_slots ? ` / ${po.max_slots}` : ""}
+                        </span>
+                      </p>
+                      <div className='flex items-center gap-2 mt-1.5 flex-wrap'>
+                        <Badge variant='outline' className='text-xs'>
+                          {po.game}
+                        </Badge>
+                        <Badge
+                          variant='outline'
+                          className={`text-xs capitalize ${approvalColor(po.approval_status)}`}
+                        >
+                          {po.approval_status}
+                        </Badge>
+                        {po.status === "closed" && (
+                          <Badge variant='secondary' className='text-xs'>
+                            Closed
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Expand chevron button */}
+                    <button
+                      type='button'
+                      onClick={() => toggleExpand(po)}
+                      className='shrink-0 h-8 w-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors'
+                      aria-label='Toggle reservations'
+                    >
+                      {isOpen ? (
+                        <ChevronUp className='h-4 w-4' />
+                      ) : (
+                        <ChevronDown className='h-4 w-4' />
+                      )}
+                    </button>
                   </div>
 
-                  {/* Expand chevron button */}
-                  <button
-                    type="button"
-                    onClick={() => toggleExpand(po)}
-                    className="shrink-0 h-8 w-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-                    aria-label="Toggle reservations"
-                  >
-                    {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </button>
-                </div>
-
-                {/* ── Inline accordion: reservations ── */}
-                {isOpen && (
-                  <div className="border-t border-border">
-                    {/* Mini stats bar */}
-                    {rows.length > 0 && (
-                      <div className="grid grid-cols-3 gap-px bg-border">
-                        {[
-                          { label: "Total Qty",    value: totalQty },
-                          { label: "Paid",         value: `${paidCount} / ${rows.length}` },
-                          { label: "Collected",    value: `${fiatSymbol}${(rows.filter((r) => r.paid === 1).reduce((s, r) => s + r.quantity * po.price, 0)).toLocaleString()}` },
-                        ].map(({ label, value }) => (
-                          <div key={label} className="bg-muted/40 px-4 py-2.5 text-center">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
-                            <p className="text-sm font-extrabold text-foreground mt-0.5">{value}</p>
+                  {/* ── Inline accordion: reservations ── */}
+                  {isOpen && (
+                    <div className='border-t border-border rounded-b-2xl overflow-hidden'>
+                      {/* Coloured stat cards */}
+                      <div className='grid grid-cols-3 gap-3 p-4 bg-muted/30'>
+                        <div className='bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 flex items-center gap-3'>
+                          <div className='p-2 bg-primary/20 rounded-lg shrink-0'>
+                            <Users className='h-4 w-4 text-primary' />
                           </div>
-                        ))}
+                          <div>
+                            <p className='text-[10px] font-semibold text-primary/70 uppercase tracking-wide'>
+                              Total Qty
+                            </p>
+                            <p className='text-xl font-black text-primary leading-none mt-0.5'>
+                              {totalQty}
+                            </p>
+                          </div>
+                        </div>
+                        <div className='bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center gap-3'>
+                          <div className='p-2 bg-blue-100 rounded-lg shrink-0'>
+                            <CheckCheck className='h-4 w-4 text-blue-600' />
+                          </div>
+                          <div>
+                            <p className='text-[10px] font-semibold text-blue-500 uppercase tracking-wide'>
+                              Paid
+                            </p>
+                            <p className='text-xl font-black text-blue-700 leading-none mt-0.5'>
+                              {paidCount}
+                              <span className='text-sm font-medium text-blue-400'>
+                                {" "}
+                                / {rows.length}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className='bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center gap-3'>
+                          <div className='p-2 bg-green-100 rounded-lg shrink-0'>
+                            <Clock className='h-4 w-4 text-green-600' />
+                          </div>
+                          <div>
+                            <p className='text-[10px] font-semibold text-green-600 uppercase tracking-wide'>
+                              Collected
+                            </p>
+                            <p className='text-lg font-black text-green-700 leading-none mt-0.5 truncate'>
+                              {fiatSymbol}
+                              {rows
+                                .filter((r) => r.paid === 1)
+                                .reduce((s, r) => s + r.quantity * po.price, 0)
+                                .toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                    )}
 
-                    {/* Reservation rows */}
-                    {isLoadingRow ? (
-                      <div className="py-8 flex justify-center">
-                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      {/* Reservation list header */}
+                      <div className='px-5 py-3 bg-white border-t border-border flex items-center justify-between'>
+                        <p className='text-xs font-bold text-foreground uppercase tracking-wider'>
+                          Reservations
+                        </p>
+                        <span className='text-xs text-muted-foreground'>
+                          {rows.length} total
+                        </span>
                       </div>
-                    ) : rows.length === 0 ? (
-                      <div className="py-8 text-center">
-                        <Users className="h-7 w-7 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">No reservations yet.</p>
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-border">
-                        {rows.map((r) => {
-                          const displayName  = r.buyer_name ?? r.buyer_email ?? r.user_email ?? "Anonymous"
-                          const displayEmail = r.buyer_email ?? r.user_email ?? ""
-                          return (
-                            <div key={r.id} className="flex items-center justify-between px-5 py-3 gap-4">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
-                                {displayEmail && displayEmail !== displayName && (
-                                  <p className="text-xs text-muted-foreground truncate">{displayEmail}</p>
-                                )}
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  <span className="font-medium text-foreground">{r.quantity}x</span>
-                                  {" · "}
-                                  {fiatSymbol}{(r.quantity * po.price).toLocaleString()}
-                                  {" · "}
-                                  {new Date(r.reserved_at).toLocaleDateString()}
-                                </p>
+
+                      {/* Reservation rows */}
+                      {isLoadingRow ? (
+                        <div className='py-10 flex justify-center bg-white'>
+                          <Loader2 className='h-5 w-5 animate-spin text-primary' />
+                        </div>
+                      ) : rows.length === 0 ? (
+                        <div className='py-10 text-center bg-white'>
+                          <div className='h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3'>
+                            <Users className='h-6 w-6 text-muted-foreground' />
+                          </div>
+                          <p className='text-sm font-medium text-muted-foreground'>
+                            No reservations yet
+                          </p>
+                          <p className='text-xs text-muted-foreground/60 mt-1'>
+                            Customers who reserve this pre-order will appear
+                            here
+                          </p>
+                        </div>
+                      ) : (
+                        <div className='divide-y divide-border bg-white'>
+                          {rows.map((r, idx) => {
+                            const displayName =
+                              r.buyer_name ??
+                              r.buyer_email ??
+                              r.user_email ??
+                              "Anonymous"
+                            const displayEmail =
+                              r.buyer_email ?? r.user_email ?? ""
+                            const initials = displayName
+                              .split(" ")
+                              .map((w: string) => w[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase()
+                            return (
+                              <div
+                                key={r.id}
+                                className='flex items-center gap-4 px-5 py-3.5'
+                              >
+                                {/* Avatar */}
+                                <div className='h-9 w-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0'>
+                                  <span className='text-xs font-bold text-primary'>
+                                    {initials}
+                                  </span>
+                                </div>
+                                {/* Buyer info */}
+                                <div className='flex-1 min-w-0'>
+                                  <div className='flex items-center gap-2'>
+                                    <p className='text-sm font-semibold text-foreground truncate'>
+                                      {displayName}
+                                    </p>
+                                    <span className='text-xs text-muted-foreground shrink-0'>
+                                      #{idx + 1}
+                                    </span>
+                                  </div>
+                                  {displayEmail &&
+                                    displayEmail !== displayName && (
+                                      <p className='text-xs text-muted-foreground truncate'>
+                                        {displayEmail}
+                                      </p>
+                                    )}
+                                  <p className='text-xs text-muted-foreground mt-0.5'>
+                                    <span className='font-semibold text-foreground'>
+                                      {r.quantity}×
+                                    </span>{" "}
+                                    <span className='text-primary font-medium'>
+                                      {fiatSymbol}
+                                      {(r.quantity * po.price).toLocaleString()}
+                                    </span>
+                                    {" · "}
+                                    {new Date(
+                                      r.reserved_at,
+                                    ).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                {/* Status + action */}
+                                <div className='flex items-center gap-2 shrink-0'>
+                                  <span
+                                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold border ${
+                                      r.paid === 1
+                                        ? "bg-green-50 text-green-700 border-green-200"
+                                        : "bg-amber-50 text-amber-700 border-amber-200"
+                                    }`}
+                                  >
+                                    {r.paid === 1 ? (
+                                      <CheckCheck className='h-3 w-3' />
+                                    ) : (
+                                      <Clock className='h-3 w-3' />
+                                    )}
+                                    {r.paid === 1 ? "Paid" : "Pending"}
+                                  </span>
+                                  <Button
+                                    size='sm'
+                                    variant={
+                                      r.paid === 1 ? "outline" : "default"
+                                    }
+                                    className={`h-7 text-xs rounded-lg px-3 font-semibold ${
+                                      r.paid === 1
+                                        ? "border-border text-muted-foreground"
+                                        : "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    }`}
+                                    disabled={togglingId === r.id}
+                                    onClick={() => togglePaid(po.id, r)}
+                                  >
+                                    {togglingId === r.id ? (
+                                      <Loader2 className='h-3 w-3 animate-spin' />
+                                    ) : r.paid === 1 ? (
+                                      <XIcon className='h-3 w-3' />
+                                    ) : (
+                                      "Mark Paid"
+                                    )}
+                                  </Button>
+                                  {/* Report buyer button */}
+                                  {r.user_id && (
+                                    <Button
+                                      size='sm'
+                                      variant='ghost'
+                                      className='h-7 w-7 p-0 text-muted-foreground hover:text-orange-500 hover:bg-orange-50'
+                                      title='Report this buyer'
+                                      onClick={() =>
+                                        setReportTarget({
+                                          userId: r.user_id!,
+                                          name: displayName,
+                                          referenceId: po.id,
+                                        })
+                                      }
+                                    >
+                                      <Flag className='h-3.5 w-3.5' />
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
-                                  r.paid === 1
-                                    ? "bg-green-50 text-green-700 border-green-200"
-                                    : "bg-amber-50 text-amber-700 border-amber-200"
-                                }`}>
-                                  {r.paid === 1 ? <CheckCheck className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                                  {r.paid === 1 ? "Paid" : "Pending"}
-                                </span>
-                                <Button
-                                  size="sm"
-                                  variant={r.paid === 1 ? "outline" : "default"}
-                                  className={`h-7 text-xs rounded-lg px-2.5 ${
-                                    r.paid === 1
-                                      ? "border-border"
-                                      : "bg-primary text-primary-foreground hover:bg-primary/90"
-                                  }`}
-                                  disabled={togglingId === r.id}
-                                  onClick={() => togglePaid(po.id, r)}
-                                >
-                                  {togglingId === r.id
-                                    ? <Loader2 className="h-3 w-3 animate-spin" />
-                                    : r.paid === 1 ? <XIcon className="h-3 w-3" /> : "Mark Paid"}
-                                </Button>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </>
   )
 }

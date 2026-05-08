@@ -103,7 +103,7 @@ export default function ShopPage() {
                 key={product.id}
                 product={product}
                 fiatSymbol={fiatSymbol}
-                onAddToCart={(p) => addToCart({ id: p.id, name: p.name, price: p.price, category: p.category }, p.quantity)}
+                onAddToCart={(p, qty) => addToCart({ id: p.id, name: p.name, price: p.price, category: p.category }, qty)}
               />
             ))}
           </div>

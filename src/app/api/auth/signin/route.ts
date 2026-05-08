@@ -11,39 +11,66 @@ export async function POST(request: NextRequest) {
 
     const db = await getDb()
     if (!db) {
-      return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
+      return NextResponse.json(
+        { success: false, error: "Database not available" },
+        { status: 503 },
+      )
     }
 
     // Find user by email
-    const user = await db
+    const user = (await db
       .prepare("SELECT id, email, password_hash FROM users WHERE email = ?")
       .bind(email)
-      .first() as { id: string; email: string; password_hash: string } | null
+      .first()) as { id: string; email: string; password_hash: string } | null
 
     if (!user) {
-      return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
+      return NextResponse.json(
+        { success: false, error: "Invalid credentials" },
+        { status: 401 },
+      )
     }
 
     // Verify password
     const isValidPassword = bcrypt.compareSync(password, user.password_hash)
     if (!isValidPassword) {
-      return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
+      return NextResponse.json(
+        { success: false, error: "Invalid credentials" },
+        { status: 401 },
+      )
     }
 
-    // Get user profile with role
-    const profile = await db
-      .prepare("SELECT role FROM profiles WHERE user_id = ?")
+    // Get user profile with role and ban state
+    const profile = (await db
+      .prepare(
+        "SELECT role, is_banned, ban_reason FROM profiles WHERE user_id = ?",
+      )
       .bind(user.id)
-      .first() as { role: string } | null
+      .first()) as {
+      role: string
+      is_banned: number
+      ban_reason: string | null
+    } | null
+
+    if (profile?.is_banned === 1) {
+      const reason = profile.ban_reason ? `: ${profile.ban_reason}` : "."
+      return NextResponse.json(
+        { success: false, error: `Your account has been suspended${reason}` },
+        { status: 403 },
+      )
+    }
 
     const userRole = profile?.role || "regular-user"
 
     // Create session
     const sessionId = crypto.randomUUID()
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+    const expiresAt = new Date(
+      Date.now() + 7 * 24 * 60 * 60 * 1000,
+    ).toISOString() // 7 days
 
     await db
-      .prepare("INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, datetime('now'))")
+      .prepare(
+        "INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, datetime('now'))",
+      )
       .bind(sessionId, user.id, expiresAt)
       .run()
 
@@ -65,11 +92,17 @@ export async function POST(request: NextRequest) {
     // wz_role: role for middleware route-guarding
     response.cookies.set("wz_role", userRole, cookieOptions)
     // wz_session: session ID for API auth (replaces Authorization header pattern)
-    response.cookies.set("wz_session", sessionId, { ...cookieOptions, httpOnly: true })
+    response.cookies.set("wz_session", sessionId, {
+      ...cookieOptions,
+      httpOnly: true,
+    })
 
     return response
   } catch (error) {
     console.error("Signin error:", error)
-    return NextResponse.json({ success: false, error: "Failed to sign in" }, { status: 500 })
+    return NextResponse.json(
+      { success: false, error: "Failed to sign in" },
+      { status: 500 },
+    )
   }
 }
