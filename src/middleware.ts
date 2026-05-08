@@ -10,12 +10,12 @@ import { NextRequest, NextResponse } from "next/server"
  * ┌─────────────────────┬───────┬──────┬────────┬───────┐
  * │ Route               │ Guest │ User │ Seller │ Admin │
  * ├─────────────────────┼───────┼──────┼────────┼───────┤
- * │ /shop*              │  ✅   │  ✅  │  ❌    │  ❌   │
- * │ /auctions*          │  ✅   │  ✅  │  ❌    │  ❌   │
- * │ /tournaments*       │  ✅   │  ✅  │  ❌    │  ❌   │
- * │ /cart               │  ✅   │  ✅  │  ❌    │  ❌   │
- * │ /pre-order*         │  ✅   │  ✅  │  ❌    │  ❌   │
- * │ /checkout*          │  ❌   │  ✅  │  ❌    │  ❌   │
+ * │ /shop*              │  ✅   │  ✅  │  ✅    │  ❌   │
+ * │ /auctions*          │  ✅   │  ✅  │  ✅    │  ❌   │
+ * │ /tournaments*       │  ✅   │  ✅  │  ✅    │  ❌   │
+ * │ /cart               │  ✅   │  ✅  │  ✅    │  ❌   │
+ * │ /pre-order*         │  ✅   │  ✅  │  ✅    │  ❌   │
+ * │ /checkout*          │  ❌   │  ✅  │  ✅    │  ❌   │
  * │ /dashboard*         │  ❌   │  ✅  │  ✅    │  ❌   │
  * │ /seller*            │  ❌   │  ❌  │  ✅    │  ✅   │
  * │ /admin*             │  ❌   │  ❌  │  ❌    │  ✅   │
@@ -66,9 +66,10 @@ export function middleware(request: NextRequest): NextResponse {
   }
 
   // ── Buyer-only routes (shop, auctions, cart, etc.) ────────────────────────
+  // Sellers are also buyers — they can browse the shop, cart, auctions, and
+  // tournaments in addition to their seller capabilities.
   if (startsWith(pathname, BUYER_ONLY_PATHS)) {
     if (isAdmin) return redirectTo("/admin", request)
-    if (isSeller) return redirectTo("/dashboard", request)
     return NextResponse.next()
   }
 

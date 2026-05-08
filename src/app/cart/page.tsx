@@ -1,14 +1,15 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { toast } from "sonner"
 import { useApp } from "@/components/shared/app-provider"
 
 export default function CartPage() {
+  const router = useRouter()
   const { cartItems, cartCount, removeFromCart, updateCartQuantity, cartTotal, fiatSymbol, requireAuth, clearCart } = useApp()
 
   return (
@@ -105,11 +106,8 @@ export default function CartPage() {
                 <Button
                   className="w-full"
                   onClick={() => {
-                    if (!requireAuth()) {
-                      return
-                    }
-
-                    toast.info("Checkout flow coming soon.")
+                    if (!requireAuth()) return
+                    router.push("/checkout")
                   }}
                 >
                   Continue to checkout

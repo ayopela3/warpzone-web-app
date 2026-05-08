@@ -1,6 +1,8 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -41,11 +43,20 @@ export function AuctionCard({ auction, fiatSymbol, isAuthenticated, onJoin }: Pr
   const isLive = auction.status === "active"
   const isJoinable = auction.status === "active" || auction.status === "upcoming"
 
+  const [timeLabel, setTimeLabel] = useState(() => getTimeRemaining(auction.end_time))
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLabel(getTimeRemaining(auction.end_time))
+    }, 1_000)
+    return () => clearInterval(interval)
+  }, [auction.end_time])
+
   return (
     <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
       <div className="h-48 bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center relative overflow-hidden">
         {auction.image_url ? (
-          <img src={auction.image_url} alt={auction.title} className="h-full w-full object-contain" />
+          <Image src={auction.image_url} alt={auction.title} fill className="object-contain" />
         ) : (
           <Gavel className="h-16 w-16 text-amber-400" />
         )}
@@ -90,7 +101,7 @@ export function AuctionCard({ auction, fiatSymbol, isAuthenticated, onJoin }: Pr
         </div>
         <div className="flex items-center text-sm text-gray-600 gap-1">
           <Clock className="h-3 w-3" />
-          {getTimeRemaining(auction.end_time)}
+          {timeLabel}
         </div>
         {isLive ? (
           <Button className="w-full mt-2" asChild>

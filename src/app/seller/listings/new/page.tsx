@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -19,23 +20,34 @@ import {
   Loader2
 } from "lucide-react"
 
-const existingProducts: Array<{
+type CatalogProduct = {
   id: string
   name: string
   category: string
-  rarity: string
+  rarity: string | null
+  image_url: string | null
+  sku: string
   hasListings: boolean
-}> = []
+}
 
 type Step = "search" | "match" | "create-listing" | "create-product"
 
 export default function NewListingPage() {
   const [step, setStep] = useState<Step>("search")
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedProduct, setSelectedProduct] = useState<typeof existingProducts[0] | null>(null)
+  const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState("")
   const [submitSuccess, setSubmitSuccess] = useState(false)
+
+  // Listing form state (step 2)
+  const [listingForm, setListingForm] = useState({
+    price: "",
+    condition: "NEW",
+    quantity: "1",
+  })
 
   // Product form state
   const [productForm, setProductForm] = useState({
@@ -49,6 +61,28 @@ export default function NewListingPage() {
     description: "",
     imageUrl: ""
   })
+
+  // Search catalog products from real API
+  const searchCatalog = useCallback(async (query: string) => {
+    if (query.length <= 2) { setCatalogProducts([]); return }
+    setSearchLoading(true)
+    try {
+      const res = await fetch(`/api/products?search=${encodeURIComponent(query)}&limit=10`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("warpzone-session-id") ?? ""}` },
+      })
+      const data = await res.json() as { success: boolean; products?: CatalogProduct[] }
+      if (data.success) setCatalogProducts(data.products ?? [])
+    } catch {
+      setCatalogProducts([])
+    } finally {
+      setSearchLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    const t = setTimeout(() => searchCatalog(searchQuery), 300)
+    return () => clearTimeout(t)
+  }, [searchQuery, searchCatalog])
 
   // Condition display mapping
   const conditionOptions = [
@@ -66,14 +100,7 @@ export default function NewListingPage() {
   const [imageUrls, setImageUrls] = useState<string[]>([])
   const [uploadingImages, setUploadingImages] = useState(false)
 
-  const filteredProducts = searchQuery.length > 2
-    ? existingProducts.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : []
-
-  const handleProductSelect = (product: typeof existingProducts[0]) => {
+  const handleProductSelect = (product: CatalogProduct) => {
     setSelectedProduct(product)
     setStep("create-listing")
   }
@@ -81,6 +108,48 @@ export default function NewListingPage() {
   const handleCreateNewProduct = () => {
     setProductForm({ ...productForm, name: searchQuery })
     setStep("create-product")
+  }
+
+  const handleCreateListing = async () => {
+    if (!selectedProduct) return
+    if (!listingForm.price || !listingForm.condition || !listingForm.quantity) {
+      setSubmitError("Price, condition and quantity are required")
+      return
+    }
+    setIsSubmitting(true)
+    setSubmitError("")
+    try {
+      const profileId = localStorage.getItem("warpzone-profile-id")
+      const res = await fetch("/api/product-listings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("warpzone-session-id") ?? ""}`,
+        },
+        body: JSON.stringify({
+          productId:  selectedProduct.id,
+          sellerId:   profileId,
+          condition:  listingForm.condition,
+          price:      parseFloat(listingForm.price),
+          quantity:   parseInt(listingForm.quantity, 10),
+        }),
+      })
+      const data = await res.json() as { success: boolean; error?: string }
+      if (!data.success) throw new Error(data.error ?? "Failed to create listing")
+      setSubmitSuccess(true)
+      setTimeout(() => {
+        setSubmitSuccess(false)
+        setStep("search")
+        setSearchQuery("")
+        setSelectedProduct(null)
+        setListingForm({ price: "", condition: "NEW", quantity: "1" })
+        setCatalogProducts([])
+      }, 2500)
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Failed to create listing")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -257,44 +326,44 @@ export default function NewListingPage() {
               </div>
 
               {/* Search Results */}
-              {filteredProducts.length > 0 && (
+              {searchLoading && (
+                <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />Searching catalog…
+                </div>
+              )}
+              {!searchLoading && catalogProducts.length > 0 && (
                 <div className="mt-6 space-y-3">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    We found these matching products:
-                  </p>
-                  {filteredProducts.map((product) => (
-                    <Card 
-                      key={product.id} 
+                  <p className="text-sm font-medium text-muted-foreground">We found these matching products:</p>
+                  {catalogProducts.map((product) => (
+                    <Card
+                      key={product.id}
                       className="cursor-pointer hover:border-primary transition-colors"
                       onClick={() => handleProductSelect(product)}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="h-16 w-16 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center">
-                              <Package className="h-8 w-8 text-primary/30" />
+                            <div className="relative h-16 w-16 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
+                              {product.image_url
+                                ? <Image src={product.image_url} alt={product.name} fill className="object-contain" />
+                                : <Package className="h-8 w-8 text-primary/30" />}
                             </div>
                             <div>
                               <h3 className="font-semibold">{product.name}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                {product.category}
-                              </p>
+                              <p className="text-xs text-muted-foreground font-mono">{product.sku}</p>
                               <div className="flex gap-2 mt-1">
-                                <Badge variant="secondary" className="text-xs">{product.category}</Badge>
+                                <Badge variant="secondary" className="text-xs capitalize">{product.category}</Badge>
                                 {product.rarity && <Badge variant="outline" className="text-xs">{product.rarity}</Badge>}
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right shrink-0">
                             {product.hasListings ? (
                               <Badge variant="secondary" className="text-xs">
-                                <Check className="h-3 w-3 mr-1" />
-                                Sellers active
+                                <Check className="h-3 w-3 mr-1" />Sellers active
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="text-xs">
-                                Be the first to sell
-                              </Badge>
+                              <Badge variant="outline" className="text-xs">Be the first to sell</Badge>
                             )}
                             <ChevronRight className="h-5 w-5 text-muted-foreground mt-2 ml-auto" />
                           </div>
@@ -306,7 +375,7 @@ export default function NewListingPage() {
               )}
 
               {/* No matches - Create new */}
-              {searchQuery.length > 2 && filteredProducts.length === 0 && (
+              {searchQuery.length > 2 && !searchLoading && catalogProducts.length === 0 && (
                 <div className="mt-6">
                   <Card className="border-dashed">
                     <CardContent className="p-6 text-center">
@@ -355,6 +424,27 @@ export default function NewListingPage() {
             </Card>
 
             {/* Listing Form */}
+            {submitSuccess && (
+              <Card className="border-green-200 bg-green-50/50">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <Check className="h-5 w-5 text-green-600" />
+                  <div>
+                    <h3 className="font-semibold text-green-800">Listing Created!</h3>
+                    <p className="text-sm text-green-700">Your listing is now live in the shop.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {submitError && (
+              <Card className="border-red-200 bg-red-50/50">
+                <CardContent className="p-4 flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                  <p className="text-sm text-red-700">{submitError}</p>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle>Listing Details</CardTitle>
@@ -362,75 +452,44 @@ export default function NewListingPage() {
               <CardContent className="p-6 space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="price">Your Price *</Label>
-                    <Input id="price" type="number" step="0.01" placeholder="299.99" className="placeholder:text-gray-400" />
+                    <Label htmlFor="listing-price">Your Price *</Label>
+                    <Input
+                      id="listing-price" type="number" step="0.01" placeholder="299.99"
+                      value={listingForm.price}
+                      onChange={(e) => setListingForm({ ...listingForm, price: e.target.value })}
+                      className="placeholder:text-gray-400"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="comparePrice">Compare at Price (optional)</Label>
-                    <Input id="comparePrice" type="number" step="0.01" placeholder="349.99" className="placeholder:text-gray-400" />
+                    <Label htmlFor="listing-qty">Quantity Available *</Label>
+                    <Input
+                      id="listing-qty" type="number" min="1" placeholder="1"
+                      value={listingForm.quantity}
+                      onChange={(e) => setListingForm({ ...listingForm, quantity: e.target.value })}
+                      className="placeholder:text-gray-400"
+                    />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="condition">Condition *</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select condition" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MINT">Mint</SelectItem>
-                        <SelectItem value="NM">Near Mint</SelectItem>
-                        <SelectItem value="LP">Lightly Played</SelectItem>
-                        <SelectItem value="MP">Moderately Played</SelectItem>
-                        <SelectItem value="HP">Heavily Played</SelectItem>
-                        <SelectItem value="DAMAGED">Damaged</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="stock">Quantity Available *</Label>
-                    <Input id="stock" type="number" placeholder="1" className="placeholder:text-gray-400" />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="shipping">Shipping Cost</Label>
-                    <Select defaultValue="0">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">Free Shipping</SelectItem>
-                        <SelectItem value="5.99">$5.99</SelectItem>
-                        <SelectItem value="9.99">$9.99</SelectItem>
-                        <SelectItem value="14.99">$14.99</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="delivery">Ships Within</Label>
-                    <Select defaultValue="1-2">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1-2">1-2 business days</SelectItem>
-                        <SelectItem value="3-5">3-5 business days</SelectItem>
-                        <SelectItem value="1 week">1 week</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="listing-condition">Condition *</Label>
+                  <Select value={listingForm.condition} onValueChange={(v) => setListingForm({ ...listingForm, condition: v })}>
+                    <SelectTrigger id="listing-condition"><SelectValue placeholder="Select condition" /></SelectTrigger>
+                    <SelectContent>
+                      {conditionOptions.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="pt-4 border-t">
-                  <Button className="w-full" size="lg">
-                    Create Listing
+                  <Button className="w-full" size="lg" onClick={handleCreateListing} disabled={isSubmitting}>
+                    {isSubmitting
+                      ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating…</>
+                      : "Create Listing"}
                   </Button>
-                  <p className="text-xs text-center text-muted-foreground mt-2">
-                    Your listing will be active immediately
-                  </p>
+                  <p className="text-xs text-center text-muted-foreground mt-2">Your listing will be active immediately.</p>
                 </div>
               </CardContent>
             </Card>
@@ -645,6 +704,7 @@ export default function NewListingPage() {
                       <div className="grid grid-cols-5 gap-2 mt-4">
                         {imagePreviews.map((preview, index) => (
                           <div key={index} className="relative group">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- blob URL from createObjectURL, not an external URL */}
                             <img
                               src={preview}
                               alt={`Preview ${index + 1}`}

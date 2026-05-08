@@ -8,6 +8,7 @@ import { AdminStats } from "@/features/admin/components/AdminStats"
 import { ApprovalsTab } from "@/features/admin/components/ApprovalsTab"
 import { ProductsTab } from "@/features/admin/components/ProductsTab"
 import { TournamentsTab } from "@/features/admin/components/TournamentsTab"
+import { PreOrdersTab } from "@/features/admin/components/PreOrdersTab"
 import { SettingsTab } from "@/features/admin/components/SettingsTab"
 import { adminApi, productsApi } from "@/lib/api-client"
 import type { Product } from "@/types"
@@ -113,9 +114,10 @@ export default function AdminDashboard() {
         />
 
         <Tabs defaultValue="approvals" className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-5 w-full max-w-3xl">
             <TabsTrigger value="approvals">Approvals</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="pre-orders">Pre-Orders</TabsTrigger>
             <TabsTrigger value="tournaments">Tournaments</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
@@ -140,6 +142,10 @@ export default function AdminDashboard() {
               onDelete={handleDelete}
               onSaveEdit={handleSaveEdit}
             />
+          </TabsContent>
+
+          <TabsContent value="pre-orders">
+            <PreOrdersTab fiatSymbol={fiatSymbol} />
           </TabsContent>
 
           <TabsContent value="tournaments">

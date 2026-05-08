@@ -47,6 +47,8 @@ export async function GET(request: NextRequest) {
     const sellerId = searchParams.get("sellerId")
     const approvalStatus = searchParams.get("approvalStatus")
     const showAll = searchParams.get("showAll") === "true"
+    const search = searchParams.get("search")
+    const limit = parseInt(searchParams.get("limit") ?? "50", 10)
 
     const db = await getDb()
     if (!db) {
@@ -77,6 +79,12 @@ export async function GET(request: NextRequest) {
       params.push(sellerId)
     }
 
+    if (search) {
+      conditions.push("(p.name LIKE ? OR p.sku LIKE ? OR p.category LIKE ?)")
+      const like = `%${search}%`
+      params.push(like, like, like)
+    }
+
     if (approvalStatus) {
       conditions.push("p.approval_status = ?")
       params.push(approvalStatus)
@@ -90,7 +98,7 @@ export async function GET(request: NextRequest) {
       query += " WHERE " + conditions.join(" AND ")
     }
 
-    query += " ORDER BY p.created_at DESC"
+    query += ` ORDER BY p.created_at DESC LIMIT ${limit}`
 
     let products
     if (params.length > 0) {

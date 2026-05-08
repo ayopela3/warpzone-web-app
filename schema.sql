@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   role TEXT NOT NULL DEFAULT 'regular-user',
   profile_picture TEXT,
   business_name TEXT,
+  payment_qr_url TEXT,                                 -- GCash / Maya / bank QR for payment
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -61,14 +62,20 @@ CREATE TABLE IF NOT EXISTS product_listings (
 );
 
 -- Orders table
+-- status lifecycle: pending_payment → confirming_payment → confirmed → shortlisted → out_of_stock → cancelled → ready_for_pickup
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending',
+  seller_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending_payment',
   total REAL NOT NULL,
+  fulfillment_type TEXT NOT NULL DEFAULT 'pickup',   -- 'pickup' | 'shipping'
+  notes TEXT,
+  payment_proof_url TEXT,                            -- buyer can optionally attach proof
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (seller_id) REFERENCES profiles(id) ON DELETE CASCADE
 );
 
 -- Order items table
@@ -179,6 +186,34 @@ CREATE TABLE IF NOT EXISTS settings (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Pre-orders table
+-- seller_id NULL = admin-created; SET = seller-submitted (needs approval)
+CREATE TABLE IF NOT EXISTS pre_orders (
+  id               TEXT    PRIMARY KEY,
+  title            TEXT    NOT NULL,
+  description      TEXT,
+  game             TEXT    NOT NULL DEFAULT 'Other',
+  image_url        TEXT,
+  price            REAL    NOT NULL DEFAULT 0,
+  release_date     TEXT    NOT NULL,
+  status           TEXT    NOT NULL DEFAULT 'active',   -- active | closed
+  approval_status  TEXT    NOT NULL DEFAULT 'approved', -- pending | approved | rejected
+  seller_id        TEXT    REFERENCES profiles(id) ON DELETE CASCADE,
+  max_slots        INTEGER,
+  created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at       TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Pre-order reservations table
+CREATE TABLE IF NOT EXISTS pre_order_reservations (
+  id              TEXT    PRIMARY KEY,
+  pre_order_id    TEXT    NOT NULL REFERENCES pre_orders(id) ON DELETE CASCADE,
+  user_id         TEXT    NOT NULL REFERENCES users(id)  ON DELETE CASCADE,
+  quantity        INTEGER NOT NULL DEFAULT 1,
+  reserved_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(pre_order_id, user_id)
+);
+
 -- Index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_sessions_id ON sessions(id);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
@@ -189,6 +224,8 @@ CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
 CREATE INDEX IF NOT EXISTS idx_product_listings_product_id ON product_listings(product_id);
 CREATE INDEX IF NOT EXISTS idx_product_listings_seller_id ON product_listings(seller_id);
 CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_seller_id ON orders(seller_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_auctions_seller_id ON auctions(seller_id);
 CREATE INDEX IF NOT EXISTS idx_auctions_product_id ON auctions(product_id);
@@ -201,3 +238,8 @@ CREATE INDEX IF NOT EXISTS idx_tournaments_status ON tournaments(status);
 CREATE INDEX IF NOT EXISTS idx_tournaments_date ON tournaments(tournament_date);
 CREATE INDEX IF NOT EXISTS idx_tournament_registrations_tournament_id ON tournament_registrations(tournament_id);
 CREATE INDEX IF NOT EXISTS idx_tournament_registrations_user_id ON tournament_registrations(user_id);
+CREATE INDEX IF NOT EXISTS idx_pre_orders_status          ON pre_orders(status);
+CREATE INDEX IF NOT EXISTS idx_pre_orders_approval_status ON pre_orders(approval_status);
+CREATE INDEX IF NOT EXISTS idx_pre_orders_seller_id       ON pre_orders(seller_id);
+CREATE INDEX IF NOT EXISTS idx_pre_order_reservations_pre_order_id ON pre_order_reservations(pre_order_id);
+CREATE INDEX IF NOT EXISTS idx_pre_order_reservations_user_id      ON pre_order_reservations(user_id);

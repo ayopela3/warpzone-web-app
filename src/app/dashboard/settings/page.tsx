@@ -9,9 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { User, Lock, MapPin, Phone, Building2, Loader2, CheckCircle2 } from "lucide-react"
+import { User, Lock, MapPin, Phone, Building2, Loader2, CheckCircle2, QrCode, Upload, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { useApp } from "@/components/shared/app-provider"
+import { sellerOrdersApi } from "@/lib/api-client"
 
 type ProfileForm = {
   full_name: string
@@ -40,6 +41,12 @@ export default function SettingsPage() {
   const { isAuthenticated, userRole } = useApp()
   const router = useRouter()
 
+  const [qrUrl, setQrUrl] = useState<string | null>(null)
+  const [qrUploading, setQrUploading] = useState(false)
+  const [qrSaving, setQrSaving] = useState(false)
+
+  const isSeller = userRole === "seller" || userRole === "admin"
+
   const [profileForm, setProfileForm] = useState<ProfileForm>({
     full_name: "", phone_number: "", street: "", city: "",
     province: "", country: "", zip_code: "", business_name: "",
@@ -51,6 +58,16 @@ export default function SettingsPage() {
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
+
+  useEffect(() => {
+    if (!isAuthenticated) { router.push("/auth/signin"); return }
+    if (isSeller) {
+      sellerOrdersApi.getPaymentQr()
+        .then((d) => { if (d.success) setQrUrl(d.payment_qr_url) })
+        .catch(console.error)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isSeller])
 
   useEffect(() => {
     if (!isAuthenticated) { router.push("/auth/signin"); return }
@@ -76,7 +93,54 @@ export default function SettingsPage() {
       })
       .catch(console.error)
       .finally(() => setLoadingProfile(false))
-  }, [isAuthenticated, router])
+  }, [isAuthenticated, router, isSeller])
+
+  const handleQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setQrUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const res = await fetch("/api/upload", { method: "POST", body: formData })
+      const data = await res.json() as { success: boolean; url?: string; error?: string }
+      if (!data.success || !data.url) throw new Error(data.error ?? "Upload failed")
+      setQrUrl(data.url)
+      toast.success("QR image uploaded — click Save to confirm.")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed")
+    } finally {
+      setQrUploading(false)
+      e.target.value = ""
+    }
+  }
+
+  const handleQrSave = async () => {
+    if (!qrUrl) return
+    setQrSaving(true)
+    try {
+      const result = await sellerOrdersApi.savePaymentQr(qrUrl)
+      if (!result.success) throw new Error(result.error ?? "Failed to save")
+      toast.success("Payment QR saved successfully")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save QR")
+    } finally {
+      setQrSaving(false)
+    }
+  }
+
+  const handleQrRemove = async () => {
+    setQrUrl(null)
+    setQrSaving(true)
+    try {
+      await sellerOrdersApi.savePaymentQr("")
+      toast.success("Payment QR removed")
+    } catch {
+      toast.error("Failed to remove QR")
+    } finally {
+      setQrSaving(false)
+    }
+  }
 
   const handleProfileSave = async () => {
     if (!profileForm.full_name.trim()) {
@@ -336,6 +400,66 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Payment QR — seller / admin only */}
+        {isSeller && (
+          <Card className="bg-white shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <QrCode className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle className="text-lg">Payment QR Code</CardTitle>
+                  <CardDescription>Buyers will scan this QR to send payment (GCash, Maya, bank transfer, etc.)</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {qrUrl ? (
+                <div className="flex flex-col items-center gap-4">
+                  <div className="border-4 border-primary/20 rounded-2xl p-3 bg-white shadow">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={qrUrl} alt="Payment QR" className="h-48 w-48 object-contain rounded-lg" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Label
+                      htmlFor="qr-replace"
+                      className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-md border-2 border-dashed border-gray-300 hover:border-primary text-sm text-gray-600 hover:text-primary transition"
+                    >
+                      {qrUploading
+                        ? <><Loader2 className="h-4 w-4 animate-spin" />Uploading…</>
+                        : <><Upload className="h-4 w-4" />Replace QR</>}
+                    </Label>
+                    <input id="qr-replace" type="file" accept="image/*" className="hidden" onChange={handleQrUpload} disabled={qrUploading} />
+                    <Button variant="outline" size="sm" onClick={handleQrRemove} className="text-red-600 border-red-200 hover:bg-red-50">
+                      <Trash2 className="h-4 w-4 mr-1" />Remove
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Label
+                  htmlFor="qr-upload"
+                  className="flex flex-col items-center justify-center gap-3 p-8 rounded-xl border-2 border-dashed border-gray-300 hover:border-primary cursor-pointer transition text-center"
+                >
+                  {qrUploading
+                    ? <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                    : <QrCode className="h-8 w-8 text-gray-400" />}
+                  <div>
+                    <p className="font-medium text-gray-700">{qrUploading ? "Uploading…" : "Upload your payment QR"}</p>
+                    <p className="text-sm text-gray-400 mt-1">PNG, JPG up to 10MB</p>
+                  </div>
+                  <input id="qr-upload" type="file" accept="image/*" className="hidden" onChange={handleQrUpload} disabled={qrUploading} />
+                </Label>
+              )}
+              {qrUrl && (
+                <div className="flex justify-end">
+                  <Button onClick={handleQrSave} disabled={qrSaving} className="bg-primary hover:bg-primary/90">
+                    {qrSaving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving…</> : "Save QR Code"}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
       </div>
     </div>

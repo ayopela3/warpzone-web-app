@@ -15,9 +15,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import Image from "next/image"
 import { toast } from "sonner"
 import { productsApi } from "@/lib/api-client"
 import { SellerProductEditDialog } from "./SellerProductEditDialog"
+import { SellerOrdersTab } from "./SellerOrdersTab"
+import { SellerPreOrdersTab } from "./SellerPreOrdersTab"
 import type { EditForm } from "./SellerProductEditDialog"
 import type { Product, Auction } from "@/types"
 
@@ -264,9 +267,10 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
           </div>
 
           <Tabs defaultValue="products" className="space-y-6">
-            <TabsList className="grid w-full max-w-lg grid-cols-3 bg-white p-1">
+            <TabsList className="grid w-full max-w-2xl grid-cols-4 bg-white p-1">
               <TabsTrigger value="products" className="data-[state=active]:bg-primary data-[state=active]:text-white">Products</TabsTrigger>
               <TabsTrigger value="auctions" className="data-[state=active]:bg-primary data-[state=active]:text-white">Auctions</TabsTrigger>
+              <TabsTrigger value="pre-orders" className="data-[state=active]:bg-primary data-[state=active]:text-white">Pre-Orders</TabsTrigger>
               <TabsTrigger value="orders" className="data-[state=active]:bg-primary data-[state=active]:text-white">Orders</TabsTrigger>
             </TabsList>
 
@@ -312,9 +316,9 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
                     <Card key={product.id} className={`bg-white shadow-sm hover:shadow-md transition-shadow ${product.approval_status === "pending" ? "opacity-60" : ""}`}>
                       <CardContent className="p-4">
                         <div className="flex gap-4 items-center">
-                          <div className="w-20 h-20 shrink-0 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
+                          <div className="relative w-20 h-20 shrink-0 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
                             {product.image_url
-                              ? <img src={product.image_url} alt={product.name} className="w-full h-full object-contain" />
+                              ? <Image src={product.image_url} alt={product.name} fill className="object-contain" />
                               : <Package className="h-8 w-8 text-gray-400" />}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -344,9 +348,9 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {products.map((product) => (
                     <Card key={product.id} className={`bg-white shadow-md hover:shadow-lg transition-shadow ${product.approval_status === "pending" ? "opacity-60" : ""}`}>
-                      <div className="w-full h-48 bg-gray-50 rounded-t-lg overflow-hidden flex items-center justify-center">
+                      <div className="relative w-full h-48 bg-gray-50 rounded-t-lg overflow-hidden flex items-center justify-center">
                         {product.image_url
-                          ? <img src={product.image_url} alt={product.name} className="w-full h-full object-contain" />
+                          ? <Image src={product.image_url} alt={product.name} fill className="object-contain" />
                           : <Package className="h-12 w-12 text-gray-300" />}
                       </div>
                       <CardContent className="p-4 space-y-3">
@@ -420,9 +424,9 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
                     <Card key={auction.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
                         <div className="flex gap-4 items-center">
-                          <Link href={`/auctions/${auction.id}`} className="w-20 h-20 shrink-0 rounded-md overflow-hidden bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center">
+                          <Link href={`/auctions/${auction.id}`} className="relative w-20 h-20 shrink-0 rounded-md overflow-hidden bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center">
                             {auction.image_url
-                              ? <img src={auction.image_url} alt={auction.title} className="w-full h-full object-contain" />
+                              ? <Image src={auction.image_url} alt={auction.title} fill className="object-contain" />
                               : <Gavel className="h-8 w-8 text-amber-400" />}
                           </Link>
                           <div className="flex-1 min-w-0">
@@ -455,9 +459,9 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
                   {auctions.map((auction) => (
                     <Link key={auction.id} href={`/auctions/${auction.id}`}>
                     <Card className="bg-white shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-                      <div className="h-36 bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center overflow-hidden rounded-t-lg">
+                      <div className="relative h-36 bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center overflow-hidden rounded-t-lg">
                         {auction.image_url
-                          ? <img src={auction.image_url} alt={auction.title} className="h-full w-full object-contain" />
+                          ? <Image src={auction.image_url} alt={auction.title} fill className="object-contain" />
                           : <Gavel className="h-12 w-12 text-amber-400" />}
                       </div>
                       <CardContent className="p-4 space-y-2">
@@ -502,17 +506,13 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
               )}
             </TabsContent>
 
+            <TabsContent value="pre-orders" className="space-y-4">
+              <SellerPreOrdersTab fiatSymbol={fiatSymbol} />
+            </TabsContent>
+
             <TabsContent value="orders" className="space-y-4">
               <h2 className="text-xl font-bold text-gray-900">Incoming Orders</h2>
-              <Card className="bg-white shadow-md">
-                <CardContent className="p-12 text-center">
-                  <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
-                    <ShoppingBag className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <h3 className="mt-6 text-xl font-semibold text-gray-900">No orders yet</h3>
-                  <p className="mt-2 text-gray-600">Orders from customers will appear here</p>
-                </CardContent>
-              </Card>
+              <SellerOrdersTab fiatSymbol={fiatSymbol} />
             </TabsContent>
           </Tabs>
         </div>

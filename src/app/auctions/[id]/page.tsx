@@ -5,6 +5,7 @@ export const runtime = "edge"
 import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -215,9 +216,9 @@ export default function AuctionDetailPage() {
           {/* Left — Image + Details */}
           <div className="lg:col-span-3 space-y-6">
             <Card className="bg-white shadow-sm overflow-hidden">
-              <div className="h-80 bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center">
+              <div className="relative h-80 bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center">
                 {auction.image_url
-                  ? <img src={auction.image_url} alt={auction.title} className="h-full w-full object-contain" />
+                  ? <Image src={auction.image_url} alt={auction.title} fill className="object-contain" />
                   : <Gavel className="h-24 w-24 text-amber-300" />}
               </div>
             </Card>

@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Package, Gavel, Trophy, DollarSign, ShoppingBag, ArrowRight, Loader2, CalendarDays, MapPin } from "lucide-react"
+import Image from "next/image"
+import { Package, Gavel, Trophy, DollarSign, ArrowRight, Loader2, CalendarDays, MapPin } from "lucide-react"
+import { UserOrdersTab } from "./UserOrdersTab"
+import { UserPreOrdersTab } from "./UserPreOrdersTab"
 
 type Stats = {
   totalOrders: number
@@ -143,29 +146,23 @@ export function UserDashboard({ fiatSymbol }: Props) {
         </div>
 
         <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid w-full max-w-lg grid-cols-3 bg-white p-1">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4 bg-white p-1">
             <TabsTrigger value="orders" className="data-[state=active]:bg-primary data-[state=active]:text-white">Orders</TabsTrigger>
+            <TabsTrigger value="pre-orders" className="data-[state=active]:bg-primary data-[state=active]:text-white">Pre-Orders</TabsTrigger>
             <TabsTrigger value="auctions" className="data-[state=active]:bg-primary data-[state=active]:text-white">Auctions</TabsTrigger>
             <TabsTrigger value="tournaments" className="data-[state=active]:bg-primary data-[state=active]:text-white">Tournaments</TabsTrigger>
           </TabsList>
 
           {/* Orders tab */}
           <TabsContent value="orders" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Recent Orders</h2>
-              <Link href="/dashboard/orders">
-                <Button variant="outline" size="sm" className="border-2">View All <ArrowRight className="ml-2 h-4 w-4" /></Button>
-              </Link>
-            </div>
-            <Card className="bg-white shadow-md">
-              <CardContent className="p-12 text-center">
-                <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
-                  <ShoppingBag className="h-8 w-8 text-gray-400" />
-                </div>
-                <h3 className="mt-6 text-xl font-semibold text-gray-900">No orders yet</h3>
-                <p className="mt-2 text-gray-600">Start shopping to see your orders here</p>
-              </CardContent>
-            </Card>
+            <h2 className="text-xl font-bold text-gray-900">My Orders</h2>
+            <UserOrdersTab fiatSymbol={fiatSymbol} />
+          </TabsContent>
+
+          {/* Pre-Orders tab */}
+          <TabsContent value="pre-orders" className="space-y-4">
+            <h2 className="text-xl font-bold text-gray-900">My Pre-Orders</h2>
+            <UserPreOrdersTab fiatSymbol={fiatSymbol} />
           </TabsContent>
 
           {/* Auctions tab */}
@@ -201,9 +198,9 @@ export function UserDashboard({ fiatSymbol }: Props) {
                   <Card key={auction.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex gap-4 items-center">
-                        <div className="w-16 h-16 shrink-0 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
+                        <div className="relative w-16 h-16 shrink-0 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
                           {auction.image_url
-                            ? <img src={auction.image_url} alt={auction.title} className="w-full h-full object-contain" />
+                            ? <Image src={auction.image_url} alt={auction.title} fill className="object-contain" />
                             : <Gavel className="h-7 w-7 text-amber-400" />}
                         </div>
                         <div className="flex-1 min-w-0">

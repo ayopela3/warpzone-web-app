@@ -8,7 +8,26 @@ export type AuctionStatus = "upcoming" | "active" | "ended"
 
 export type TournamentStatus = "upcoming" | "open" | "past"
 
-export type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled"
+/**
+ * Full order status lifecycle:
+ *  pending_payment      → buyer placed order, awaiting payment via QR
+ *  confirming_payment   → seller is verifying the payment
+ *  confirmed            → payment accepted; item reserved for buyer
+ *  ready_for_pickup     → item prepared; buyer can collect in-store
+ *  shortlisted          → stock may be limited; seller reviewing allocation
+ *  out_of_stock         → item unavailable; refund required
+ *  cancelled            → order cancelled by either party
+ */
+export type OrderStatus =
+  | "pending_payment"
+  | "confirming_payment"
+  | "confirmed"
+  | "ready_for_pickup"
+  | "shortlisted"
+  | "out_of_stock"
+  | "cancelled"
+
+export type FulfillmentType = "pickup" | "shipping"
 
 export type ProductCondition = "NEW" | "LIKE NEW" | "GOOD" | "FAIR" | "POOR" | "DAMAGED"
 
@@ -94,6 +113,92 @@ export type CartItem = {
   price: number
   category: string
   quantity: number
+}
+
+// ---------------------------------------------------------------------------
+// Pre-Orders
+// ---------------------------------------------------------------------------
+
+export type PreOrderStatus = "active" | "closed"
+
+export type PreOrder = {
+  id: string
+  title: string
+  description: string | null
+  game: string
+  image_url: string | null
+  price: number
+  release_date: string
+  status: PreOrderStatus
+  approval_status: ApprovalStatus
+  seller_id: string | null
+  max_slots: number | null
+  created_at: string
+  updated_at: string
+  /** Joined — seller's display name */
+  seller_name?: string | null
+  seller_business?: string | null
+  /** Joined — total reservations so far */
+  reservation_count?: number
+  /** Whether the current user has already reserved */
+  user_reserved?: boolean
+  user_quantity?: number
+}
+
+export type PreOrderReservation = {
+  id: string
+  pre_order_id: string
+  user_id: string
+  quantity: number
+  reserved_at: string
+  /** Joined from pre_orders */
+  title?: string
+  game?: string
+  image_url?: string | null
+  price?: number
+  release_date?: string
+  status?: PreOrderStatus
+}
+
+// ---------------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------------
+
+export type OrderItem = {
+  id: string
+  order_id: string
+  product_id: string
+  listing_id: string
+  seller_id: string
+  quantity: number
+  price: number
+  /** Joined from products */
+  product_name?: string
+  product_image_url?: string | null
+  product_category?: string
+}
+
+export type Order = {
+  id: string
+  user_id: string
+  seller_id: string
+  status: OrderStatus
+  total: number
+  fulfillment_type: FulfillmentType
+  notes: string | null
+  payment_proof_url: string | null
+  created_at: string
+  updated_at: string
+  /** Joined from profiles (buyer) */
+  buyer_name?: string | null
+  buyer_email?: string | null
+  buyer_phone?: string | null
+  /** Joined from profiles (seller) */
+  seller_name?: string | null
+  seller_business?: string | null
+  seller_payment_qr_url?: string | null
+  /** Items in this order */
+  items?: OrderItem[]
 }
 
 // ---------------------------------------------------------------------------
