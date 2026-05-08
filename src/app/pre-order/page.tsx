@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Calendar, Package, Search, X, Loader2, CheckCircle2,
-  Users, Clock, Tag, LockKeyhole,
+  Users, Clock, Tag, LockKeyhole, ShoppingCart, Minus, Plus as PlusIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 import { useApp } from "@/components/shared/app-provider"
@@ -21,11 +21,12 @@ const GAME_OPTIONS = ["All", "Pokemon", "MTG", "Yu-Gi-Oh!", "Plushies", "Accesso
 type StatusFilter = "all" | "active" | "closed"
 
 export default function PreOrderPage() {
-  const { requireAuth, fiatSymbol, isAuthenticated } = useApp()
+  const { requireAuth, fiatSymbol, isAuthenticated, addToCart } = useApp()
 
   const [preOrders, setPreOrders] = useState<PreOrder[]>([])
   const [loading, setLoading] = useState(true)
-  const [reservingId, setReservingId] = useState<string | null>(null)
+  /** Track per-card quantity before adding to cart */
+  const [quantities, setQuantities] = useState<Record<string, number>>({})
 
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<StatusFilter>("all")
@@ -68,29 +69,41 @@ export default function PreOrderPage() {
     setGameFilter("All")
   }
 
-  const handleReserve = async (preOrder: PreOrder) => {
+  const getQty = (id: string) => quantities[id] ?? 1
+
+  const adjustQty = (id: string, delta: number, max?: number | null) => {
+    setQuantities((prev) => {
+      const next = Math.max(1, (prev[id] ?? 1) + delta)
+      if (max !== null && max !== undefined && next > max) return prev
+      return { ...prev, [id]: next }
+    })
+  }
+
+  const handleAddToCart = (preOrder: PreOrder) => {
     if (!requireAuth()) return
-    if (preOrder.user_reserved) {
-      toast.info("You already have a reservation for this pre-order.")
-      return
-    }
-    setReservingId(preOrder.id)
-    try {
-      const result = await preOrdersApi.reserve(preOrder.id, 1)
-      if (!result.success) throw new Error(result.error ?? "Failed to reserve")
-      toast.success(`Reserved: ${preOrder.title}`)
-      setPreOrders((prev) =>
-        prev.map((p) =>
-          p.id === preOrder.id
-            ? { ...p, user_reserved: true, user_quantity: 1, reservation_count: (p.reservation_count ?? 0) + 1 }
-            : p
-        )
+    const qty = getQty(preOrder.id)
+    addToCart(
+      {
+        id:          preOrder.id,
+        name:        preOrder.title,
+        price:       preOrder.price,
+        category:    preOrder.game,
+        itemType:    "pre_order",
+        preOrderId:  preOrder.id,
+        seller_id:   preOrder.seller_id ?? undefined,
+      },
+      preOrder.max_slots ?? undefined
+    )
+    /** Also create the DB reservation so seller sees it */
+    preOrdersApi.reserve(preOrder.id, qty).catch(() => {})
+    toast.success(`${preOrder.title} ×${qty} added to cart`)
+    setPreOrders((prev) =>
+      prev.map((p) =>
+        p.id === preOrder.id
+          ? { ...p, user_reserved: true, reservation_count: (p.reservation_count ?? 0) + 1 }
+          : p
       )
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to reserve")
-    } finally {
-      setReservingId(null)
-    }
+    )
   }
 
   return (
@@ -188,7 +201,6 @@ export default function PreOrderPage() {
               const isClosed    = po.status === "closed"
               const isFull      = po.max_slots !== null && (po.reservation_count ?? 0) >= po.max_slots
               const isReserved  = po.user_reserved === true
-              const isReserving = reservingId === po.id
               const slotsLeft   = po.max_slots !== null ? po.max_slots - (po.reservation_count ?? 0) : null
 
               return (
@@ -265,25 +277,47 @@ export default function PreOrderPage() {
                     )}
 
                     {/* CTA */}
-                    <div className="mt-auto pt-1">
+                    <div className="mt-auto pt-1 space-y-2">
                       {isReserved ? (
                         <Button className="w-full bg-green-600 hover:bg-green-700 text-white" disabled>
-                          <CheckCircle2 className="h-4 w-4 mr-2" />Your slot is reserved
+                          <CheckCircle2 className="h-4 w-4 mr-2" />Added to cart
                         </Button>
                       ) : isClosed || isFull ? (
                         <Button className="w-full" variant="outline" disabled>
                           <LockKeyhole className="h-4 w-4 mr-2" />{isFull ? "Fully Reserved" : "Closed"}
                         </Button>
                       ) : (
-                        <Button
-                          className="w-full bg-primary hover:bg-primary/90 text-white"
-                          onClick={() => handleReserve(po)}
-                          disabled={isReserving || !isAuthenticated}
-                        >
-                          {isReserving
-                            ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Reserving…</>
-                            : isAuthenticated ? "Reserve Now" : "Sign in to Reserve"}
-                        </Button>
+                        <>
+                          {/* Quantity picker */}
+                          <div className="flex items-center justify-between rounded-xl border border-border bg-white px-3 py-2">
+                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Qty</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => adjustQty(po.id, -1)}
+                                className="h-6 w-6 rounded-full border border-border flex items-center justify-center hover:bg-muted transition"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </button>
+                              <span className="w-6 text-center text-sm font-bold">{getQty(po.id)}</span>
+                              <button
+                                type="button"
+                                onClick={() => adjustQty(po.id, 1, po.max_slots !== null ? po.max_slots - (po.reservation_count ?? 0) : null)}
+                                className="h-6 w-6 rounded-full border border-border flex items-center justify-center hover:bg-muted transition"
+                              >
+                                <PlusIcon className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                          <Button
+                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+                            onClick={() => handleAddToCart(po)}
+                            disabled={!isAuthenticated}
+                          >
+                            <ShoppingCart className="h-4 w-4 mr-2" />
+                            {isAuthenticated ? "Add to Cart" : "Sign in to Order"}
+                          </Button>
+                        </>
                       )}
                     </div>
                   </CardContent>

@@ -13,6 +13,11 @@ const STATUS_CONFIG: Record<
     className: "bg-amber-50 text-amber-700 border-amber-200",
     Icon: Clock,
   },
+  payment_submitted: {
+    label: "Proof Submitted",
+    className: "bg-orange-50 text-orange-700 border-orange-200",
+    Icon: Loader2,
+  },
   confirming_payment: {
     label: "Confirming Payment",
     className: "bg-blue-50 text-blue-700 border-blue-200",

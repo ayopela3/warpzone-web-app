@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select"
 import {
   Package, Plus, Loader2, CheckCircle2, Upload, Calendar, Users, Clock,
-  ArrowLeft, CheckCheck, X as XIcon,
+  CheckCheck, X as XIcon, ChevronDown, ChevronUp,
 } from "lucide-react"
 import { toast } from "sonner"
 import { preOrdersApi } from "@/lib/api-client"
@@ -42,10 +42,11 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
   const [uploading, setUploading]         = useState(false)
   const [sellerId, setSellerId]           = useState<string | null>(null)
 
-  /** Detail panel state */
-  const [selected, setSelected]           = useState<PreOrder | null>(null)
-  const [reservations, setReservations]   = useState<PreOrderReservationDetail[]>([])
-  const [detailLoading, setDetailLoading] = useState(false)
+  /** Accordion expand state */
+  const [expandedId, setExpandedId]       = useState<string | null>(null)
+  /** Per-pre-order reservation cache: id -> list */
+  const [reservationMap, setReservationMap] = useState<Record<string, PreOrderReservationDetail[]>>({})
+  const [loadingDetailId, setLoadingDetailId] = useState<string | null>(null)
   const [togglingId, setTogglingId]       = useState<string | null>(null)
 
   /** Resolve seller's profile id once */
@@ -75,28 +76,38 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
 
   useEffect(() => { fetchMyPreOrders() }, [fetchMyPreOrders])
 
-  const openDetail = async (po: PreOrder) => {
-    setSelected(po)
-    setDetailLoading(true)
+  const toggleExpand = async (po: PreOrder) => {
+    if (expandedId === po.id) {
+      setExpandedId(null)
+      return
+    }
+    setExpandedId(po.id)
+    /** Only fetch if not already cached */
+    if (reservationMap[po.id]) return
+    setLoadingDetailId(po.id)
     try {
       const data = await preOrdersApi.getDetail(po.id)
-      if (data.success) setReservations(data.reservations)
+      if (data.success) {
+        setReservationMap((prev) => ({ ...prev, [po.id]: data.reservations }))
+      }
     } catch {
       toast.error("Failed to load reservations")
     } finally {
-      setDetailLoading(false)
+      setLoadingDetailId(null)
     }
   }
 
-  const togglePaid = async (r: PreOrderReservationDetail) => {
-    if (!selected) return
+  const togglePaid = async (preOrderId: string, r: PreOrderReservationDetail) => {
     setTogglingId(r.id)
     try {
-      const result = await preOrdersApi.markPaid(selected.id, r.id, r.paid === 0)
+      const result = await preOrdersApi.markPaid(preOrderId, r.id, r.paid === 0)
       if (!result.success) throw new Error(result.error)
-      setReservations((prev) =>
-        prev.map((x) => x.id === r.id ? { ...x, paid: r.paid === 0 ? 1 : 0 } : x)
-      )
+      setReservationMap((prev) => ({
+        ...prev,
+        [preOrderId]: (prev[preOrderId] ?? []).map((x) =>
+          x.id === r.id ? { ...x, paid: r.paid === 0 ? 1 : 0 } : x
+        ),
+      }))
       toast.success(r.paid === 0 ? "Marked as paid" : "Marked as unpaid")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update")
@@ -159,117 +170,7 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
     return "bg-amber-50 text-amber-700 border-amber-200"
   }
 
-  // ── Detail panel ──────────────────────────────────────────────────────────
-  if (selected) {
-    const totalQty  = reservations.reduce((s, r) => s + r.quantity, 0)
-    const paidCount = reservations.filter((r) => r.paid === 1).length
-    const totalRevenue = reservations
-      .filter((r) => r.paid === 1)
-      .reduce((s, r) => s + r.quantity * selected.price, 0)
-
-    return (
-      <div className="space-y-5">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => setSelected(null)} className="gap-1.5 -ml-1">
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h2 className="font-display text-xl font-bold text-foreground truncate">{selected.title}</h2>
-            <p className="text-xs text-muted-foreground">
-              {fiatSymbol}{selected.price.toLocaleString()} · {new Date(selected.release_date).toLocaleDateString()}
-            </p>
-          </div>
-          <Badge variant="outline" className={`text-xs capitalize shrink-0 ${approvalColor(selected.approval_status)}`}>
-            {selected.approval_status}
-          </Badge>
-        </div>
-
-        {/* Summary stats */}
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: "Total Reserved", value: totalQty },
-            { label: "Paid", value: `${paidCount} / ${reservations.length}` },
-            { label: "Revenue Collected", value: `${fiatSymbol}${totalRevenue.toLocaleString()}` },
-          ].map(({ label, value }) => (
-            <div key={label} className="bg-white rounded-2xl border border-border p-4 text-center">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">{label}</p>
-              <p className="font-display font-extrabold text-xl text-foreground">{value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Reservation list */}
-        <div className="bg-white rounded-2xl border border-border overflow-hidden">
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <h3 className="font-display font-bold text-sm text-foreground">Reservations</h3>
-            <span className="text-xs text-muted-foreground">{reservations.length} total</span>
-          </div>
-
-          {detailLoading ? (
-            <div className="py-10 flex justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : reservations.length === 0 ? (
-            <div className="py-10 text-center">
-              <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">No reservations yet.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {reservations.map((r) => {
-                const displayName = r.buyer_name ?? r.buyer_email ?? r.user_email ?? "Anonymous"
-                const displayEmail = r.buyer_email ?? r.user_email ?? ""
-                return (
-                  <div key={r.id} className="flex items-center justify-between px-5 py-3.5 gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
-                      {displayEmail && displayEmail !== displayName && (
-                        <p className="text-xs text-muted-foreground truncate">{displayEmail}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Qty: <span className="font-medium text-foreground">{r.quantity}</span>
-                        {" · "}
-                        {new Date(r.reserved_at).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        r.paid === 1
-                          ? "bg-green-50 text-green-700 border border-green-200"
-                          : "bg-amber-50 text-amber-700 border border-amber-200"
-                      }`}>
-                        {r.paid === 1 ? <CheckCheck className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                        {r.paid === 1 ? "Paid" : "Pending"}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant={r.paid === 1 ? "outline" : "default"}
-                        className={`h-7 text-xs rounded-lg px-2.5 ${
-                          r.paid === 1
-                            ? "border-border"
-                            : "bg-primary text-primary-foreground hover:bg-primary/90"
-                        }`}
-                        disabled={togglingId === r.id}
-                        onClick={() => togglePaid(r)}
-                      >
-                        {togglingId === r.id
-                          ? <Loader2 className="h-3 w-3 animate-spin" />
-                          : r.paid === 1 ? <XIcon className="h-3 w-3" /> : "Mark Paid"}
-                      </Button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  // ── List view ──────────────────────────────────────────────────────────────
+  // ── List view (with inline accordion) ─────────────────────────────────────
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -362,42 +263,148 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
         </div>
       ) : (
         <div className="space-y-3">
-          {preOrders.map((po) => (
-            <button
-              key={po.id}
-              onClick={() => openDetail(po)}
-              className="w-full text-left bg-white rounded-2xl border border-border hover:border-primary/40 hover:shadow-sm transition-all p-4 flex items-center gap-4 group"
-            >
-              <div className="relative h-12 w-12 shrink-0 rounded-xl bg-muted overflow-hidden flex items-center justify-center">
-                {po.image_url
-                  ? <Image src={po.image_url} alt={po.title} fill className="object-contain" />
-                  : <Package className="h-6 w-6 text-muted-foreground" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">{po.title}</p>
-                  <Badge variant="outline" className="text-xs">{po.game}</Badge>
-                  <Badge variant="outline" className={`text-xs capitalize ${approvalColor(po.approval_status)}`}>
-                    {po.approval_status}
-                  </Badge>
-                  {po.status === "closed" && (
-                    <Badge variant="secondary" className="text-xs">Closed</Badge>
-                  )}
+          {preOrders.map((po) => {
+            const isOpen       = expandedId === po.id
+            const isLoadingRow = loadingDetailId === po.id
+            const rows         = reservationMap[po.id] ?? []
+            const totalQty     = rows.reduce((s, r) => s + r.quantity, 0)
+            const paidCount    = rows.filter((r) => r.paid === 1).length
+
+            return (
+              <div key={po.id} className={`bg-white rounded-2xl border transition-all ${
+                isOpen ? "border-primary/40 shadow-md" : "border-border shadow-sm"
+              }`}>
+                {/* ── Row header — click to expand ── */}
+                <div className="p-5 flex items-center gap-4">
+                  {/* Thumbnail */}
+                  <div className="relative h-16 w-16 shrink-0 rounded-xl bg-muted overflow-hidden flex items-center justify-center">
+                    {po.image_url
+                      ? <Image src={po.image_url} alt={po.title} fill className="object-contain" />
+                      : <Package className="h-7 w-7 text-muted-foreground" />}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-base text-foreground truncate">{po.title}</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {fiatSymbol}{po.price.toLocaleString()}
+                      {" · "}
+                      <span className="inline-flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(po.release_date).toLocaleDateString()}
+                      </span>
+                      {" · "}
+                      <span className="inline-flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {po.reservation_count ?? 0} reserved{po.max_slots ? ` / ${po.max_slots}` : ""}
+                      </span>
+                    </p>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <Badge variant="outline" className="text-xs">{po.game}</Badge>
+                      <Badge variant="outline" className={`text-xs capitalize ${approvalColor(po.approval_status)}`}>
+                        {po.approval_status}
+                      </Badge>
+                      {po.status === "closed" && (
+                        <Badge variant="secondary" className="text-xs">Closed</Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Expand chevron button */}
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(po)}
+                    className="shrink-0 h-8 w-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                    aria-label="Toggle reservations"
+                  >
+                    {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </button>
                 </div>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-0.5">
-                  <span className="font-medium text-foreground">{fiatSymbol}{po.price.toLocaleString()}</span>
-                  <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(po.release_date).toLocaleDateString()}</span>
-                  <span className="flex items-center gap-1"><Users className="h-3 w-3" />{po.reservation_count ?? 0} reserved{po.max_slots ? ` / ${po.max_slots}` : ""}</span>
-                </div>
-                {po.approval_status === "pending" && (
-                  <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
-                    <Clock className="h-3 w-3" />Awaiting admin approval
-                  </p>
+
+                {/* ── Inline accordion: reservations ── */}
+                {isOpen && (
+                  <div className="border-t border-border">
+                    {/* Mini stats bar */}
+                    {rows.length > 0 && (
+                      <div className="grid grid-cols-3 gap-px bg-border">
+                        {[
+                          { label: "Total Qty",    value: totalQty },
+                          { label: "Paid",         value: `${paidCount} / ${rows.length}` },
+                          { label: "Collected",    value: `${fiatSymbol}${(rows.filter((r) => r.paid === 1).reduce((s, r) => s + r.quantity * po.price, 0)).toLocaleString()}` },
+                        ].map(({ label, value }) => (
+                          <div key={label} className="bg-muted/40 px-4 py-2.5 text-center">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
+                            <p className="text-sm font-extrabold text-foreground mt-0.5">{value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Reservation rows */}
+                    {isLoadingRow ? (
+                      <div className="py-8 flex justify-center">
+                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      </div>
+                    ) : rows.length === 0 ? (
+                      <div className="py-8 text-center">
+                        <Users className="h-7 w-7 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">No reservations yet.</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-border">
+                        {rows.map((r) => {
+                          const displayName  = r.buyer_name ?? r.buyer_email ?? r.user_email ?? "Anonymous"
+                          const displayEmail = r.buyer_email ?? r.user_email ?? ""
+                          return (
+                            <div key={r.id} className="flex items-center justify-between px-5 py-3 gap-4">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
+                                {displayEmail && displayEmail !== displayName && (
+                                  <p className="text-xs text-muted-foreground truncate">{displayEmail}</p>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  <span className="font-medium text-foreground">{r.quantity}x</span>
+                                  {" · "}
+                                  {fiatSymbol}{(r.quantity * po.price).toLocaleString()}
+                                  {" · "}
+                                  {new Date(r.reserved_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
+                                  r.paid === 1
+                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    : "bg-amber-50 text-amber-700 border-amber-200"
+                                }`}>
+                                  {r.paid === 1 ? <CheckCheck className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                                  {r.paid === 1 ? "Paid" : "Pending"}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant={r.paid === 1 ? "outline" : "default"}
+                                  className={`h-7 text-xs rounded-lg px-2.5 ${
+                                    r.paid === 1
+                                      ? "border-border"
+                                      : "bg-primary text-primary-foreground hover:bg-primary/90"
+                                  }`}
+                                  disabled={togglingId === r.id}
+                                  onClick={() => togglePaid(po.id, r)}
+                                >
+                                  {togglingId === r.id
+                                    ? <Loader2 className="h-3 w-3 animate-spin" />
+                                    : r.paid === 1 ? <XIcon className="h-3 w-3" /> : "Mark Paid"}
+                                </Button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
-              <span className="text-xs text-muted-foreground shrink-0 group-hover:text-primary transition-colors">View →</span>
-            </button>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

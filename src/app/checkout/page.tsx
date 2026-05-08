@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import {
   ShoppingCart, Truck, Store, CheckCircle2, ArrowRight, ArrowLeft,
-  Loader2, QrCode, Package, AlertCircle,
+  Loader2, QrCode, Package, AlertCircle, Upload, ImageIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 import { useApp } from "@/components/shared/app-provider"
@@ -37,6 +37,8 @@ export default function CheckoutPage() {
   const [loadingQr, setLoadingQr] = useState(false)
   const [placingOrder, setPlacingOrder] = useState(false)
   const [orderId, setOrderId] = useState<string | null>(null)
+  const [proofUrl, setProofUrl] = useState<string | null>(null)
+  const [uploadingProof, setUploadingProof] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -78,9 +80,33 @@ export default function CheckoutPage() {
     setStep("payment")
   }
 
+  const handleUploadProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingProof(true)
+    try {
+      const fd = new FormData()
+      fd.append("file", file)
+      const res = await fetch("/api/upload", { method: "POST", body: fd })
+      const data = await res.json() as { success: boolean; url?: string; error?: string }
+      if (!data.success || !data.url) throw new Error(data.error ?? "Upload failed")
+      setProofUrl(data.url)
+      toast.success("Payment proof uploaded")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed")
+    } finally {
+      setUploadingProof(false)
+      e.target.value = ""
+    }
+  }
+
   const handlePlaceOrder = async () => {
     if (!userId) {
       toast.error("Please sign in to continue.")
+      return
+    }
+    if (!proofUrl) {
+      toast.error("Please upload your payment screenshot first.")
       return
     }
 
@@ -89,9 +115,10 @@ export default function CheckoutPage() {
       const items = cartItems.map((item) => ({
         product_id: item.id,
         listing_id: item.id,
-        seller_id: (item as unknown as { seller_id?: string }).seller_id ?? "",
+        seller_id: item.seller_id ?? "",
         quantity: item.quantity,
         price: item.price,
+        pre_order_id: item.itemType === "pre_order" ? item.preOrderId : undefined,
       }))
 
       const result = await ordersApi.create({
@@ -104,6 +131,11 @@ export default function CheckoutPage() {
 
       if (!result.success) {
         throw new Error(result.error ?? "Failed to place order")
+      }
+
+      /** Attach proof of payment */
+      if (result.orderId) {
+        await ordersApi.uploadProof(result.orderId, proofUrl)
       }
 
       setOrderId(result.orderId ?? null)
@@ -126,25 +158,29 @@ export default function CheckoutPage() {
           <h1 className="text-2xl font-black text-gray-900">Checkout</h1>
           {/* Step indicator */}
           <div className="flex items-center gap-2 mt-3">
-            {(["review", "payment", "confirmed"] as Step[]).map((s, i) => (
+            {(["review", "payment", "confirmed"] as Step[]).map((s, i) => {
+              const isPast =
+                (s === "review" && (step === "payment" || step === "confirmed")) ||
+                (s === "payment" && step === "confirmed")
+              const isActive = step === s
+              return (
               <div key={s} className="flex items-center gap-2">
                 <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                  step === s
-                    ? "bg-primary text-white"
-                    : step === "confirmed" || (step === "payment" && s === "review")
-                      ? "bg-green-500 text-white"
+                  isPast
+                    ? "bg-green-500 text-white"
+                    : isActive
+                      ? "bg-primary text-white"
                       : "bg-gray-200 text-gray-500"
                 }`}>
-                  {(step === "confirmed" && s !== "confirmed") || (step === "payment" && s === "review")
-                    ? <CheckCircle2 className="h-4 w-4" />
-                    : i + 1}
+                  {isPast ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                 </div>
-                <span className={`text-sm font-medium capitalize hidden sm:block ${step === s ? "text-gray-900" : "text-gray-400"}`}>
+                <span className={`text-sm font-medium hidden sm:block ${isActive ? "text-gray-900 font-semibold" : isPast ? "text-green-600" : "text-gray-400"}`}>
                   {s === "review" ? "Review" : s === "payment" ? "Payment" : "Confirmed"}
                 </span>
                 {i < 2 && <ArrowRight className="h-3 w-3 text-gray-300" />}
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>
@@ -330,9 +366,52 @@ export default function CheckoutPage() {
                 <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
                   <li>Scan the QR and send the exact amount shown.</li>
                   <li>Take a screenshot of your payment confirmation.</li>
-                  <li>Click <strong>I&apos;ve Paid</strong> below to notify the seller.</li>
-                  <li>The seller will verify and confirm your order.</li>
+                  <li>Upload the screenshot below.</li>
+                  <li>Click <strong>Place Order</strong> — the seller will verify and confirm.</li>
                 </ol>
+              </CardContent>
+            </Card>
+
+            {/* Proof of payment upload */}
+            <Card className="bg-white shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Upload className="h-4 w-4 text-primary" />
+                  Upload Payment Screenshot <span className="text-red-500">*</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {proofUrl ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="relative h-40 w-full rounded-xl overflow-hidden border border-border">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={proofUrl} alt="Payment proof" className="h-full w-full object-contain bg-muted" />
+                    </div>
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground underline hover:text-foreground"
+                      onClick={() => setProofUrl(null)}
+                    >
+                      Remove & re-upload
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-border rounded-xl py-8 cursor-pointer hover:border-primary hover:bg-primary/5 transition">
+                    {uploadingProof
+                      ? <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      : <ImageIcon className="h-8 w-8 text-muted-foreground" />}
+                    <span className="text-sm text-muted-foreground">
+                      {uploadingProof ? "Uploading…" : "Click to upload your payment screenshot"}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleUploadProof}
+                      disabled={uploadingProof}
+                    />
+                  </label>
+                )}
               </CardContent>
             </Card>
 
@@ -361,13 +440,13 @@ export default function CheckoutPage() {
                 Back
               </Button>
               <Button
-                className="flex-1 bg-primary hover:bg-primary/90 text-white font-bold"
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
                 onClick={handlePlaceOrder}
-                disabled={placingOrder}
+                disabled={placingOrder || !proofUrl}
               >
                 {placingOrder
                   ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Placing Order…</>
-                  : <>I&apos;ve Paid — Place Order <ArrowRight className="h-4 w-4 ml-2" /></>}
+                  : <>Place Order <ArrowRight className="h-4 w-4 ml-2" /></>}
               </Button>
             </div>
           </div>

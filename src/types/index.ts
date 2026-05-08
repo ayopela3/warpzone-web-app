@@ -20,6 +20,7 @@ export type TournamentStatus = "upcoming" | "open" | "past"
  */
 export type OrderStatus =
   | "pending_payment"
+  | "payment_submitted"
   | "confirming_payment"
   | "confirmed"
   | "ready_for_pickup"
@@ -113,6 +114,12 @@ export type CartItem = {
   price: number
   category: string
   quantity: number
+  /** "product" (default) or "pre_order" */
+  itemType?: "product" | "pre_order"
+  /** Set when itemType === "pre_order" */
+  preOrderId?: string
+  /** Seller profile id — needed to look up payment QR */
+  seller_id?: string
 }
 
 // ---------------------------------------------------------------------------

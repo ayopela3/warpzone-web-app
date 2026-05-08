@@ -8,10 +8,12 @@ import {
 } from "@/components/ui/select"
 import {
   ShoppingBag, Package, Loader2, ChevronDown, ChevronUp, CalendarDays, User,
+  CheckCheck, ImageIcon,
 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { toast } from "sonner"
-import { sellerOrdersApi } from "@/lib/api-client"
+import { sellerOrdersApi, ordersApi } from "@/lib/api-client"
 import { OrderStatusBadge } from "@/features/checkout/components/OrderStatusBadge"
 import type { Order, OrderStatus } from "@/types"
 
@@ -32,6 +34,7 @@ export function SellerOrdersTab({ fiatSymbol }: Props) {
   const [loading, setLoading] = useState(true)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
 
   const fetchOrders = useCallback(async () => {
     setLoading(true)
@@ -46,6 +49,22 @@ export function SellerOrdersTab({ fiatSymbol }: Props) {
   }, [])
 
   useEffect(() => { fetchOrders() }, [fetchOrders])
+
+  const handleConfirmPayment = async (orderId: string) => {
+    setConfirmingId(orderId)
+    try {
+      const result = await ordersApi.markPaid(orderId)
+      if (!result.success) throw new Error(result.error ?? "Failed to confirm")
+      setOrders((prev) =>
+        prev.map((o) => o.id === orderId ? { ...o, status: "confirmed" } : o)
+      )
+      toast.success("Payment confirmed — order marked as Confirmed")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to confirm payment")
+    } finally {
+      setConfirmingId(null)
+    }
+  }
 
   const handleStatusChange = async (orderId: string, status: OrderStatus) => {
     setUpdatingId(orderId)
@@ -180,6 +199,45 @@ export function SellerOrdersTab({ fiatSymbol }: Props) {
                       <p className="text-sm text-gray-700 bg-gray-50 rounded p-2">{order.notes}</p>
                     </div>
                   )}
+
+                  {/* Payment proof */}
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Payment Proof</p>
+                    {order.payment_proof_url ? (
+                      <div className="space-y-3">
+                        <a
+                          href={order.payment_proof_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={order.payment_proof_url}
+                            alt="Payment proof"
+                            className="max-h-48 w-full object-contain rounded-xl border border-border bg-muted cursor-zoom-in"
+                          />
+                        </a>
+                        {(order.status === "pending_payment" || order.status === "payment_submitted" || order.status === "confirming_payment") && (
+                          <Button
+                            size="sm"
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold"
+                            disabled={confirmingId === order.id}
+                            onClick={() => handleConfirmPayment(order.id)}
+                          >
+                            {confirmingId === order.id
+                              ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Confirming…</>
+                              : <><CheckCheck className="h-4 w-4 mr-2" />Confirm Payment Received</>}
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-xl px-4 py-3">
+                        <ImageIcon className="h-4 w-4 shrink-0" />
+                        No payment screenshot uploaded yet.
+                      </div>
+                    )}
+                  </div>
 
                   {/* Status action */}
                   <div className="flex items-center gap-3 pt-1">

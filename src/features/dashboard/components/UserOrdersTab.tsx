@@ -17,6 +17,7 @@ import type { Order } from "@/types"
 /** Human-readable tip per status for the buyer */
 const STATUS_TIPS: Partial<Record<string, string>> = {
   pending_payment:    "Send the exact amount via the seller's QR. The seller will verify shortly.",
+  payment_submitted:  "Proof received! The seller is reviewing your payment.",
   confirming_payment: "The seller is verifying your payment. Hang tight!",
   confirmed:          "Payment confirmed! Your item is reserved for you.",
   ready_for_pickup:   "Your order is ready. Head to the shop to collect it.",
@@ -154,6 +155,26 @@ export function UserOrdersTab({ fiatSymbol }: Props) {
                     <div>
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Your notes</p>
                       <p className="text-sm text-gray-600 bg-gray-50 rounded p-2">{order.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Payment proof submitted by buyer */}
+                  {order.payment_proof_url && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Your Payment Screenshot</p>
+                      <a
+                        href={order.payment_proof_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={order.payment_proof_url}
+                          alt="Payment screenshot"
+                          className="max-h-40 w-full object-contain rounded-xl border border-border bg-muted cursor-zoom-in"
+                        />
+                      </a>
                     </div>
                   )}
                 </div>

@@ -222,7 +222,7 @@ export const preOrdersApi = {
 export const ordersApi = {
   /** Create a new order from the current cart */
   create: (body: {
-    items: { product_id: string; listing_id: string; seller_id: string; quantity: number; price: number }[]
+    items: { product_id: string; listing_id: string; seller_id: string; quantity: number; price: number; pre_order_id?: string }[]
     seller_id: string
     total: number
     fulfillment_type: "pickup" | "shipping"
@@ -241,6 +241,22 @@ export const ordersApi = {
   /** Get a single order with items */
   get: (id: string) =>
     apiFetch<{ success: boolean; order: Order }>(`/api/orders/${id}`),
+
+  /** Buyer: attach proof-of-payment screenshot URL to the order */
+  uploadProof: (orderId: string, payment_proof_url: string) =>
+    apiFetch<{ success: boolean; error?: string }>(`/api/orders/${orderId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payment_proof_url }),
+    }),
+
+  /** Seller / Admin: confirm payment received and mark order confirmed */
+  markPaid: (orderId: string) =>
+    apiFetch<{ success: boolean; error?: string }>(`/api/orders/${orderId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "mark_paid" }),
+    }),
 }
 
 // ---------------------------------------------------------------------------

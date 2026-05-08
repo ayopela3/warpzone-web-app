@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     if (!userId) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
 
     const body = await request.json() as {
-      items: { product_id: string; listing_id: string; seller_id: string; quantity: number; price: number }[]
+      items: { product_id: string; listing_id: string; seller_id: string; quantity: number; price: number; pre_order_id?: string }[]
       seller_id: string
       total: number
       fulfillment_type: "pickup" | "shipping"
@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
     for (const item of items) {
       await db
         .prepare(
-          `INSERT INTO order_items (id, order_id, product_id, listing_id, seller_id, quantity, price, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+          `INSERT INTO order_items (id, order_id, product_id, listing_id, seller_id, quantity, price, pre_order_id, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
         )
         .bind(
           crypto.randomUUID(),
@@ -72,7 +72,8 @@ export async function POST(request: NextRequest) {
           item.listing_id,
           item.seller_id,
           item.quantity,
-          item.price
+          item.price,
+          item.pre_order_id ?? null
         )
         .run()
     }
@@ -113,23 +114,24 @@ export async function GET(request: NextRequest) {
 
     const orders = ordersResult.results
 
-    for (const order of orders) {
-      const itemsResult = await db
-        .prepare(
-          `SELECT
-             oi.*,
-             p.name  AS product_name,
-             p.image_url AS product_image_url,
-             p.category  AS product_category
-           FROM order_items oi
-           LEFT JOIN products p ON oi.product_id = p.id
-           WHERE oi.order_id = ?`
-        )
-        .bind(order.id as string)
-        .all<Record<string, unknown>>()
-
-      order.items = itemsResult.results
-    }
+    await Promise.all(
+      orders.map(async (order) => {
+        const itemsResult = await db
+          .prepare(
+            `SELECT
+               oi.*,
+               p.name       AS product_name,
+               p.image_url  AS product_image_url,
+               p.category   AS product_category
+             FROM order_items oi
+             LEFT JOIN products p ON oi.product_id = p.id
+             WHERE oi.order_id = ?`
+          )
+          .bind(order.id as string)
+          .all<Record<string, unknown>>()
+        order.items = itemsResult.results
+      })
+    )
 
     return NextResponse.json({ success: true, orders })
   } catch (error) {

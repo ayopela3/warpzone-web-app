@@ -90,3 +90,71 @@ export async function GET(
     return NextResponse.json({ success: false, error: "Failed to fetch order" }, { status: 500 })
   }
 }
+
+// ---------------------------------------------------------------------------
+// PATCH /api/orders/[id]
+//   Buyer:  { payment_proof_url: string } — attach proof of payment
+//   Seller: { action: "mark_paid" }       — confirm payment received
+// ---------------------------------------------------------------------------
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const db = await getDb()
+    if (!db) return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
+
+    const userId = await resolveSession(request, db)
+    if (!userId) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
+
+    const order = await db
+      .prepare("SELECT id, user_id, seller_id, status FROM orders WHERE id = ?")
+      .bind(id)
+      .first<{ id: string; user_id: string; seller_id: string; status: string }>()
+
+    if (!order) return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 })
+
+    const profile = await db
+      .prepare("SELECT id, role FROM profiles WHERE user_id = ?")
+      .bind(userId)
+      .first<{ id: string; role: string }>()
+
+    const isBuyer  = order.user_id === userId
+    const isSeller = profile && order.seller_id === profile.id
+    const isAdmin  = profile?.role === "admin"
+
+    const body = await request.json() as {
+      payment_proof_url?: string
+      action?: "mark_paid"
+    }
+
+    if (body.payment_proof_url !== undefined) {
+      if (!isBuyer) {
+        return NextResponse.json({ success: false, error: "Only the buyer can upload payment proof" }, { status: 403 })
+      }
+      await db
+        .prepare("UPDATE orders SET payment_proof_url = ?, status = 'payment_submitted', updated_at = datetime('now') WHERE id = ?")
+        .bind(body.payment_proof_url, id)
+        .run()
+      return NextResponse.json({ success: true })
+    }
+
+    if (body.action === "mark_paid") {
+      if (!isSeller && !isAdmin) {
+        return NextResponse.json({ success: false, error: "Only the seller can confirm payment" }, { status: 403 })
+      }
+      await db
+        .prepare("UPDATE orders SET status = 'confirmed', updated_at = datetime('now') WHERE id = ?")
+        .bind(id)
+        .run()
+      return NextResponse.json({ success: true })
+    }
+
+    return NextResponse.json({ success: false, error: "No valid action provided" }, { status: 400 })
+  } catch (error) {
+    console.error("Order patch error:", error)
+    return NextResponse.json({ success: false, error: "Failed to update order" }, { status: 500 })
+  }
+}
