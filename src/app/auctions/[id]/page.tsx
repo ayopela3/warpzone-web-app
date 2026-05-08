@@ -7,8 +7,6 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -61,12 +59,6 @@ const CONDITION_LABELS: Record<string, string> = {
   FAIR: "Moderately Played",
   POOR: "Heavily Played",
   DAMAGED: "Damaged",
-}
-
-const STATUS_STYLES: Record<string, string> = {
-  active: "bg-green-50 text-green-700 border-green-200",
-  upcoming: "bg-amber-50 text-amber-700 border-amber-200",
-  ended: "bg-gray-50 text-gray-500 border-gray-200",
 }
 
 export default function AuctionDetailPage() {
@@ -179,7 +171,7 @@ export default function AuctionDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     )
@@ -190,235 +182,271 @@ export default function AuctionDetailPage() {
   const isActive = auction.status === "active"
   const isUpcoming = auction.status === "upcoming"
   const isEnded = auction.status === "ended"
+  const sellerLabel = auction.business_name ?? auction.seller_name ?? "Unknown seller"
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="border-b bg-white shadow-sm">
-        <div className="mx-auto max-w-6xl px-4 py-6 lg:px-8">
-          <Link href="/auctions" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
-            <ArrowLeft className="h-4 w-4" />Back to Auctions
-          </Link>
-          <div className="flex items-start justify-between gap-4">
-            <h1 className="text-2xl font-bold text-gray-900">{auction.title}</h1>
-            <Badge variant="outline" className={`text-sm shrink-0 px-3 py-1 ${STATUS_STYLES[auction.status] ?? ""}`}>
-              {isActive ? "🔴 Live" : isUpcoming ? "⏳ Upcoming" : "✅ Ended"}
-            </Badge>
-          </div>
-          <p className="text-sm text-gray-500 mt-1">
-            Sold by <span className="font-medium">{auction.business_name ?? auction.seller_name ?? "Unknown seller"}</span>
-          </p>
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-6xl px-4 pt-6 pb-12 lg:px-8">
+
+        {/* ── Back link ── */}
+        <Link
+          href="/auctions"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Auctions
+        </Link>
+
+        {/* ── Page header ── */}
+        <div className="flex items-start justify-between gap-4 mb-1">
+          <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground leading-tight">
+            {auction.title}
+          </h1>
+          {/* Status badge */}
+          <span className={`inline-flex items-center gap-1.5 shrink-0 rounded-full px-3 py-1 text-sm font-semibold border ${
+            isActive
+              ? "bg-white border-red-200 text-red-600"
+              : isUpcoming
+              ? "bg-white border-amber-200 text-amber-600"
+              : "bg-white border-gray-200 text-gray-500"
+          }`}>
+            {isActive && <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />}
+            {isActive ? "Live" : isUpcoming ? "Upcoming" : "Ended"}
+          </span>
         </div>
-      </div>
+        <p className="text-sm text-muted-foreground mb-8">
+          Sold by <span className="font-semibold text-foreground">{sellerLabel}</span>
+        </p>
 
-      <div className="mx-auto max-w-6xl px-4 py-8 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        {/* ── Main grid ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
-          {/* Left — Image + Details */}
-          <div className="lg:col-span-3 space-y-6">
-            <Card className="bg-white shadow-sm overflow-hidden">
-              <div className="relative h-80 bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center">
-                {auction.image_url
-                  ? <Image src={auction.image_url} alt={auction.title} fill className="object-contain" />
-                  : <Gavel className="h-24 w-24 text-amber-300" />}
-              </div>
-            </Card>
+          {/* ─── Left col: image + item details ─────────────────── */}
+          <div className="lg:col-span-3 space-y-5">
 
-            <Card className="bg-white shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Item Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="grid grid-cols-2 gap-2">
-                  <span className="text-gray-500">Category</span>
-                  <span className="font-medium capitalize">{auction.category}</span>
-                  <span className="text-gray-500">Condition</span>
-                  <span className="font-medium">{CONDITION_LABELS[auction.condition] ?? auction.condition}</span>
-                  {auction.rarity && (
-                    <>
-                      <span className="text-gray-500">Rarity</span>
-                      <span className="font-medium">{auction.rarity}</span>
-                    </>
-                  )}
-                  <span className="text-gray-500">Starting Price</span>
-                  <span className="font-medium">{fiatSymbol}{auction.starting_price.toLocaleString()}</span>
-                  <span className="text-gray-500">Min. Increment</span>
-                  <span className="font-medium">{fiatSymbol}{auction.min_bid_increment.toLocaleString()}</span>
+            {/* Image panel */}
+            <div className="rounded-2xl overflow-hidden bg-[#fdf6e3] border border-border flex items-center justify-center" style={{ minHeight: "340px" }}>
+              {auction.image_url ? (
+                <div className="relative w-full" style={{ height: "340px" }}>
+                  <Image
+                    src={auction.image_url}
+                    alt={auction.title}
+                    fill
+                    className="object-contain p-6"
+                  />
                 </div>
-                {auction.description && (
-                  <p className="pt-3 border-t text-gray-700 leading-relaxed">{auction.description}</p>
-                )}
-              </CardContent>
-            </Card>
+              ) : (
+                <Gavel className="h-24 w-24 text-amber-300 my-16" />
+              )}
+            </div>
+
+            {/* Item details card */}
+            <div className="bg-white rounded-2xl border border-border p-6">
+              <h2 className="font-display text-base font-bold text-foreground mb-4">Item Details</h2>
+              <div className="divide-y divide-border">
+                {[
+                  ["Category", <span key="cat" className="capitalize">{auction.category}</span>],
+                  ["Condition", CONDITION_LABELS[auction.condition] ?? auction.condition],
+                  ...(auction.rarity ? [["Rarity", auction.rarity]] : []),
+                  ["Starting Price", `${fiatSymbol}${auction.starting_price.toLocaleString()}`],
+                  ["Min. Increment", `${fiatSymbol}${auction.min_bid_increment.toLocaleString()}`],
+                ].map(([label, value], i) => (
+                  <div key={i} className="flex items-center justify-between py-3 text-sm">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="font-medium text-foreground text-right">{value}</span>
+                  </div>
+                ))}
+              </div>
+              {auction.description && (
+                <p className="mt-4 pt-4 border-t border-border text-sm text-foreground/80 leading-relaxed">
+                  {auction.description}
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Right — Bid Panel + History */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* ─── Right col: bid panel + history ──────────────────── */}
+          <div className="lg:col-span-2 space-y-5">
 
-            {/* Current Bid Card */}
-            <Card className="bg-white shadow-sm border-2 border-primary/20">
-              <CardContent className="p-6 space-y-4">
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">Current Bid</p>
-                  <p className="text-4xl font-black text-primary mt-1">
-                    {fiatSymbol}{(auction.current_bid || auction.starting_price).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {bids.length} bid{bids.length !== 1 ? "s" : ""}
-                  </p>
-                </div>
+            {/* Bid panel */}
+            <div className="bg-white rounded-2xl border border-border p-6 space-y-5">
 
-                <div className="flex items-center gap-2 text-sm text-gray-600 justify-center">
-                  <Clock className="h-4 w-4" />
-                  <span className="font-medium">{timeRemaining}</span>
-                </div>
+              {/* Current bid display */}
+              <div className="text-center space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Current Bid</p>
+                <p className="font-display text-4xl font-extrabold text-primary leading-none">
+                  {fiatSymbol}{(auction.current_bid || auction.starting_price).toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {bids.length} bid{bids.length !== 1 ? "s" : ""}
+                </p>
+              </div>
 
-                {/* Snipe protection notice */}
-                {isActive && (() => {
-                  const msLeft = new Date(auction.end_time).getTime() - Date.now()
-                  const inSnipeWindow = msLeft > 0 && msLeft <= 60 * 60 * 1000
-                  return (inSnipeWindow || sniped) ? (
-                    <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
-                      <Zap className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-500" />
-                      <span>
-                        {sniped
-                          ? "Auction was extended by 30 min due to a last-minute bid."
-                          : "Last hour — any bid will extend this auction by 30 min."}
-                      </span>
-                    </div>
-                  ) : null
-                })()}
+              {/* Countdown */}
+              <div className="flex items-center justify-center gap-1.5 text-sm font-medium text-foreground">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                {timeRemaining}
+              </div>
 
-                {/* Seller view — no bidding on own auction */}
-                {isSeller && (
-                  <div className="pt-2 border-t space-y-3">
-                    <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/20 px-3 py-2 text-sm text-primary font-medium">
-                      <Gavel className="h-4 w-4 shrink-0" />
-                      You are selling this item
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <span className="text-gray-500">Total bids</span>
-                      <span className="font-semibold text-gray-900">{bids.length}</span>
-                      <span className="text-gray-500">Leading bid</span>
-                      <span className="font-semibold text-primary">
-                        {bids[0] ? `${fiatSymbol}${bids[0].bid_amount.toLocaleString()}` : "No bids yet"}
-                      </span>
-                      {bids[0] && (
-                        <>
-                          <span className="text-gray-500">Leading bidder</span>
-                          <span className="font-semibold text-gray-900">{bids[0].bidder_name ?? "Anonymous"}</span>
-                        </>
-                      )}
-                    </div>
-                    {isActive && (
-                      <Button asChild variant="outline" className="w-full" size="sm">
-                        <Link href="/dashboard">View in Dashboard</Link>
-                      </Button>
-                    )}
+              {/* Snipe protection notice */}
+              {isActive && (() => {
+                const msLeft = new Date(auction.end_time).getTime() - Date.now()
+                const inSnipeWindow = msLeft > 0 && msLeft <= 60 * 60 * 1000
+                return (inSnipeWindow || sniped) ? (
+                  <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-800">
+                    <Zap className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-500" />
+                    <span>
+                      {sniped
+                        ? "Auction extended +30 min due to a last-minute bid."
+                        : "Last hour — any bid will extend this auction by 30 min."}
+                    </span>
                   </div>
-                )}
+                ) : null
+              })()}
 
-                {/* Bid Form — only for active auctions and non-sellers */}
-                {isActive && !isSeller && (
-                  <div className="space-y-3 pt-2 border-t">
-                    <div className="space-y-1">
-                      <Label htmlFor="bid_amount" className="text-sm font-medium">
-                        Your Bid
-                        <span className="text-gray-400 font-normal ml-1">
-                          (min. {fiatSymbol}{minBid.toLocaleString()})
-                        </span>
-                      </Label>
-                      <Input
-                        id="bid_amount"
-                        type="number"
-                        min={minBid}
-                        step={auction.min_bid_increment}
-                        placeholder={minBid.toString()}
-                        value={bidAmount}
-                        onChange={(e) => setBidAmount(e.target.value)}
-                        className="text-lg font-semibold"
-                        onKeyDown={(e) => { if (e.key === "Enter") handleBid() }}
-                      />
-                    </div>
-                    <Button
-                      className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-5 text-base"
-                      onClick={handleBid}
-                      disabled={placing}
-                    >
-                      {placing
-                        ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Placing Bid…</>
-                        : <><Gavel className="h-4 w-4 mr-2" />Place Bid</>}
-                    </Button>
-                    {!isAuthenticated && (
-                      <p className="text-xs text-center text-gray-500">
-                        <Link href="/auth/signin" className="text-primary underline">Sign in</Link> to place a bid
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-400 text-center flex items-center justify-center gap-1">
-                      <AlertCircle className="h-3 w-3" />Bids are binding and cannot be retracted
-                    </p>
+              {/* ── Seller view ── */}
+              {isSeller && (
+                <div className="space-y-3 pt-1 border-t border-border">
+                  <div className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-3 py-2 text-sm text-primary font-semibold">
+                    <Gavel className="h-4 w-4 shrink-0" />
+                    You are selling this item
                   </div>
-                )}
-
-                {isUpcoming && (
-                  <div className="pt-2 border-t text-center space-y-2">
-                    <p className="text-sm text-amber-700 font-medium">Auction starts {new Date(auction.start_time).toLocaleString()}</p>
-                    <p className="text-xs text-gray-500">Come back when the auction goes live to place your bid.</p>
-                  </div>
-                )}
-
-                {isEnded && (
-                  <div className="pt-2 border-t text-center">
-                    <div className="flex items-center justify-center gap-2 text-gray-500">
-                      <CheckCircle2 className="h-5 w-5" />
-                      <span className="font-medium">Auction closed</span>
-                    </div>
-                    {bids[0] && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        Won at <span className="font-bold text-gray-900">{fiatSymbol}{bids[0].bid_amount.toLocaleString()}</span>
-                      </p>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Bid History */}
-            <Card className="bg-white shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                  Bid History
-                  <span className="text-xs text-gray-400 font-normal ml-auto flex items-center gap-1">
-                    <Users className="h-3 w-3" />{bids.length} bid{bids.length !== 1 ? "s" : ""}
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {bids.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-4">No bids yet — be the first!</p>
-                ) : (
-                  <div className="space-y-2">
-                    {bids.map((bid, i) => (
-                      <div
-                        key={i}
-                        className={`flex items-center justify-between py-2 px-3 rounded-lg text-sm ${i === 0 ? "bg-primary/5 border border-primary/20" : "bg-gray-50"}`}
-                      >
-                        <div>
-                          <span className="font-medium text-gray-800">
-                            {bid.bidder_name ?? "Anonymous"}
-                          </span>
-                          {i === 0 && <span className="ml-2 text-xs text-primary font-semibold">Leading</span>}
-                          <p className="text-xs text-gray-400">{new Date(bid.bid_time).toLocaleString()}</p>
-                        </div>
-                        <span className={`font-bold ${i === 0 ? "text-primary" : "text-gray-700"}`}>
-                          {fiatSymbol}{bid.bid_amount.toLocaleString()}
-                        </span>
+                  <div className="divide-y divide-border text-sm">
+                    {[
+                      ["Total bids", String(bids.length)],
+                      ["Leading bid", bids[0] ? `${fiatSymbol}${bids[0].bid_amount.toLocaleString()}` : "No bids yet"],
+                      ...(bids[0] ? [["Leading bidder", bids[0].bidder_name ?? "Anonymous"]] : []),
+                    ].map(([l, v], i) => (
+                      <div key={i} className="flex items-center justify-between py-2">
+                        <span className="text-muted-foreground">{l}</span>
+                        <span className="font-semibold text-foreground">{v}</span>
                       </div>
                     ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  {isActive && (
+                    <Button asChild variant="outline" className="w-full" size="sm">
+                      <Link href="/dashboard">View in Dashboard</Link>
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* ── Bid form ── */}
+              {isActive && !isSeller && (
+                <div className="space-y-3 pt-1 border-t border-border">
+                  <div className="space-y-1.5">
+                    <Label
+                      htmlFor="bid_amount"
+                      className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
+                    >
+                      Your Bid <span className="font-normal normal-case tracking-normal">(min. {fiatSymbol}{minBid.toLocaleString()})</span>
+                    </Label>
+                    <Input
+                      id="bid_amount"
+                      type="number"
+                      min={minBid}
+                      step={auction.min_bid_increment}
+                      placeholder={minBid.toString()}
+                      value={bidAmount}
+                      onChange={(e) => setBidAmount(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleBid() }}
+                      className="h-12 text-lg font-semibold rounded-xl border-border"
+                    />
+                  </div>
+                  <Button
+                    className="w-full h-12 rounded-xl text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+                    onClick={handleBid}
+                    disabled={placing}
+                  >
+                    {placing
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Placing Bid…</>
+                      : <><Zap className="h-4 w-4 mr-2" />Place Bid</>}
+                  </Button>
+                  {!isAuthenticated && (
+                    <p className="text-xs text-center text-muted-foreground">
+                      <Link href="/auth/signin" className="text-primary font-semibold hover:underline">Sign in</Link>
+                      {" "}to place a bid
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Bids are binding and cannot be retracted
+                  </p>
+                </div>
+              )}
+
+              {/* ── Upcoming state ── */}
+              {isUpcoming && (
+                <div className="pt-1 border-t border-border text-center space-y-1">
+                  <p className="text-sm font-semibold text-amber-700">
+                    Starts {new Date(auction.start_time).toLocaleString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Come back when the auction goes live.</p>
+                </div>
+              )}
+
+              {/* ── Ended state ── */}
+              {isEnded && (
+                <div className="pt-1 border-t border-border text-center space-y-1">
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                    <CheckCircle2 className="h-5 w-5" />
+                    <span className="font-medium text-sm">Auction closed</span>
+                  </div>
+                  {bids[0] && (
+                    <p className="text-sm text-muted-foreground">
+                      Won at{" "}
+                      <span className="font-bold text-foreground">
+                        {fiatSymbol}{bids[0].bid_amount.toLocaleString()}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Bid history */}
+            <div className="bg-white rounded-2xl border border-border p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-display text-base font-bold text-foreground flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  Bid History
+                </h2>
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <Users className="h-3 w-3" />
+                  {bids.length} bid{bids.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+
+              {bids.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No bids yet — be the first!</p>
+              ) : (
+                <div className="space-y-2">
+                  {bids.map((bid, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm ${
+                        i === 0
+                          ? "bg-primary/10 border border-primary/20"
+                          : "bg-muted/50"
+                      }`}
+                    >
+                      <div className="space-y-0.5">
+                        {i === 0 && (
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Leading</p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(bid.bid_time).toLocaleString()}
+                        </p>
+                      </div>
+                      <span className={`font-display font-bold text-base ${i === 0 ? "text-primary" : "text-foreground"}`}>
+                        {fiatSymbol}{bid.bid_amount.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </div>

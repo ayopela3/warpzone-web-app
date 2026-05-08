@@ -1,5 +1,7 @@
 "use client"
 
+export const runtime = "edge"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -52,7 +54,9 @@ export default function CheckoutPage() {
    * endpoint if not stored directly. For now, cart items carry seller_id
    * when added via ProductCard (handled in the seller QR public endpoint).
    */
-  const cartSellerId = (cartItems[0] as unknown as { seller_id?: string }).seller_id ?? ""
+  const cartSellerId = cartItems.length > 0
+    ? ((cartItems[0] as unknown as { seller_id?: string }).seller_id ?? "")
+    : ""
 
   /** Fetch the seller's payment QR when moving to payment step */
   const fetchSellerQr = async () => {

@@ -13,10 +13,11 @@ import {
 } from "@/components/ui/select"
 import {
   Package, Plus, Loader2, CheckCircle2, Upload, Calendar, Users, Clock,
+  ArrowLeft, CheckCheck, X as XIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 import { preOrdersApi } from "@/lib/api-client"
-import type { PreOrder } from "@/types"
+import type { PreOrder, PreOrderReservationDetail } from "@/types"
 
 const GAME_OPTIONS = ["Pokemon", "MTG", "Yu-Gi-Oh!", "Plushies", "Accessories", "Other"]
 
@@ -33,31 +34,76 @@ const INITIAL_FORM = {
 type Props = { fiatSymbol: string }
 
 export function SellerPreOrdersTab({ fiatSymbol }: Props) {
-  const [preOrders, setPreOrders]   = useState<PreOrder[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [showCreate, setShowCreate] = useState(false)
-  const [form, setForm]             = useState(INITIAL_FORM)
-  const [saving, setSaving]         = useState(false)
-  const [uploading, setUploading]   = useState(false)
+  const [preOrders, setPreOrders]         = useState<PreOrder[]>([])
+  const [loading, setLoading]             = useState(true)
+  const [showCreate, setShowCreate]       = useState(false)
+  const [form, setForm]                   = useState(INITIAL_FORM)
+  const [saving, setSaving]               = useState(false)
+  const [uploading, setUploading]         = useState(false)
+  const [sellerId, setSellerId]           = useState<string | null>(null)
+
+  /** Detail panel state */
+  const [selected, setSelected]           = useState<PreOrder | null>(null)
+  const [reservations, setReservations]   = useState<PreOrderReservationDetail[]>([])
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [togglingId, setTogglingId]       = useState<string | null>(null)
+
+  /** Resolve seller's profile id once */
+  useEffect(() => {
+    fetch("/api/user/profile", {
+      headers: { Authorization: `Bearer ${localStorage.getItem("warpzone-session-id") ?? ""}` },
+    })
+      .then((r) => r.json())
+      .then((d: { success: boolean; profile?: { id: string } }) => {
+        if (d.success && d.profile?.id) setSellerId(d.profile.id)
+      })
+      .catch(() => {})
+  }, [])
 
   const fetchMyPreOrders = useCallback(async () => {
+    if (!sellerId) return
     setLoading(true)
     try {
-      /** listAll returns all statuses but the server will only include seller's own
-       *  rows plus admin rows. We filter client-side to show only this seller's. */
-      const data = await preOrdersApi.listAll()
-      if (data.success) {
-        /** Show only rows that have a seller_id (i.e., submitted by a seller, not admin) */
-        setPreOrders(data.preOrders.filter((p) => p.seller_id !== null))
-      }
+      const data = await preOrdersApi.listBySeller(sellerId)
+      if (data.success) setPreOrders(data.preOrders)
     } catch {
       toast.error("Failed to load pre-orders")
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [sellerId])
 
   useEffect(() => { fetchMyPreOrders() }, [fetchMyPreOrders])
+
+  const openDetail = async (po: PreOrder) => {
+    setSelected(po)
+    setDetailLoading(true)
+    try {
+      const data = await preOrdersApi.getDetail(po.id)
+      if (data.success) setReservations(data.reservations)
+    } catch {
+      toast.error("Failed to load reservations")
+    } finally {
+      setDetailLoading(false)
+    }
+  }
+
+  const togglePaid = async (r: PreOrderReservationDetail) => {
+    if (!selected) return
+    setTogglingId(r.id)
+    try {
+      const result = await preOrdersApi.markPaid(selected.id, r.id, r.paid === 0)
+      if (!result.success) throw new Error(result.error)
+      setReservations((prev) =>
+        prev.map((x) => x.id === r.id ? { ...x, paid: r.paid === 0 ? 1 : 0 } : x)
+      )
+      toast.success(r.paid === 0 ? "Marked as paid" : "Marked as unpaid")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update")
+    } finally {
+      setTogglingId(null)
+    }
+  }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -113,13 +159,124 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
     return "bg-amber-50 text-amber-700 border-amber-200"
   }
 
+  // ── Detail panel ──────────────────────────────────────────────────────────
+  if (selected) {
+    const totalQty  = reservations.reduce((s, r) => s + r.quantity, 0)
+    const paidCount = reservations.filter((r) => r.paid === 1).length
+    const totalRevenue = reservations
+      .filter((r) => r.paid === 1)
+      .reduce((s, r) => s + r.quantity * selected.price, 0)
+
+    return (
+      <div className="space-y-5">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => setSelected(null)} className="gap-1.5 -ml-1">
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-display text-xl font-bold text-foreground truncate">{selected.title}</h2>
+            <p className="text-xs text-muted-foreground">
+              {fiatSymbol}{selected.price.toLocaleString()} · {new Date(selected.release_date).toLocaleDateString()}
+            </p>
+          </div>
+          <Badge variant="outline" className={`text-xs capitalize shrink-0 ${approvalColor(selected.approval_status)}`}>
+            {selected.approval_status}
+          </Badge>
+        </div>
+
+        {/* Summary stats */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: "Total Reserved", value: totalQty },
+            { label: "Paid", value: `${paidCount} / ${reservations.length}` },
+            { label: "Revenue Collected", value: `${fiatSymbol}${totalRevenue.toLocaleString()}` },
+          ].map(({ label, value }) => (
+            <div key={label} className="bg-white rounded-2xl border border-border p-4 text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">{label}</p>
+              <p className="font-display font-extrabold text-xl text-foreground">{value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Reservation list */}
+        <div className="bg-white rounded-2xl border border-border overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <h3 className="font-display font-bold text-sm text-foreground">Reservations</h3>
+            <span className="text-xs text-muted-foreground">{reservations.length} total</span>
+          </div>
+
+          {detailLoading ? (
+            <div className="py-10 flex justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : reservations.length === 0 ? (
+            <div className="py-10 text-center">
+              <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">No reservations yet.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {reservations.map((r) => {
+                const displayName = r.buyer_name ?? r.buyer_email ?? r.user_email ?? "Anonymous"
+                const displayEmail = r.buyer_email ?? r.user_email ?? ""
+                return (
+                  <div key={r.id} className="flex items-center justify-between px-5 py-3.5 gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
+                      {displayEmail && displayEmail !== displayName && (
+                        <p className="text-xs text-muted-foreground truncate">{displayEmail}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Qty: <span className="font-medium text-foreground">{r.quantity}</span>
+                        {" · "}
+                        {new Date(r.reserved_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                        r.paid === 1
+                          ? "bg-green-50 text-green-700 border border-green-200"
+                          : "bg-amber-50 text-amber-700 border border-amber-200"
+                      }`}>
+                        {r.paid === 1 ? <CheckCheck className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                        {r.paid === 1 ? "Paid" : "Pending"}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant={r.paid === 1 ? "outline" : "default"}
+                        className={`h-7 text-xs rounded-lg px-2.5 ${
+                          r.paid === 1
+                            ? "border-border"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90"
+                        }`}
+                        disabled={togglingId === r.id}
+                        onClick={() => togglePaid(r)}
+                      >
+                        {togglingId === r.id
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : r.paid === 1 ? <XIcon className="h-3 w-3" /> : "Mark Paid"}
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── List view ──────────────────────────────────────────────────────────────
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">My Pre-Orders</h2>
+        <h2 className="font-display text-xl font-bold text-foreground">My Pre-Orders</h2>
         <Button
           onClick={() => setShowCreate(!showCreate)}
-          className="bg-primary hover:bg-primary/90 text-white"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           <Plus className="mr-2 h-4 w-4" />
           {showCreate ? "Cancel" : "Submit Pre-Order"}
@@ -127,12 +284,10 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
       </div>
 
       {/* Info notice */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="p-4 text-sm text-blue-700">
-          <strong>How it works:</strong> Submit a pre-order listing and an admin will review it.
-          Once approved, customers can reserve their slots. You will be notified when items are reserved.
-        </CardContent>
-      </Card>
+      <div className="rounded-2xl bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-700">
+        <strong>How it works:</strong> Submit a pre-order listing and an admin will review it.
+        Once approved, customers can reserve their slots. Click any listing to see reservations and mark payments.
+      </div>
 
       {/* Create form */}
       {showCreate && (
@@ -187,7 +342,7 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
               <Textarea id="sel-po-desc" placeholder="Optional description..." rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="resize-none" />
             </div>
             <div className="flex justify-end">
-              <Button onClick={handleSubmit} disabled={saving} className="bg-primary hover:bg-primary/90 text-white">
+              <Button onClick={handleSubmit} disabled={saving} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Submitting…</> : "Submit for Review"}
               </Button>
             </div>
@@ -195,54 +350,53 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
         </Card>
       )}
 
-      {/* My submitted pre-orders */}
+      {/* Pre-order list */}
       {loading ? (
-        <Card className="bg-white shadow-sm">
-          <CardContent className="p-10 text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400 mx-auto" />
-          </CardContent>
-        </Card>
+        <div className="py-10 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
       ) : preOrders.length === 0 ? (
-        <Card className="bg-white shadow-sm">
-          <CardContent className="p-10 text-center">
-            <Package className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No pre-orders submitted yet.</p>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-2xl border border-border py-10 text-center">
+          <Package className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No pre-orders submitted yet.</p>
+        </div>
       ) : (
         <div className="space-y-3">
           {preOrders.map((po) => (
-            <Card key={po.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="relative h-12 w-12 shrink-0 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
-                  {po.image_url
-                    ? <Image src={po.image_url} alt={po.title} fill className="object-contain" />
-                    : <Package className="h-6 w-6 text-gray-400" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-gray-900 truncate">{po.title}</p>
-                    <Badge variant="outline" className="text-xs">{po.game}</Badge>
-                    <Badge variant="outline" className={`text-xs capitalize ${approvalColor(po.approval_status)}`}>
-                      {po.approval_status}
-                    </Badge>
-                    {po.status === "closed" && (
-                      <Badge variant="secondary" className="text-xs">Closed</Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-500 mt-0.5">
-                    <span>{fiatSymbol}{po.price.toLocaleString()}</span>
-                    <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(po.release_date).toLocaleDateString()}</span>
-                    <span className="flex items-center gap-1"><Users className="h-3 w-3" />{po.reservation_count ?? 0} reserved{po.max_slots ? ` / ${po.max_slots}` : ""}</span>
-                  </div>
-                  {po.approval_status === "pending" && (
-                    <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
-                      <Clock className="h-3 w-3" />Awaiting admin approval
-                    </p>
+            <button
+              key={po.id}
+              onClick={() => openDetail(po)}
+              className="w-full text-left bg-white rounded-2xl border border-border hover:border-primary/40 hover:shadow-sm transition-all p-4 flex items-center gap-4 group"
+            >
+              <div className="relative h-12 w-12 shrink-0 rounded-xl bg-muted overflow-hidden flex items-center justify-center">
+                {po.image_url
+                  ? <Image src={po.image_url} alt={po.title} fill className="object-contain" />
+                  : <Package className="h-6 w-6 text-muted-foreground" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">{po.title}</p>
+                  <Badge variant="outline" className="text-xs">{po.game}</Badge>
+                  <Badge variant="outline" className={`text-xs capitalize ${approvalColor(po.approval_status)}`}>
+                    {po.approval_status}
+                  </Badge>
+                  {po.status === "closed" && (
+                    <Badge variant="secondary" className="text-xs">Closed</Badge>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-0.5">
+                  <span className="font-medium text-foreground">{fiatSymbol}{po.price.toLocaleString()}</span>
+                  <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(po.release_date).toLocaleDateString()}</span>
+                  <span className="flex items-center gap-1"><Users className="h-3 w-3" />{po.reservation_count ?? 0} reserved{po.max_slots ? ` / ${po.max_slots}` : ""}</span>
+                </div>
+                {po.approval_status === "pending" && (
+                  <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
+                    <Clock className="h-3 w-3" />Awaiting admin approval
+                  </p>
+                )}
+              </div>
+              <span className="text-xs text-muted-foreground shrink-0 group-hover:text-primary transition-colors">View →</span>
+            </button>
           ))}
         </div>
       )}

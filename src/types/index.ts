@@ -160,6 +160,19 @@ export type PreOrderReservation = {
   status?: PreOrderStatus
 }
 
+/** Extended reservation returned by GET /api/pre-orders/[id] (seller/admin view) */
+export type PreOrderReservationDetail = {
+  id: string
+  pre_order_id: string
+  user_id: string
+  quantity: number
+  reserved_at: string
+  paid: number /** SQLite boolean: 0 | 1 */
+  buyer_name: string | null
+  buyer_email: string | null
+  user_email: string | null
+}
+
 // ---------------------------------------------------------------------------
 // Orders
 // ---------------------------------------------------------------------------

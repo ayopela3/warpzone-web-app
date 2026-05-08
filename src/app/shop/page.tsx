@@ -53,12 +53,15 @@ export default function ShopPage() {
   const clearFilters = () => { setSearch(""); setCategory("all"); setSortBy("relevance") }
 
   return (
-    <div className="min-h-screen bg-white text-black">
-      <div className="border-b border-neutral-200 bg-neutral-50">
-        <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-          <h1 className="text-3xl font-black">Shop cards and sealed products</h1>
-          <p className="mt-1 text-neutral-600">Browse singles, slabs, booster boxes, accessories, and hobby shop inventory.</p>
-        </div>
+    <div className="min-h-screen bg-background">
+      {/* ── Page header ── */}
+      <div className="mx-auto max-w-7xl px-4 pt-8 pb-4 lg:px-8">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground">
+          Shop cards and sealed products
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Browse singles, slabs, booster boxes, accessories, and hobby shop inventory.
+        </p>
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -73,19 +76,19 @@ export default function ShopPage() {
           onClear={clearFilters}
         />
 
-        <p className="text-sm text-muted-foreground mb-4">
-          Showing <span className="font-medium">{filtered.length}</span> of {products.length} results
+        <p className="text-sm text-muted-foreground mb-5">
+          Showing <span className="font-semibold text-foreground">{filtered.length}</span> of {products.length} results
         </p>
 
         {loading ? (
-          <div className="text-center py-12">
-            <Loader2 className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-spin" />
-            <h3 className="text-lg font-semibold">Loading products...</h3>
+          <div className="text-center py-16">
+            <Loader2 className="h-10 w-10 text-primary mx-auto mb-4 animate-spin" />
+            <p className="text-sm text-muted-foreground">Loading products...</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-16">
             <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold">No products found</h3>
+            <h3 className="font-display text-lg font-bold text-foreground">No products found</h3>
             <p className="text-sm text-muted-foreground mt-1">
               {activeFiltersCount > 0 ? "Try adjusting your filters" : "Check back later for new listings"}
             </p>
@@ -94,7 +97,7 @@ export default function ShopPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {filtered.map((product) => (
               <ProductCard
                 key={product.id}

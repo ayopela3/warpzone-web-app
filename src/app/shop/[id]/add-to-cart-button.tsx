@@ -1,5 +1,6 @@
 "use client"
 
+import { ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useApp } from "@/components/shared/app-provider"
 
@@ -17,8 +18,7 @@ export default function AddToCartButton({ productId, name, price, category, inSt
 
   return (
     <Button
-      className="mt-5 w-full"
-      size="lg"
+      className="w-full h-12 rounded-xl text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90"
       disabled={!inStock}
       onClick={() => {
         addToCart({
@@ -29,6 +29,7 @@ export default function AddToCartButton({ productId, name, price, category, inSt
         }, quantity)
       }}
     >
+      <ShoppingCart className="h-4 w-4 mr-2" />
       {inStock ? "Add to cart" : "Out of stock"}
     </Button>
   )

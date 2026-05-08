@@ -47,7 +47,7 @@ export default function ProductImageCarousel({ imageUrl, productName }: ProductI
       )}
 
       {/* Main Image */}
-      <div className="flex-1 flex items-center justify-center bg-[linear-gradient(135deg,#fff7cc,#ffffff)] p-8 rounded-2xl">
+      <div className="flex-1 flex items-center justify-center bg-[#fdf6e3] p-8 rounded-2xl">
         {images.length > 0 && images[currentIndex] ? (
           <img
             src={images[currentIndex]}

@@ -1,9 +1,8 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { ShoppingBag } from "lucide-react"
 import type { Product } from "@/types"
 
@@ -17,60 +16,83 @@ export function ProductCard({ product, fiatSymbol, onAddToCart }: Props) {
   const outOfStock = product.quantity === 0
 
   return (
-    <Link href={`/shop/${product.id}`}>
-      <Card className="group h-full cursor-pointer overflow-hidden border-neutral-200 bg-white py-0 shadow-sm transition hover:-translate-y-1 hover:border-black hover:shadow-xl">
-        <CardContent className="flex h-full flex-col p-0">
-          <div className="relative flex h-64 items-center justify-center overflow-hidden bg-[linear-gradient(135deg,#fff7cc,#ffffff)]">
-            <div className="absolute inset-x-8 top-6 h-44 rounded-2xl border border-primary/30 bg-white/70 blur-xl" />
-            {product.image_url ? (
-              <img
-                src={product.image_url}
-                alt={product.name}
-                className="relative h-40 w-28 object-contain transition-transform group-hover:scale-105"
-              />
-            ) : (
-              <div className="relative flex h-40 w-28 items-center justify-center rounded-2xl border-2 border-primary bg-white shadow-lg transition-transform group-hover:scale-105">
-                <ShoppingBag className="h-12 w-12 text-primary" />
-              </div>
-            )}
-            <Badge className="absolute top-3 left-3 text-white">{product.category}</Badge>
-            {outOfStock && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                <Badge variant="secondary" className="text-sm">Out of Stock</Badge>
-              </div>
-            )}
-          </div>
+    <div className="group bg-white rounded-2xl border border-border overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-[border-color,box-shadow] duration-150 hover:border-primary/40 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] flex flex-col">
 
-          <div className="flex flex-1 flex-col p-4">
-            <h3 className="line-clamp-2 min-h-12 font-black leading-6 text-black">{product.name}</h3>
-            {product.rarity && (
-              <p className="mt-1 line-clamp-1 text-sm text-neutral-600">{product.rarity}</p>
-            )}
-            <div className="mt-auto flex items-center justify-between pt-4">
-              <div>
-                <p className="text-xl font-black text-primary">{fiatSymbol}{product.price.toLocaleString()}</p>
-                <p className="text-xs text-neutral-500">Qty: {product.quantity}</p>
-              </div>
+      {/* Image panel */}
+      <Link href={`/shop/${product.id}`} className="block">
+        <div className="relative flex items-center justify-center bg-[#fdf6e3] overflow-hidden" style={{ height: "200px" }}>
+          {product.image_url ? (
+            <Image
+              src={product.image_url}
+              alt={product.name}
+              fill
+              className="object-contain p-5 transition-transform duration-200 group-hover:scale-105"
+            />
+          ) : (
+            <ShoppingBag className="h-16 w-16 text-primary/40" />
+          )}
+
+          {/* Category pill */}
+          <span className="absolute top-3 left-3 rounded-full bg-primary/90 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-primary-foreground">
+            {product.category}
+          </span>
+
+          {/* Out of stock overlay */}
+          {outOfStock && (
+            <div className="absolute inset-0 bg-foreground/40 flex items-center justify-center">
+              <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-foreground">
+                Out of Stock
+              </span>
             </div>
-            <div className="flex gap-2 mt-3">
-              <Button
-                className="flex-1 text-white cursor-pointer"
-                disabled={outOfStock}
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  onAddToCart(product)
-                }}
-              >
-                {outOfStock ? "Out of Stock" : "Add to Cart"}
-              </Button>
-              <Button variant="outline" className="flex-1" disabled={outOfStock}>
-                View Details
-              </Button>
-            </div>
+          )}
+        </div>
+      </Link>
+
+      {/* Content */}
+      <div className="flex flex-col flex-1 p-4 gap-3">
+        <div>
+          <Link href={`/shop/${product.id}`}>
+            <h3 className="font-display font-bold text-sm leading-snug text-foreground line-clamp-2 hover:text-primary transition-colors">
+              {product.name}
+            </h3>
+          </Link>
+          {product.rarity && (
+            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{product.rarity}</p>
+          )}
+        </div>
+
+        <div className="mt-auto flex items-end justify-between">
+          <div>
+            <p className="font-display text-lg font-extrabold text-primary leading-none">
+              {fiatSymbol}{product.price.toLocaleString()}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Qty: {product.quantity}</p>
           </div>
-        </CardContent>
-      </Card>
-    </Link>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          <Button
+            className="flex-1 h-9 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
+            disabled={outOfStock}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onAddToCart(product)
+            }}
+          >
+            {outOfStock ? "Out of Stock" : "Add to Cart"}
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1 h-9 text-xs font-semibold rounded-xl"
+            asChild
+            disabled={outOfStock}
+          >
+            <Link href={`/shop/${product.id}`}>View Details</Link>
+          </Button>
+        </div>
+      </div>
+    </div>
   )
 }

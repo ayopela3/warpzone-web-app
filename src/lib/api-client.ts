@@ -3,7 +3,7 @@
  * All fetch calls in pages/components go through here — one place to change URLs.
  */
 
-import type { Auction, Order, OrderStatus, PreOrder, PreOrderReservation, Product, Tournament } from "@/types"
+import type { Auction, Order, OrderStatus, PreOrder, PreOrderReservation, PreOrderReservationDetail, Product, Tournament } from "@/types"
 
 // ---------------------------------------------------------------------------
 // helpers
@@ -193,6 +193,22 @@ export const preOrdersApi = {
   /** Admin: list all pre-orders (any status/approval) */
   listAll: () =>
     apiFetch<{ success: boolean; preOrders: PreOrder[] }>("/api/pre-orders?showAll=true"),
+
+  /** Seller: list only their own pre-orders */
+  listBySeller: (sellerId: string) =>
+    apiFetch<{ success: boolean; preOrders: PreOrder[] }>(`/api/pre-orders?sellerId=${encodeURIComponent(sellerId)}`),
+
+  /** Seller/Admin: get pre-order detail + reservations */
+  getDetail: (id: string) =>
+    apiFetch<{ success: boolean; preOrder: PreOrder; reservations: PreOrderReservationDetail[] }>(`/api/pre-orders/${id}`),
+
+  /** Seller/Admin: mark a reservation as paid or unpaid */
+  markPaid: (preOrderId: string, reservationId: string, paid: boolean) =>
+    apiFetch<{ success: boolean; error?: string }>(`/api/pre-orders/${preOrderId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reservationId, paid }),
+    }),
 
   /** Buyer: list their own reservations */
   myReservations: () =>

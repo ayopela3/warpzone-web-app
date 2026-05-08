@@ -43,12 +43,17 @@ export async function GET(request: NextRequest) {
     const game     = searchParams.get("game")
     const status   = searchParams.get("status")
     const showAll  = searchParams.get("showAll") === "true"
+    const sellerId = searchParams.get("sellerId")
 
     const conditions: string[] = []
     const params: (string | number)[] = []
 
     if (showAll) {
       // admin mode — no approval filter applied
+    } else if (sellerId) {
+      // seller viewing their own — show all statuses for their items
+      conditions.push("po.seller_id = ?")
+      params.push(sellerId)
     } else {
       conditions.push("po.approval_status = 'approved'")
       conditions.push("po.status = 'active'")
@@ -59,7 +64,7 @@ export async function GET(request: NextRequest) {
       params.push(game)
     }
 
-    if (status && !showAll) {
+    if (status && !showAll && !sellerId) {
       conditions.push("po.status = ?")
       params.push(status)
     }

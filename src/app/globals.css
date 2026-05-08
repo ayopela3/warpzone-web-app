@@ -1,56 +1,211 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────
+   THE WARPZONE — Design System Tokens
+   Palette: Warm Parchment × Electric Yellow
+   Typography: Montserrat (headings) + Inter (body)
+   ───────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
-  --card: #ffffff;
-  --card-foreground: #0a0a0a;
-  --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --primary: #f5b400;
-  --primary-foreground: #0a0a0a;
-  --secondary: #0a0a0a;
-  --secondary-foreground: #ffffff;
-  --muted: #f7f7f7;
-  --muted-foreground: #525252;
-  --accent: #ffd84d;
-  --accent-foreground: #0a0a0a;
-  --destructive: #dc2626;
-  --destructive-foreground: #ffffff;
-  --border: #e5e5e5;
-  --input: #d4d4d4;
-  --ring: #f5b400;
+  /* ── Surface scale ─────────────────────── */
+  --background:                 #fff9ef;
+  --surface-dim:                #e1d9c7;
+  --surface-container-lowest:   #ffffff;
+  --surface-container-low:      #fbf3e0;
+  --surface-container:          #f6edda;
+  --surface-container-high:     #f0e7d5;
+  --surface-container-highest:  #eae2cf;
+
+  /* ── Foreground / on-surface ────────────── */
+  --foreground:                 #1f1b10;
+  --on-surface-variant:         #4d4732;
+  --inverse-surface:            #343024;
+  --inverse-on-surface:         #f9f0dd;
+
+  /* ── Outline ────────────────────────────── */
+  --border:                     #d0c6ab;
+  --outline:                    #7e775f;
+
+  /* ── Primary — Electric Yellow ──────────── */
+  --primary:                    #ffbf2a;
+  --primary-foreground:         #1f1b10;
+  --primary-container:          #ffbf2a;
+  --on-primary-container:       #705e00;
+  --primary-fixed:              #ffd470;
+  --primary-fixed-dim:          #ffbf2a;
+  --inverse-primary:            #ffbf2a;
+
+  /* ── Secondary ──────────────────────────── */
+  --secondary:                  #ffbf2a;
+  --secondary-foreground:       #1f1b10;
+  --secondary-container:        #e4e1e5;
+  --on-secondary-container:     #656467;
+
+  /* ── Muted / neutral ────────────────────── */
+  --muted:                      #f6edda;
+  --muted-foreground:           #4d4732;
+
+  /* ── Accent (bright yellow highlight) ──── */
+  --accent:                     #ffbf2a;
+  --accent-foreground:          #1f1b10;
+
+  /* ── Card / popover ─────────────────────── */
+  --card:                       #ffffff;
+  --card-foreground:            #1f1b10;
+  --popover:                    #ffffff;
+  --popover-foreground:         #1f1b10;
+
+  /* ── Destructive ─────────────────────────── */
+  --destructive:                #ba1a1a;
+  --destructive-foreground:     #ffffff;
+
+  /* ── Input / focus ring ─────────────────── */
+  --input:                      #d0c6ab;
+  --ring:                       #ffbf2a;
+
+  /* ── Status accents ─────────────────────── */
+  --status-live:                #e8410a;
+  --status-preorder:            #1a56db;
+  --status-tournament:          #7c3aed;
+
+  /* ── Radius scale ────────────────────────── */
+  --radius-sm:   0.25rem;   /* 4px  */
+  --radius:      0.5rem;    /* 8px  */
+  --radius-md:   0.75rem;   /* 12px */
+  --radius-lg:   1rem;      /* 16px */
+  --radius-xl:   1.5rem;    /* 24px */
+  --radius-full: 9999px;
 }
 
+/* ─── Tailwind v4 theme mapping ─────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background:               var(--background);
+  --color-foreground:               var(--foreground);
+  --color-card:                     var(--card);
+  --color-card-foreground:          var(--card-foreground);
+  --color-popover:                  var(--popover);
+  --color-popover-foreground:       var(--popover-foreground);
+  --color-primary:                  var(--primary);
+  --color-primary-foreground:       var(--primary-foreground);
+  --color-secondary:                var(--secondary);
+  --color-secondary-foreground:     var(--secondary-foreground);
+  --color-muted:                    var(--muted);
+  --color-muted-foreground:         var(--muted-foreground);
+  --color-accent:                   var(--accent);
+  --color-accent-foreground:        var(--accent-foreground);
+  --color-destructive:              var(--destructive);
+  --color-destructive-foreground:   var(--destructive-foreground);
+  --color-border:                   var(--border);
+  --color-input:                    var(--input);
+  --color-ring:                     var(--ring);
+
+  /* Status colors available as Tailwind utilities */
+  --color-live:                     var(--status-live);
+  --color-preorder:                 var(--status-preorder);
+  --color-tournament:               var(--status-tournament);
+
+  /* Radius tokens */
+  --radius-sm:   var(--radius-sm);
+  --radius:      var(--radius);
+  --radius-md:   var(--radius-md);
+  --radius-lg:   var(--radius-lg);
+  --radius-xl:   var(--radius-xl);
+  --radius-full: var(--radius-full);
+
+  /* Fonts */
+  --font-sans:     var(--font-inter);
+  --font-display:  var(--font-montserrat);
+  --font-mono:     ui-monospace, "Cascadia Code", monospace;
 }
 
-* {
+/* ─── Base reset ────────────────────────── */
+*,
+*::before,
+*::after {
   border-color: var(--border);
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* ─── Typography scale ───────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-montserrat), system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--foreground);
+}
+
+h1 { font-size: 3rem;   font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+h2 { font-size: 2rem;   font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+h3 { font-size: 1.5rem; font-weight: 700; line-height: 1.3; }
+h4 { font-size: 1.125rem; font-weight: 600; line-height: 1.4; }
+
+/* ─── Input focus ring — Electric Yellow ── */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--ring) !important;
+  box-shadow: 0 0 0 1px var(--ring);
+}
+
+/* ─── Card hover — border transitions to yellow ── */
+.card-interactive {
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.card-interactive:hover {
+  border-color: var(--accent) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* ─── Status badge utilities ────────────── */
+.badge-live {
+  background: var(--status-live);
+  color: #ffffff;
+  border-radius: var(--radius-full);
+}
+.badge-preorder {
+  background: var(--status-preorder);
+  color: #ffffff;
+  border-radius: var(--radius-full);
+}
+.badge-tournament {
+  background: var(--status-tournament);
+  color: #ffffff;
+  border-radius: var(--radius-full);
+}
+
+/* ─── Price display — always Montserrat ─── */
+.price {
+  font-family: var(--font-montserrat), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+/* ─── Metadata labels — uppercase ──────── */
+.label-meta {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ─── Scrollbar (subtle) ────────────────── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: var(--surface-container-low); }
+::-webkit-scrollbar-thumb  { background: var(--outline); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--on-surface-variant); }
