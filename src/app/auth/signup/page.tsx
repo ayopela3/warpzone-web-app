@@ -39,7 +39,7 @@ export default function SignUpPage() {
     if (result.success) {
       const signInResult = await signIn(email, password)
       if (signInResult.success) {
-        router.push("/")
+        router.push("/auth/complete-profile")
       } else {
         setError("Account created but sign in failed. Please try signing in.")
       }

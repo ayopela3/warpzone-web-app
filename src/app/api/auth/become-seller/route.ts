@@ -37,13 +37,13 @@ export async function POST(request: NextRequest) {
       .bind(userId, email, passwordHash)
       .run()
 
-    // Create profile with seller role
+    // Create profile with pending-seller role — admin must approve before full seller access
     await db
       .prepare(
         `INSERT INTO profiles (id, user_id, full_name, street, city, province, country, zip_code, phone_number, role, business_name, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
       )
-      .bind(profileId, userId, fullName, street, city, province, country, zipCode, phoneNumber, "seller", businessName)
+      .bind(profileId, userId, fullName, street, city, province, country, zipCode, phoneNumber, "pending-seller", businessName)
       .run()
 
     return NextResponse.json({ success: true })

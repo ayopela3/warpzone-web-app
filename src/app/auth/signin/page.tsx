@@ -24,7 +24,11 @@ export default function SignInPage() {
     const result = await signIn(email, password)
 
     if (result.success) {
-      router.push("/")
+      if (result.profileComplete === false) {
+        router.push("/auth/complete-profile")
+      } else {
+        router.push("/")
+      }
     } else {
       setError(result.error || "Sign in failed")
     }

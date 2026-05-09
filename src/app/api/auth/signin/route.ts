@@ -61,6 +61,13 @@ export async function POST(request: NextRequest) {
 
     const userRole = profile?.role || "regular-user"
 
+    // Fetch full_name to determine if profile is complete
+    const profileDetails = (await db
+      .prepare("SELECT full_name FROM profiles WHERE user_id = ?")
+      .bind(user.id)
+      .first()) as { full_name: string | null } | null
+    const profileComplete = !!(profileDetails?.full_name?.trim())
+
     // Create session
     const sessionId = crypto.randomUUID()
     const expiresAt = new Date(
@@ -79,6 +86,7 @@ export async function POST(request: NextRequest) {
       sessionId,
       userId: user.id,
       userRole,
+      profileComplete,
     })
 
     const cookieOptions = {

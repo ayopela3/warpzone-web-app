@@ -19,7 +19,7 @@ type AppContextValue = {
   updateCartQuantity: (id: string, quantity: number) => void
   clearCart: () => void
   signUp: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string; profileComplete?: boolean }>
   signOut: () => Promise<void>
   requireAuth: () => boolean
 }
@@ -153,7 +153,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setIsAuthenticated(true)
         setUserId(data.userId)
         setUserRole(data.userRole || "regular-user")
-        return { success: true }
+        return { success: true, profileComplete: data.profileComplete as boolean }
       }
       return { success: false, error: data.error || "Sign in failed" }
     } catch {

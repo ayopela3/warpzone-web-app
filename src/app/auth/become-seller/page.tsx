@@ -71,7 +71,7 @@ export default function BecomeSellerPage() {
       if (data.success) {
         const signInResult = await signIn(formData.email, formData.password)
         if (signInResult.success) {
-          router.push("/seller")
+          router.push("/auth/seller-pending")
         } else {
           setError("Account created but sign in failed. Please try signing in.")
         }
