@@ -14,7 +14,7 @@ type AppContextValue = {
   userRole: string | null
   fiatSymbol: string
   setFiatSymbol: (symbol: string) => void
-  addToCart: (item: Omit<CartItem, "quantity">, maxQuantity?: number) => void
+  addToCart: (item: Omit<CartItem, "quantity">, qty?: number, maxQuantity?: number) => void
   removeFromCart: (id: string) => void
   updateCartQuantity: (id: string, quantity: number) => void
   clearCart: () => void
@@ -36,9 +36,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") {
       return []
     }
-
-    const savedCart = window.localStorage.getItem(cartStorageKey)
-    return savedCart ? JSON.parse(savedCart) as CartItem[] : []
+    try {
+      const savedCart = window.localStorage.getItem(cartStorageKey)
+      return savedCart ? JSON.parse(savedCart) as CartItem[] : []
+    } catch {
+      return []
+    }
   })
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -74,18 +77,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(cartStorageKey, JSON.stringify(cartItems))
   }, [cartItems])
 
-  const addToCart = useCallback((item: Omit<CartItem, "quantity">, maxQuantity?: number) => {
+  const addToCart = useCallback((item: Omit<CartItem, "quantity">, qty: number = 1, maxQuantity?: number) => {
     setCartItems((currentItems) => {
       const existingItem = currentItems.find((cartItem) => cartItem.id === item.id)
 
       if (existingItem) {
-        const newQuantity = existingItem.quantity + 1
-        if (maxQuantity !== undefined && newQuantity > maxQuantity) {
-          return currentItems
-        }
+        const newQuantity = existingItem.quantity + qty
+        const capped = maxQuantity !== undefined ? Math.min(newQuantity, maxQuantity) : newQuantity
         return currentItems.map((cartItem) =>
           cartItem.id === item.id
-            ? { ...cartItem, quantity: newQuantity }
+            ? { ...cartItem, quantity: capped }
             : cartItem
         )
       }
@@ -94,7 +95,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return currentItems
       }
 
-      return [...currentItems, { ...item, quantity: 1 }]
+      const initial = maxQuantity !== undefined ? Math.min(qty, maxQuantity) : qty
+      return [...currentItems, { ...item, quantity: initial }]
     })
   }, [])
 

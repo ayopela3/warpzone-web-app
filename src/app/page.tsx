@@ -3,14 +3,16 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useApp } from "@/components/shared/app-provider"
-import { HeroSection, CtaSection } from "@/features/home/components/HeroSection"
-import { ServicesGrid } from "@/features/home/components/ServicesGrid"
+import { AnnouncementBar } from "@/features/home/components/AnnouncementBar"
+import { HeroSection } from "@/features/home/components/HeroSection"
+import { CategoryTiles } from "@/features/home/components/CategoryTiles"
 import { FeaturedProductsSection } from "@/features/home/components/FeaturedProductsSection"
+import { TrustStrip } from "@/features/home/components/TrustStrip"
 import { productsApi } from "@/lib/api-client"
 import type { Product } from "@/types"
 
 export default function HomePage() {
-  const { userRole, isAuthenticated } = useApp()
+  const { userRole, isAuthenticated, fiatSymbol, addToCart } = useApp()
   const router = useRouter()
   const [activeFeaturedIndex, setActiveFeaturedIndex] = useState(0)
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
@@ -26,17 +28,32 @@ export default function HomePage() {
       .catch(console.error)
   }, [])
 
+  const handleAddToCart = (product: Product, qty: number) => {
+    addToCart(
+      { id: product.id, name: product.name, price: product.price, category: product.category },
+      qty,
+      product.quantity,
+    )
+  }
+
   return (
-    <div className="bg-white text-black">
+    <div className="bg-white">
+      <AnnouncementBar />
       <HeroSection
         isSeller={isSeller}
         featuredProducts={featuredProducts}
         activeFeaturedIndex={activeFeaturedIndex}
+        fiatSymbol={fiatSymbol}
         onDotClick={setActiveFeaturedIndex}
       />
-      <ServicesGrid />
-      <FeaturedProductsSection products={featuredProducts} isSeller={isSeller} />
-      <CtaSection isSeller={isSeller} />
+      <CategoryTiles />
+      <FeaturedProductsSection
+        products={featuredProducts}
+        isSeller={isSeller}
+        fiatSymbol={fiatSymbol}
+        onAddToCart={handleAddToCart}
+      />
+      <TrustStrip />
     </div>
   )
 }

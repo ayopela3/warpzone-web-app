@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useEffect, useState } from "react"
 import { Menu, X, ShoppingCart, Search, User, Store } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -50,14 +51,9 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <nav className="mx-auto flex max-w-7xl items-center justify-between p-4 lg:px-8" aria-label="Global">
         <div className="flex lg:flex-1">
-          <Link href="/" className="-m-1.5 p-1.5 flex items-center gap-2">
+          <Link href="/" className="-m-1.5 p-1.5">
             <span className="sr-only">The Warpzone</span>
-            <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center shadow-sm">
-              <span className="text-white font-bold text-sm">WZ</span>
-            </div>
-            <span className="text-xl font-black text-primary">
-              The Warpzone
-            </span>
+            <Image src="/images/warpzone.png" alt="The Warpzone" width={160} height={48} className="h-10 w-auto object-contain" priority />
           </Link>
         </div>
         
@@ -152,11 +148,8 @@ export function Navbar() {
         <div className="fixed inset-0 z-9999 flex flex-col bg-white overflow-hidden lg:hidden">
           {/* Header row */}
           <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 p-4">
-            <Link href="/" className="-m-1.5 p-1.5 flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-white font-bold text-sm">WZ</span>
-              </div>
-              <span className="text-xl font-black text-primary">The Warpzone</span>
+            <Link href="/" className="-m-1.5 p-1.5" onClick={() => setMobileMenuOpen(false)}>
+              <Image src="/images/warpzone.png" alt="The Warpzone" width={140} height={40} className="h-9 w-auto object-contain" />
             </Link>
             <button
               type="button"

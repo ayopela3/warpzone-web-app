@@ -92,6 +92,7 @@ export default function PreOrderPage() {
         preOrderId:  preOrder.id,
         seller_id:   preOrder.seller_id ?? undefined,
       },
+      qty,
       preOrder.max_slots ?? undefined
     )
     /** Also create the DB reservation so seller sees it */

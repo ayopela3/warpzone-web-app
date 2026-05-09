@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Globe, MessageCircle, Video, Share2 } from "lucide-react"
 
 const footerNavigation = {
@@ -43,11 +44,8 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
           {/* Brand */}
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-amber-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">WZ</span>
-              </div>
-              <span className="text-lg font-bold">The Warpzone</span>
+            <Link href="/">
+              <Image src="/images/warpzone.png" alt="The Warpzone" width={140} height={40} className="h-9 w-auto object-contain" />
             </Link>
             <p className="mt-4 text-sm text-muted-foreground">
               Your ultimate destination for trading cards, tournaments, and collectibles.

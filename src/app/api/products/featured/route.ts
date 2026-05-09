@@ -20,7 +20,11 @@ export async function GET() {
           p.rarity,
           p.description,
           p.image_url,
+          p.price,
+          p.quantity,
           p.approval_status,
+          p.featured,
+          p.is_active,
           p.created_at,
           pr.full_name as seller_name
         FROM products p
