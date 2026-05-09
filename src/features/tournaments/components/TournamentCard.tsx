@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trophy, MapPin, Calendar, Users, DollarSign, Loader2, ChevronDown, ChevronUp } from "lucide-react"
+import { Trophy, MapPin, Calendar, Users, DollarSign, Loader2, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react"
 import type { Tournament } from "@/types"
 
 type Props = {
@@ -18,6 +18,7 @@ export function TournamentCard({ tournament, registering, onRegister }: Props) {
   const isFull = tournament.registered_players >= tournament.player_size
   const fillPct = Math.min((tournament.registered_players / tournament.player_size) * 100, 100)
   const isOpen = tournament.status === "open"
+  const isRegistered = tournament.user_registered === 1
 
   return (
     <Card className="border-neutral-200 bg-white py-0 shadow-sm transition hover:-translate-y-1 hover:border-black hover:shadow-xl">
@@ -26,11 +27,17 @@ export function TournamentCard({ tournament, registering, onRegister }: Props) {
       </div>
 
       <CardHeader className="pt-5">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
           <Badge variant={tournament.status === "open" ? "default" : "secondary"}>
             {tournament.status === "open" ? "Registration Open" : "Upcoming"}
           </Badge>
           {tournament.format && <Badge variant="outline">{tournament.format}</Badge>}
+          {isRegistered && (
+            <Badge className="bg-green-100 text-green-700 border border-green-200 gap-1">
+              <CheckCircle2 className="h-3 w-3" />
+              Registered
+            </Badge>
+          )}
         </div>
         <CardTitle className="text-lg">{tournament.name}</CardTitle>
         {tournament.location && (
@@ -73,28 +80,37 @@ export function TournamentCard({ tournament, registering, onRegister }: Props) {
           </p>
         )}
 
-        {isOpen ? (
-          <Button
-            className="w-full mt-2"
-            disabled={registering || isFull}
-            onClick={() => onRegister(tournament.id, tournament.name)}
-          >
-            {registering ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Registering...</>
-            ) : isFull ? "Tournament Full" : "Register Now"}
-          </Button>
-        ) : (
-          <Button
-            variant="outline"
-            className="w-full mt-2"
-            onClick={() => setExpanded((v) => !v)}
-          >
-            {expanded ? (
-              <><ChevronUp className="h-4 w-4 mr-2" />Hide Details</>
-            ) : (
-              <><ChevronDown className="h-4 w-4 mr-2" />View Details</>
-            )}
-          </Button>
+        {/* View Details toggle — always visible */}
+        <Button
+          variant="outline"
+          className="w-full mt-2"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? (
+            <><ChevronUp className="h-4 w-4 mr-2" />Hide Details</>
+          ) : (
+            <><ChevronDown className="h-4 w-4 mr-2" />View Details</>
+          )}
+        </Button>
+
+        {/* Register button — only for open tournaments */}
+        {isOpen && (
+          isRegistered ? (
+            <Button className="w-full mt-2 bg-green-600 hover:bg-green-600 text-white cursor-default" disabled>
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              You&apos;re Registered
+            </Button>
+          ) : (
+            <Button
+              className="w-full mt-2"
+              disabled={registering || isFull}
+              onClick={() => onRegister(tournament.id, tournament.name)}
+            >
+              {registering ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Registering...</>
+              ) : isFull ? "Tournament Full" : "Register Now"}
+            </Button>
+          )
         )}
       </CardContent>
     </Card>

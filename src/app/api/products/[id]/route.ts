@@ -3,6 +3,29 @@ import { getDb } from "@/lib/db"
 
 export const runtime = "edge"
 
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const db = await getDb()
+    if (!db) return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
+
+    const product = await db
+      .prepare("SELECT id, name, category, price, quantity, created_by FROM products WHERE id = ?")
+      .bind(id)
+      .first<{ id: string; name: string; category: string; price: number; quantity: number; created_by: string | null }>()
+
+    if (!product) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 })
+
+    return NextResponse.json({ success: true, product })
+  } catch (error) {
+    console.error("Failed to fetch product:", error)
+    return NextResponse.json({ success: false, error: "Failed to fetch product" }, { status: 500 })
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

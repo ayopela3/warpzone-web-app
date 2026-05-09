@@ -23,10 +23,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "sellerId is required" }, { status: 400 })
     }
 
-    const profile = await db
+    // Try by profiles.id first (canonical path), then fall back to user_id
+    let profile = await db
       .prepare("SELECT full_name, business_name, payment_qr_url FROM profiles WHERE id = ?")
       .bind(sellerId)
       .first<{ full_name: string; business_name: string | null; payment_qr_url: string | null }>()
+
+    if (!profile) {
+      profile = await db
+        .prepare("SELECT full_name, business_name, payment_qr_url FROM profiles WHERE user_id = ?")
+        .bind(sellerId)
+        .first<{ full_name: string; business_name: string | null; payment_qr_url: string | null }>()
+    }
 
     if (!profile) {
       return NextResponse.json({ success: false, error: "Seller not found" }, { status: 404 })

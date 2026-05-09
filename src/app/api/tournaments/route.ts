@@ -39,21 +39,36 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status")
+    const userId = searchParams.get("userId")
 
     const db = await getDb()
     if (!db) {
       return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
     }
 
-    let query = "SELECT * FROM tournaments"
+    const conditions: string[] = []
     const params: string[] = []
 
+    // When a userId is supplied, join registrations to mark which ones the user joined
+    let selectClause = "SELECT t.*"
+    if (userId) {
+      selectClause += ", CASE WHEN tr.id IS NOT NULL THEN 1 ELSE 0 END AS user_registered"
+    }
+
+    let query = `${selectClause} FROM tournaments t`
+
+    if (userId) {
+      query += " LEFT JOIN tournament_registrations tr ON tr.tournament_id = t.id AND tr.user_id = ?"
+      params.push(userId)
+    }
+
     if (status) {
-      query += " WHERE status = ?"
+      conditions.push("t.status = ?")
       params.push(status)
     }
 
-    query += " ORDER BY tournament_date ASC"
+    if (conditions.length) query += " WHERE " + conditions.join(" AND ")
+    query += " ORDER BY t.tournament_date ASC"
 
     const tournaments = await db
       .prepare(query)

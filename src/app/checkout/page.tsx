@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner"
 import { useApp } from "@/components/shared/app-provider"
 import { ordersApi } from "@/lib/api-client"
-import type { FulfillmentType } from "@/types"
+import type { FulfillmentType, CartItem } from "@/types"
 
 type Step = "review" | "payment" | "confirmed"
 
@@ -26,17 +26,26 @@ type SellerQr = {
   seller_business: string | null
 }
 
+type SellerGroup = {
+  sellerId: string
+  items: CartItem[]
+}
+
 export default function CheckoutPage() {
   const router = useRouter()
-  const { cartItems, fiatSymbol, isAuthenticated, userId, clearCart } = useApp()
+  const { cartItems, fiatSymbol, isAuthenticated, userId, removeFromCart } = useApp()
 
   const [step, setStep] = useState<Step>("review")
   const [fulfillment, setFulfillment] = useState<FulfillmentType>("pickup")
   const [notes, setNotes] = useState("")
+
+  /** Which seller group the user is currently paying (0-indexed) */
+  const [currentGroupIdx, setCurrentGroupIdx] = useState(0)
+
   const [sellerQr, setSellerQr] = useState<SellerQr | null>(null)
   const [loadingQr, setLoadingQr] = useState(false)
   const [placingOrder, setPlacingOrder] = useState(false)
-  const [orderId, setOrderId] = useState<string | null>(null)
+  const [placedOrderIds, setPlacedOrderIds] = useState<string[]>([])
   const [proofUrl, setProofUrl] = useState<string | null>(null)
   const [uploadingProof, setUploadingProof] = useState(false)
 
@@ -56,8 +65,7 @@ export default function CheckoutPage() {
   /** Items selected for this checkout */
   const selectedItems = cartItems.filter((i) => selectedIds.has(i.id))
 
-  /** Group selected items by seller_id (falls back to "__unknown__") */
-  type SellerGroup = { sellerId: string; items: typeof cartItems }
+  /** Selected items grouped by seller — stable across renders */
   const sellerGroups: SellerGroup[] = Object.values(
     selectedItems.reduce<Record<string, SellerGroup>>((acc, item) => {
       const key = item.seller_id ?? "__unknown__"
@@ -69,6 +77,10 @@ export default function CheckoutPage() {
 
   const selectedTotal = selectedItems.reduce((s, i) => s + i.price * i.quantity, 0)
   const selectedCount = selectedItems.reduce((s, i) => s + i.quantity, 0)
+
+  /** The group currently being paid */
+  const activeGroup = sellerGroups[currentGroupIdx]
+  const activeGroupTotal = activeGroup?.items.reduce((s, i) => s + i.price * i.quantity, 0) ?? 0
 
   const toggleItem = (id: string) =>
     setSelectedIds((prev) => {
@@ -84,13 +96,28 @@ export default function CheckoutPage() {
         : new Set(cartItems.map((i) => i.id))
     )
 
-  /** Fetch the seller's payment QR for the first seller group */
-  const fetchSellerQr = async () => {
-    const firstSellerId = sellerGroups[0]?.sellerId
-    if (!firstSellerId || firstSellerId === "__unknown__") return
+  /** Resolve seller ID for a group — falls back to product API for legacy cart items */
+  const resolveGroupSellerId = async (group: SellerGroup): Promise<string | null> => {
+    let sellerId = group.sellerId
+    if (!sellerId || sellerId === "__unknown__") {
+      const firstItem = group.items[0]
+      if (firstItem) {
+        const res = await fetch(`/api/products/${firstItem.id}`)
+        const data = await res.json() as { success: boolean; product?: { created_by?: string } }
+        if (data.success && data.product?.created_by) sellerId = data.product.created_by
+      }
+    }
+    return sellerId && sellerId !== "__unknown__" ? sellerId : null
+  }
+
+  /** Fetch the QR for a specific seller group */
+  const fetchQrForGroup = async (group: SellerGroup) => {
+    setSellerQr(null)
     setLoadingQr(true)
     try {
-      const res = await fetch(`/api/seller/payment-qr-public?sellerId=${encodeURIComponent(firstSellerId)}`)
+      const sellerId = await resolveGroupSellerId(group)
+      if (!sellerId) return
+      const res = await fetch(`/api/seller/payment-qr-public?sellerId=${encodeURIComponent(sellerId)}`)
       const data = await res.json() as SellerQr & { success: boolean }
       if (data.success) setSellerQr(data)
     } catch {
@@ -105,7 +132,8 @@ export default function CheckoutPage() {
       toast.error("Please select at least one item to checkout.")
       return
     }
-    await fetchSellerQr()
+    setCurrentGroupIdx(0)
+    await fetchQrForGroup(sellerGroups[0])
     setStep("payment")
   }
 
@@ -129,22 +157,19 @@ export default function CheckoutPage() {
     }
   }
 
+  /** Place order for the current seller group, then advance to next group or finish */
   const handlePlaceOrder = async () => {
-    if (!userId) {
-      toast.error("Please sign in to continue.")
-      return
-    }
-    if (!proofUrl) {
-      toast.error("Please upload your payment screenshot first.")
-      return
-    }
+    if (!userId) { toast.error("Please sign in to continue."); return }
+    if (!proofUrl) { toast.error("Please upload your payment screenshot first."); return }
+    if (!activeGroup) return
 
     setPlacingOrder(true)
     try {
-      const items = selectedItems.map((item) => ({
+      const sellerId = await resolveGroupSellerId(activeGroup) ?? ""
+      const items = activeGroup.items.map((item) => ({
         product_id: item.id,
         listing_id: item.id,
-        seller_id: item.seller_id ?? "",
+        seller_id: sellerId,
         quantity: item.quantity,
         price: item.price,
         pre_order_id: item.itemType === "pre_order" ? item.preOrderId : undefined,
@@ -152,24 +177,31 @@ export default function CheckoutPage() {
 
       const result = await ordersApi.create({
         items,
-        seller_id: items[0]?.seller_id ?? "",
-        total: selectedTotal,
+        seller_id: sellerId,
+        total: activeGroupTotal,
         fulfillment_type: fulfillment,
         notes: notes.trim() || undefined,
       })
 
-      if (!result.success) {
-        throw new Error(result.error ?? "Failed to place order")
-      }
+      if (!result.success) throw new Error(result.error ?? "Failed to place order")
 
-      /** Attach proof of payment */
-      if (result.orderId) {
-        await ordersApi.uploadProof(result.orderId, proofUrl)
-      }
+      if (result.orderId) await ordersApi.uploadProof(result.orderId, proofUrl)
 
-      setOrderId(result.orderId ?? null)
-      clearCart()
-      setStep("confirmed")
+      /** Remove this group's items from the cart */
+      activeGroup.items.forEach((item) => removeFromCart(item.id))
+      setPlacedOrderIds((prev) => [...prev, result.orderId ?? ""])
+
+      const nextIdx = currentGroupIdx + 1
+      if (nextIdx < sellerGroups.length) {
+        /** More seller groups remain — advance to the next one */
+        setCurrentGroupIdx(nextIdx)
+        setProofUrl(null)
+        await fetchQrForGroup(sellerGroups[nextIdx])
+        toast.success(`Order placed! Now pay the next seller.`)
+      } else {
+        /** All groups paid — done */
+        setStep("confirmed")
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to place order")
     } finally {
@@ -373,11 +405,65 @@ export default function CheckoutPage() {
         {/* ── STEP 2: PAYMENT QR ─────────────────────────────────── */}
         {step === "payment" && (
           <div className="space-y-6">
+
+            {/* Multi-seller progress bar */}
+            {sellerGroups.length > 1 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
+                  Payment progress — {currentGroupIdx + 1} of {sellerGroups.length} sellers
+                </p>
+                <div className="flex gap-2">
+                  {sellerGroups.map((g, idx) => (
+                    <div key={g.sellerId} className="flex-1 flex flex-col gap-1">
+                      <div className={`h-2 rounded-full ${
+                        idx < currentGroupIdx ? "bg-green-500" :
+                        idx === currentGroupIdx ? "bg-primary" : "bg-gray-200"
+                      }`} />
+                      <span className="text-xs text-gray-400 truncate">
+                        {idx < currentGroupIdx ? "✓ Paid" :
+                         idx === currentGroupIdx ? "Paying now" : "Pending"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Active group items summary */}
+            <Card className="bg-white shadow-sm">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <Store className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                    {sellerGroups.length > 1
+                      ? `Seller ${currentGroupIdx + 1} of ${sellerGroups.length}`
+                      : "Your Order"}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0 divide-y divide-gray-100">
+                {activeGroup?.items.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 py-2.5">
+                    <div className="h-9 w-9 shrink-0 rounded-lg bg-gray-100 flex items-center justify-center">
+                      <Package className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{item.name}</p>
+                      <p className="text-xs text-gray-400">×{item.quantity}</p>
+                    </div>
+                    <p className="text-sm font-bold text-gray-900 shrink-0">
+                      {fiatSymbol}{(item.price * item.quantity).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
             <Card className="bg-white shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <QrCode className="h-5 w-5 text-primary" />
-                  Scan & Pay
+                  Scan &amp; Pay
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -411,7 +497,7 @@ export default function CheckoutPage() {
                     <div className="w-full bg-amber-50 border border-amber-200 rounded-xl p-4">
                       <p className="text-sm font-bold text-amber-800">Amount to pay</p>
                       <p className="text-3xl font-black text-amber-700 mt-1">
-                        {fiatSymbol}{selectedTotal.toLocaleString()}
+                        {fiatSymbol}{activeGroupTotal.toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -514,7 +600,9 @@ export default function CheckoutPage() {
               >
                 {placingOrder
                   ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Placing Order…</>
-                  : <>Place Order <ArrowRight className="h-4 w-4 ml-2" /></>}
+                  : currentGroupIdx < sellerGroups.length - 1
+                    ? <>Place Order &amp; Pay Next Seller <ArrowRight className="h-4 w-4 ml-2" /></>
+                    : <>Place Order <ArrowRight className="h-4 w-4 ml-2" /></>}
               </Button>
             </div>
           </div>
@@ -530,13 +618,23 @@ export default function CheckoutPage() {
                     <CheckCircle2 className="h-10 w-10 text-green-600" />
                   </div>
                 </div>
-                <h2 className="text-2xl font-black text-gray-900">Order Placed!</h2>
+                <h2 className="text-2xl font-black text-gray-900">
+                  {placedOrderIds.length > 1 ? "All Orders Placed!" : "Order Placed!"}
+                </h2>
                 <p className="text-gray-600 max-w-sm mx-auto">
-                  Your order is now <strong>pending payment confirmation</strong> from the seller.
-                  You can track its status in your dashboard.
+                  {placedOrderIds.length > 1
+                    ? `${placedOrderIds.length} orders are now pending payment confirmation from each seller.`
+                    : "Your order is now pending payment confirmation from the seller."}
+                  {" "}You can track their status in your dashboard.
                 </p>
-                {orderId && (
-                  <p className="text-xs text-gray-400 font-mono">Order ID: {orderId}</p>
+                {placedOrderIds.length > 0 && (
+                  <div className="space-y-1">
+                    {placedOrderIds.map((id, i) => id && (
+                      <p key={id} className="text-xs text-gray-400 font-mono">
+                        {placedOrderIds.length > 1 ? `Order ${i + 1}: ` : "Order ID: "}{id}
+                      </p>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>

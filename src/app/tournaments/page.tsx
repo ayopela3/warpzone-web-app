@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Trophy, Search, X, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { useApp } from "@/components/shared/app-provider"
 import { TournamentCard } from "@/features/tournaments/components/TournamentCard"
 import { tournamentsApi } from "@/lib/api-client"
@@ -22,7 +23,7 @@ export default function TournamentsPage() {
 
   const fetchTournaments = async () => {
     try {
-      const data = await tournamentsApi.list()
+      const data = await tournamentsApi.list(userId ?? undefined)
       if (data.success) setTournaments(data.tournaments)
     } catch (error) {
       console.error("Failed to fetch tournaments:", error)
@@ -31,7 +32,7 @@ export default function TournamentsPage() {
     }
   }
 
-  useEffect(() => { fetchTournaments() }, [])
+  useEffect(() => { fetchTournaments() }, [userId])
 
   const handleRegister = async (tournamentId: string, tournamentName: string) => {
     if (!requireAuth()) return
@@ -39,10 +40,11 @@ export default function TournamentsPage() {
     try {
       const data = await tournamentsApi.register(tournamentId, userId ?? "")
       if (!data.success) throw new Error(data.error ?? "Failed to register")
-      console.log(`Registered for ${tournamentName}`)
+      toast.success(`You're registered for ${tournamentName}!`)
       await fetchTournaments()
     } catch (error) {
-      console.error(error instanceof Error ? error.message : "Failed to register for tournament")
+      const msg = error instanceof Error ? error.message : "Failed to register for tournament"
+      toast.error(msg)
     } finally {
       setRegisteringId(null)
     }

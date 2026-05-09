@@ -163,8 +163,10 @@ export const auctionsApi = {
 // ---------------------------------------------------------------------------
 
 export const tournamentsApi = {
-  list: () =>
-    apiFetch<{ success: boolean; tournaments: Tournament[] }>("/api/tournaments"),
+  list: (userId?: string) =>
+    apiFetch<{ success: boolean; tournaments: Tournament[] }>(
+      userId ? `/api/tournaments?userId=${encodeURIComponent(userId)}` : "/api/tournaments"
+    ),
 
   register: (id: string, userId: string) =>
     apiFetch<{ success: boolean; error?: string }>(`/api/tournaments/${id}/register`, {

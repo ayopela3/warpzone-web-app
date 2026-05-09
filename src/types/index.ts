@@ -156,6 +156,8 @@ export type Tournament = {
   status: TournamentStatus
   preregistration_fee: number
   description: string
+  /** 1 if the authenticated user is already registered, 0 or undefined otherwise */
+  user_registered?: 0 | 1
 }
 
 // ---------------------------------------------------------------------------
