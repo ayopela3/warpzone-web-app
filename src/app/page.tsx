@@ -30,7 +30,7 @@ export default function HomePage() {
 
   const handleAddToCart = (product: Product, qty: number) => {
     addToCart(
-      { id: product.id, name: product.name, price: product.price, category: product.category },
+      { id: product.id, name: product.name, price: product.price, category: product.category, seller_id: product.created_by ?? undefined },
       qty,
       product.quantity,
     )

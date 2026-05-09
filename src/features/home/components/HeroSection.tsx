@@ -87,7 +87,7 @@ export function HeroSection({ isSeller, featuredProducts, activeFeaturedIndex, f
                 : "Browse verified singles, bid on grails, reserve upcoming releases, and join local tournaments at The Warpzone."}
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               {isSeller ? (
                 <Button size="lg" className="bg-primary text-black font-bold hover:bg-primary/90" asChild>
                   <Link href="/dashboard">Go to Dashboard <ArrowRight className="h-4 w-4" /></Link>

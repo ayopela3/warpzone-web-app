@@ -65,13 +65,19 @@ function ProductTile({
           )}
         </div>
 
-        <div className="mt-auto space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xl font-black text-primary">{fiatSymbol}{(product.price ?? 0).toLocaleString()}</p>
-            <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 ${outOfStock ? "bg-muted text-muted-foreground" : "bg-green-50 text-green-700 border border-green-200"}`}>
-              {outOfStock ? "Out of stock" : `In stock (${product.quantity})`}
-            </span>
-          </div>
+        <div className="mt-auto space-y-1.5">
+          <p className="font-black leading-none" style={{ fontSize: "1.05rem", color: "#d97706" }}>
+            {fiatSymbol}{(product.price ?? 0).toLocaleString()}
+          </p>
+          <span
+            className="block w-fit text-[10px] font-bold rounded-full px-2 py-0.5"
+            style={outOfStock
+              ? { background: "#f3f4f6", color: "#6b7280" }
+              : { background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0" }
+            }
+          >
+            {outOfStock ? "Out of stock" : `In stock (${product.quantity})`}
+          </span>
 
           {/* Stepper */}
           {!outOfStock && (

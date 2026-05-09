@@ -84,18 +84,20 @@ function ShopPageInner() {
     <div className="min-h-screen bg-neutral-50">
       {/* ── Page header ── */}
       <div className="bg-white border-b border-neutral-200">
-        <div className="mx-auto max-w-7xl px-4 pt-8 pb-6 lg:px-8 flex items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-primary mb-1">
-              {category === "all" ? "All Categories" : CATEGORY_MAP[category] ?? category}
+        <div className="mx-auto max-w-7xl px-4 pt-6 pb-5 lg:px-8 lg:pt-8 lg:pb-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-widest text-primary mb-1">
+                {category === "all" ? "All Categories" : CATEGORY_MAP[category] ?? category}
+              </p>
+              <h1 className="text-xl font-black tracking-tight text-neutral-900 sm:text-2xl lg:text-3xl">
+                {activeCategory}
+              </h1>
+            </div>
+            <p className="text-sm text-neutral-400 shrink-0 mt-1">
+              {filtered.length} product{filtered.length !== 1 ? "s" : ""}
             </p>
-            <h1 className="text-3xl font-black tracking-tight text-neutral-900">
-              {activeCategory}
-            </h1>
           </div>
-          <p className="text-sm text-neutral-400 shrink-0">
-            {filtered.length} product{filtered.length !== 1 ? "s" : ""}
-          </p>
         </div>
       </div>
 
@@ -134,7 +136,7 @@ function ShopPageInner() {
                 key={product.id}
                 product={product}
                 fiatSymbol={fiatSymbol}
-                onAddToCart={(p, qty) => addToCart({ id: p.id, name: p.name, price: p.price, category: p.category }, qty)}
+                onAddToCart={(p, qty) => addToCart({ id: p.id, name: p.name, price: p.price, category: p.category, seller_id: p.created_by ?? undefined }, qty)}
               />
             ))}
           </div>

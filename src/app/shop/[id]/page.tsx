@@ -20,6 +20,7 @@ type Product = {
   approval_status: string
   condition: string
   created_at: string
+  created_by: string | null
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -62,7 +63,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         price,
         approval_status,
         condition,
-        created_at
+        created_at,
+        created_by
       FROM products
       WHERE id = ? AND approval_status = 'approved' AND is_active = 1
     `)
@@ -164,6 +166,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                 category={product.category}
                 inStock={product.quantity > 0}
                 quantity={product.quantity}
+                sellerId={product.created_by ?? undefined}
               />
             </div>
 

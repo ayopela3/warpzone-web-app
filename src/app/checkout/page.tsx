@@ -28,7 +28,7 @@ type SellerQr = {
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { cartItems, cartTotal, cartCount, fiatSymbol, isAuthenticated, userId, clearCart } = useApp()
+  const { cartItems, fiatSymbol, isAuthenticated, userId, clearCart } = useApp()
 
   const [step, setStep] = useState<Step>("review")
   const [fulfillment, setFulfillment] = useState<FulfillmentType>("pickup")
@@ -40,6 +40,9 @@ export default function CheckoutPage() {
   const [proofUrl, setProofUrl] = useState<string | null>(null)
   const [uploadingProof, setUploadingProof] = useState(false)
 
+  /** IDs of items the user has selected for this checkout */
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set(cartItems.map((i) => i.id)))
+
   useEffect(() => {
     if (!isAuthenticated) {
       router.push(`/auth/signin?next=/checkout`)
@@ -50,22 +53,44 @@ export default function CheckoutPage() {
     }
   }, [isAuthenticated, cartItems.length, step, router])
 
-  /**
-   * Derive the seller ID from the first cart item.
-   * CartItem stores product id; we look up seller_id via the product detail
-   * endpoint if not stored directly. For now, cart items carry seller_id
-   * when added via ProductCard (handled in the seller QR public endpoint).
-   */
-  const cartSellerId = cartItems.length > 0
-    ? ((cartItems[0] as unknown as { seller_id?: string }).seller_id ?? "")
-    : ""
+  /** Items selected for this checkout */
+  const selectedItems = cartItems.filter((i) => selectedIds.has(i.id))
 
-  /** Fetch the seller's payment QR when moving to payment step */
+  /** Group selected items by seller_id (falls back to "__unknown__") */
+  type SellerGroup = { sellerId: string; items: typeof cartItems }
+  const sellerGroups: SellerGroup[] = Object.values(
+    selectedItems.reduce<Record<string, SellerGroup>>((acc, item) => {
+      const key = item.seller_id ?? "__unknown__"
+      if (!acc[key]) acc[key] = { sellerId: key, items: [] }
+      acc[key].items.push(item)
+      return acc
+    }, {})
+  )
+
+  const selectedTotal = selectedItems.reduce((s, i) => s + i.price * i.quantity, 0)
+  const selectedCount = selectedItems.reduce((s, i) => s + i.quantity, 0)
+
+  const toggleItem = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) { next.delete(id) } else { next.add(id) }
+      return next
+    })
+
+  const toggleAll = () =>
+    setSelectedIds(
+      selectedIds.size === cartItems.length
+        ? new Set()
+        : new Set(cartItems.map((i) => i.id))
+    )
+
+  /** Fetch the seller's payment QR for the first seller group */
   const fetchSellerQr = async () => {
+    const firstSellerId = sellerGroups[0]?.sellerId
+    if (!firstSellerId || firstSellerId === "__unknown__") return
     setLoadingQr(true)
     try {
-      const qs = cartSellerId ? `?sellerId=${encodeURIComponent(cartSellerId)}` : ""
-      const res = await fetch(`/api/seller/payment-qr-public${qs}`)
+      const res = await fetch(`/api/seller/payment-qr-public?sellerId=${encodeURIComponent(firstSellerId)}`)
       const data = await res.json() as SellerQr & { success: boolean }
       if (data.success) setSellerQr(data)
     } catch {
@@ -76,6 +101,10 @@ export default function CheckoutPage() {
   }
 
   const handleProceedToPayment = async () => {
+    if (selectedItems.length === 0) {
+      toast.error("Please select at least one item to checkout.")
+      return
+    }
     await fetchSellerQr()
     setStep("payment")
   }
@@ -112,7 +141,7 @@ export default function CheckoutPage() {
 
     setPlacingOrder(true)
     try {
-      const items = cartItems.map((item) => ({
+      const items = selectedItems.map((item) => ({
         product_id: item.id,
         listing_id: item.id,
         seller_id: item.seller_id ?? "",
@@ -124,7 +153,7 @@ export default function CheckoutPage() {
       const result = await ordersApi.create({
         items,
         seller_id: items[0]?.seller_id ?? "",
-        total: cartTotal,
+        total: selectedTotal,
         fulfillment_type: fulfillment,
         notes: notes.trim() || undefined,
       })
@@ -190,28 +219,67 @@ export default function CheckoutPage() {
         {/* ── STEP 1: REVIEW ──────────────────────────────────────── */}
         {step === "review" && (
           <div className="space-y-6">
-            {/* Items */}
+            {/* Items — grouped by seller with checkboxes */}
             <Card className="bg-white shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <ShoppingCart className="h-5 w-5 text-primary" />
-                  Order Items ({cartCount})
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <ShoppingCart className="h-5 w-5 text-primary" />
+                    Select Items to Checkout
+                  </CardTitle>
+                  <button
+                    type="button"
+                    onClick={toggleAll}
+                    className="text-xs font-bold text-primary hover:underline"
+                  >
+                    {selectedIds.size === cartItems.length ? "Deselect all" : "Select all"}
+                  </button>
+                </div>
               </CardHeader>
-              <CardContent className="divide-y divide-gray-100">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex items-center gap-4 py-3">
-                    <div className="h-14 w-14 shrink-0 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
-                      <Package className="h-6 w-6 text-gray-400" />
+              <CardContent className="space-y-5">
+                {/* Group by seller */}
+                {Object.values(
+                  cartItems.reduce<Record<string, { sellerId: string; sellerName?: string; items: typeof cartItems }>>((acc, item) => {
+                    const key = item.seller_id ?? "__unknown__"
+                    if (!acc[key]) acc[key] = { sellerId: key, items: [] }
+                    acc[key].items.push(item)
+                    return acc
+                  }, {})
+                ).map((group) => (
+                  <div key={group.sellerId}>
+                    {/* Seller header */}
+                    <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100">
+                      <Store className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                        {group.sellerId === "__unknown__" ? "Warpzone Shop" : `Seller · ${group.sellerId.slice(0, 8)}…`}
+                      </span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{item.name}</p>
-                      <p className="text-sm text-gray-500 capitalize">{item.category}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="font-bold text-gray-900">{fiatSymbol}{(item.price * item.quantity).toLocaleString()}</p>
-                      <p className="text-xs text-gray-400">x{item.quantity} @ {fiatSymbol}{item.price.toLocaleString()}</p>
-                    </div>
+                    {group.items.map((item) => (
+                      <label
+                        key={item.id}
+                        className={`flex items-center gap-3 py-3 cursor-pointer rounded-lg px-2 transition ${
+                          selectedIds.has(item.id) ? "bg-primary/5" : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(item.id)}
+                          onChange={() => toggleItem(item.id)}
+                          className="h-4 w-4 accent-primary shrink-0"
+                        />
+                        <div className="h-12 w-12 shrink-0 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                          <Package className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm truncate">{item.name}</p>
+                          <p className="text-xs text-gray-500 capitalize">{item.category}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-bold text-gray-900 text-sm">{fiatSymbol}{(item.price * item.quantity).toLocaleString()}</p>
+                          <p className="text-xs text-gray-400">×{item.quantity} @ {fiatSymbol}{item.price.toLocaleString()}</p>
+                        </div>
+                      </label>
+                    ))}
                   </div>
                 ))}
               </CardContent>
@@ -277,12 +345,12 @@ export default function CheckoutPage() {
             <Card className="bg-white shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-                  <span>Subtotal ({cartCount} items)</span>
-                  <span>{fiatSymbol}{cartTotal.toLocaleString()}</span>
+                  <span>Selected ({selectedCount} item{selectedCount !== 1 ? "s" : ""})</span>
+                  <span>{fiatSymbol}{selectedTotal.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between font-black text-lg border-t pt-3">
                   <span>Total</span>
-                  <span className="text-primary">{fiatSymbol}{cartTotal.toLocaleString()}</span>
+                  <span className="text-primary">{fiatSymbol}{selectedTotal.toLocaleString()}</span>
                 </div>
               </CardContent>
             </Card>
@@ -343,7 +411,7 @@ export default function CheckoutPage() {
                     <div className="w-full bg-amber-50 border border-amber-200 rounded-xl p-4">
                       <p className="text-sm font-bold text-amber-800">Amount to pay</p>
                       <p className="text-3xl font-black text-amber-700 mt-1">
-                        {fiatSymbol}{cartTotal.toLocaleString()}
+                        {fiatSymbol}{selectedTotal.toLocaleString()}
                       </p>
                     </div>
                   </div>

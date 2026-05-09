@@ -11,6 +11,7 @@ import { TournamentsTab } from "@/features/admin/components/TournamentsTab"
 import { PreOrdersTab } from "@/features/admin/components/PreOrdersTab"
 import { SettingsTab } from "@/features/admin/components/SettingsTab"
 import { UsersTab } from "@/features/admin/components/UsersTab"
+import { SellersTab } from "@/features/admin/components/SellersTab"
 import { ReportsTab } from "@/features/admin/components/ReportsTab"
 import { adminApi, productsApi } from "@/lib/api-client"
 import type { Product } from "@/types"
@@ -133,8 +134,9 @@ export default function AdminDashboard() {
         />
 
         <Tabs defaultValue='approvals' className='space-y-6'>
-          <TabsList className='grid grid-cols-7 w-full max-w-5xl'>
+          <TabsList className='grid grid-cols-8 w-full max-w-5xl'>
             <TabsTrigger value='approvals'>Approvals</TabsTrigger>
+            <TabsTrigger value='sellers'>Sellers</TabsTrigger>
             <TabsTrigger value='products'>Products</TabsTrigger>
             <TabsTrigger value='pre-orders'>Pre-Orders</TabsTrigger>
             <TabsTrigger value='tournaments'>Tournaments</TabsTrigger>
@@ -171,6 +173,10 @@ export default function AdminDashboard() {
 
           <TabsContent value='tournaments'>
             <TournamentsTab />
+          </TabsContent>
+
+          <TabsContent value='sellers'>
+            <SellersTab />
           </TabsContent>
 
           <TabsContent value='users'>
