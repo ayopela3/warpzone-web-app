@@ -244,6 +244,26 @@ CREATE INDEX IF NOT EXISTS idx_pre_orders_seller_id       ON pre_orders(seller_i
 CREATE INDEX IF NOT EXISTS idx_pre_order_reservations_pre_order_id ON pre_order_reservations(pre_order_id);
 CREATE INDEX IF NOT EXISTS idx_pre_order_reservations_user_id      ON pre_order_reservations(user_id);
 
+-- Service fees table (tracks 5% pre-order / 10% auction fees owed by sellers to admin)
+CREATE TABLE IF NOT EXISTS service_fees (
+  id            TEXT    PRIMARY KEY,
+  seller_id     TEXT    NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  source_type   TEXT    NOT NULL,
+  source_id     TEXT    NOT NULL,
+  description   TEXT    NOT NULL DEFAULT '',
+  gross_amount  REAL    NOT NULL DEFAULT 0,
+  fee_rate      REAL    NOT NULL DEFAULT 0,
+  fee_amount    REAL    NOT NULL DEFAULT 0,
+  status        TEXT    NOT NULL DEFAULT 'unpaid',
+  paid_at       TEXT,
+  created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_service_fees_seller_id ON service_fees(seller_id);
+CREATE INDEX IF NOT EXISTS idx_service_fees_status    ON service_fees(status);
+CREATE INDEX IF NOT EXISTS idx_service_fees_source    ON service_fees(source_type, source_id);
+
 -- Categories table
 CREATE TABLE IF NOT EXISTS categories (
   id          TEXT PRIMARY KEY,

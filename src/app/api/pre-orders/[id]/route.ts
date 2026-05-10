@@ -128,6 +128,47 @@ export async function PATCH(
       .bind(body.paid ? 1 : 0, body.reservationId, id)
       .run()
 
+    // ── Record service fee when marking paid (idempotent via fee_recorded flag) ──
+    if (body.paid) {
+      const reservation = await db
+        .prepare("SELECT quantity, fee_recorded FROM pre_order_reservations WHERE id = ?")
+        .bind(body.reservationId)
+        .first<{ quantity: number; fee_recorded: number | null }>()
+
+      const po = await db
+        .prepare("SELECT price, seller_id FROM pre_orders WHERE id = ?")
+        .bind(id)
+        .first<{ price: number; seller_id: string | null }>()
+
+      // Only charge fee for seller-created pre-orders (seller_id IS NOT NULL)
+      if (reservation && po?.seller_id && !reservation.fee_recorded) {
+        const rateSetting = await db
+          .prepare("SELECT value FROM settings WHERE key = 'pre_order_service_fee_rate'")
+          .first<{ value: string }>()
+        const feeRate = rateSetting ? parseFloat(rateSetting.value) : 0.05
+        const grossAmount = po.price * (reservation.quantity ?? 1)
+        const feeAmount   = Math.round(grossAmount * feeRate * 100) / 100
+
+        await db.prepare(`
+          INSERT OR IGNORE INTO service_fees
+            (id, seller_id, source_type, source_id, description, gross_amount, fee_rate, fee_amount, status, created_at, updated_at)
+          VALUES (?, ?, 'pre_order', ?, ?, ?, ?, ?, 'unpaid', datetime('now'), datetime('now'))
+        `).bind(
+          crypto.randomUUID(),
+          po.seller_id,
+          id,
+          `Pre-order reservation payment — qty ${reservation.quantity ?? 1} × ${po.price}`,
+          grossAmount,
+          feeRate,
+          feeAmount,
+        ).run()
+
+        // Mark so we don't double-charge if toggled again
+        await db.prepare("UPDATE pre_order_reservations SET fee_recorded = 1 WHERE id = ?")
+          .bind(body.reservationId).run()
+      }
+    }
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Pre-order patch error:", error)
