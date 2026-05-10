@@ -11,45 +11,28 @@ import { productsApi } from "@/lib/api-client"
 import type { Product } from "@/types"
 import type { SortOption } from "@/features/shop/components/ProductFilters"
 
-const CATEGORY_MAP: Record<string, string> = {
-  pokemon:     "Pokemon",
-  mtg:         "Magic: The Gathering",
-  yugioh:      "Yu-Gi-Oh!",
-  sealed:      "Sealed Product",
-  plushies:    "Plushies",
-  accessories: "Accessories",
-  others:      "Others",
-}
-
-const CATEGORIES_DISPLAY: Record<string, string> = {
-  all:         "All Products",
-  pokemon:     "Pokémon Products",
-  mtg:         "Magic: The Gathering",
-  yugioh:      "Yu-Gi-Oh! Products",
-  sealed:      "Sealed Products",
-  plushies:    "Plushies",
-  accessories: "Accessories",
-  others:      "Others",
-}
+type ApiCategory = { id: string; slug: string; label: string }
 
 function ShopPageInner() {
   const { addToCart, fiatSymbol } = useApp()
   const searchParams = useSearchParams()
   const [search, setSearch] = useState("")
-  const [category, setCategory] = useState(() => {
-    const param = searchParams.get("category")
-    if (!param) return "all"
-    // accept either short key (pokemon) or display name (Pokemon)
-    const asKey = Object.keys(CATEGORY_MAP).find((k) => k === param.toLowerCase())
-    if (asKey) return asKey
-    const asName = Object.keys(CATEGORY_MAP).find(
-      (k) => CATEGORY_MAP[k].toLowerCase() === param.toLowerCase()
-    )
-    return asName ?? "all"
-  })
+  const [category, setCategory] = useState(searchParams.get("category") ?? "all")
   const [sortBy, setSortBy] = useState<SortOption>("relevance")
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
+  const [apiCategories, setApiCategories] = useState<ApiCategory[]>([])
+
+  /** Slug → label lookup built from API categories */
+  const categoryLabel = (slug: string) =>
+    apiCategories.find((c) => c.slug === slug)?.label ?? slug
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d: { success: boolean; categories: ApiCategory[] }) => { if (d.success) setApiCategories(d.categories) })
+      .catch(console.error)
+  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -66,19 +49,19 @@ function ShopPageInner() {
       result = result.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
     }
     if (category !== "all") {
-      const name = CATEGORY_MAP[category] ?? category
-      result = result.filter((p) => p.category.toLowerCase() === name.toLowerCase())
+      const label = categoryLabel(category)
+      result = result.filter((p) => p.category.toLowerCase() === label.toLowerCase() || p.category.toLowerCase() === category.toLowerCase())
     }
     if (sortBy === "newest")     result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     if (sortBy === "price_asc")  result.sort((a, b) => a.price - b.price)
     if (sortBy === "price_desc") result.sort((a, b) => b.price - a.price)
     return result
-  }, [search, category, sortBy, products])
+  }, [search, category, sortBy, products, apiCategories])
 
   const activeFiltersCount = [category !== "all", search.trim() !== ""].filter(Boolean).length
   const clearFilters = () => { setSearch(""); setCategory("all"); setSortBy("relevance") }
 
-  const activeCategory = CATEGORIES_DISPLAY[category] ?? "All Products"
+  const activeCategory = category === "all" ? "All Products" : (categoryLabel(category) || "All Products")
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -88,7 +71,7 @@ function ShopPageInner() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-widest text-primary mb-1">
-                {category === "all" ? "All Categories" : CATEGORY_MAP[category] ?? category}
+                {category === "all" ? "All Categories" : categoryLabel(category)}
               </p>
               <h1 className="text-xl font-black tracking-tight text-neutral-900 sm:text-2xl lg:text-3xl">
                 {activeCategory}

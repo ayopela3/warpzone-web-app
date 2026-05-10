@@ -1,18 +1,14 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { ArrowUpDown, Search } from "lucide-react"
 
-const CATEGORIES = [
-  { id: "all",         name: "All" },
-  { id: "pokemon",     name: "Pokémon" },
-  { id: "mtg",         name: "MTG" },
-  { id: "yugioh",      name: "Yu-Gi-Oh!" },
-  { id: "sealed",      name: "Sealed" },
-  { id: "plushies",    name: "Plushies" },
-  { id: "accessories", name: "Accessories" },
-  { id: "others",      name: "Others" },
-]
+type ApiCategory = {
+  id: string
+  slug: string
+  label: string
+}
 
 export type SortOption = "relevance" | "newest" | "price_asc" | "price_desc"
 
@@ -28,6 +24,17 @@ type Props = {
 }
 
 export function ProductFilters({ search, category, sortBy, onSearchChange, onCategoryChange, onSortChange }: Props) {
+  const [apiCategories, setApiCategories] = useState<ApiCategory[]>([])
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d: { success: boolean; categories: ApiCategory[] }) => {
+        if (d.success) setApiCategories(d.categories)
+      })
+      .catch(console.error)
+  }, [])
+
   const cycleSortPrice = () => {
     if (sortBy === "price_asc") onSortChange("price_desc")
     else onSortChange("price_asc")
@@ -58,18 +65,32 @@ export function ProductFilters({ search, category, sortBy, onSearchChange, onCat
 
         {/* Category pill chips */}
         <div className="flex items-center gap-2 flex-wrap flex-1">
-          {CATEGORIES.map((cat) => (
+          {/* Static "All" pill */}
+          <button
+            type="button"
+            onClick={() => onCategoryChange("all")}
+            className={`rounded-full border px-3.5 h-8 text-xs font-semibold transition-colors ${
+              category === "all"
+                ? "bg-neutral-900 text-white border-neutral-900"
+                : "bg-white text-neutral-700 border-neutral-300 hover:border-neutral-500"
+            }`}
+          >
+            All
+          </button>
+
+          {/* Dynamic category pills from API */}
+          {apiCategories.map((cat) => (
             <button
               key={cat.id}
               type="button"
-              onClick={() => onCategoryChange(cat.id)}
+              onClick={() => onCategoryChange(cat.slug)}
               className={`rounded-full border px-3.5 h-8 text-xs font-semibold transition-colors ${
-                category === cat.id
+                category === cat.slug
                   ? "bg-neutral-900 text-white border-neutral-900"
                   : "bg-white text-neutral-700 border-neutral-300 hover:border-neutral-500"
               }`}
             >
-              {cat.name}
+              {cat.label}
             </button>
           ))}
         </div>

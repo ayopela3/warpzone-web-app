@@ -243,3 +243,17 @@ CREATE INDEX IF NOT EXISTS idx_pre_orders_approval_status ON pre_orders(approval
 CREATE INDEX IF NOT EXISTS idx_pre_orders_seller_id       ON pre_orders(seller_id);
 CREATE INDEX IF NOT EXISTS idx_pre_order_reservations_pre_order_id ON pre_order_reservations(pre_order_id);
 CREATE INDEX IF NOT EXISTS idx_pre_order_reservations_user_id      ON pre_order_reservations(user_id);
+
+-- Categories table
+CREATE TABLE IF NOT EXISTS categories (
+  id          TEXT PRIMARY KEY,
+  slug        TEXT NOT NULL UNIQUE,
+  label       TEXT NOT NULL,
+  emoji       TEXT,
+  image_url   TEXT,
+  color       TEXT NOT NULL DEFAULT 'bg-gray-50 border-gray-200 hover:border-gray-400 hover:bg-gray-100',
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  is_active   INTEGER NOT NULL DEFAULT 1,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);

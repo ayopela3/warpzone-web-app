@@ -13,6 +13,7 @@ import { SettingsTab } from "@/features/admin/components/SettingsTab"
 import { UsersTab } from "@/features/admin/components/UsersTab"
 import { SellersTab } from "@/features/admin/components/SellersTab"
 import { ReportsTab } from "@/features/admin/components/ReportsTab"
+import { CategoriesTab } from "@/features/admin/components/CategoriesTab"
 import { adminApi, productsApi } from "@/lib/api-client"
 import type { Product } from "@/types"
 
@@ -134,12 +135,13 @@ export default function AdminDashboard() {
         />
 
         <Tabs defaultValue='approvals' className='space-y-6'>
-          <TabsList className='grid grid-cols-8 w-full max-w-5xl'>
+          <TabsList className='grid grid-cols-9 w-full max-w-5xl'>
             <TabsTrigger value='approvals'>Approvals</TabsTrigger>
             <TabsTrigger value='sellers'>Sellers</TabsTrigger>
             <TabsTrigger value='products'>Products</TabsTrigger>
             <TabsTrigger value='pre-orders'>Pre-Orders</TabsTrigger>
             <TabsTrigger value='tournaments'>Tournaments</TabsTrigger>
+            <TabsTrigger value='categories'>Categories</TabsTrigger>
             <TabsTrigger value='users'>Users</TabsTrigger>
             <TabsTrigger value='reports'>Reports</TabsTrigger>
             <TabsTrigger value='settings'>Settings</TabsTrigger>
@@ -181,6 +183,10 @@ export default function AdminDashboard() {
 
           <TabsContent value='users'>
             <UsersTab />
+          </TabsContent>
+
+          <TabsContent value='categories'>
+            <CategoriesTab />
           </TabsContent>
 
           <TabsContent value='reports'>
