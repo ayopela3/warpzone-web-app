@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useDynamicCategories } from "@/hooks/useDynamicCategories"
 import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -19,12 +20,10 @@ import { toast } from "sonner"
 import { preOrdersApi } from "@/lib/api-client"
 import type { PreOrder } from "@/types"
 
-const GAME_OPTIONS = ["Pokemon", "MTG", "Yu-Gi-Oh!", "Plushies", "Accessories", "Other"]
-
 const INITIAL_FORM = {
   title: "",
   description: "",
-  game: "Pokemon",
+  game: "",
   price: "",
   release_date: "",
   max_slots: "",
@@ -34,6 +33,7 @@ const INITIAL_FORM = {
 type Props = { fiatSymbol: string }
 
 export function PreOrdersTab({ fiatSymbol }: Props) {
+  const { categories: dynamicCategories } = useDynamicCategories()
   const [preOrders, setPreOrders]   = useState<PreOrder[]>([])
   const [loading, setLoading]       = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -179,7 +179,7 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
                 <Select value={form.game} onValueChange={(v) => setForm({ ...form, game: v })}>
                   <SelectTrigger id="po-game"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {GAME_OPTIONS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                    {dynamicCategories.map((cat) => <SelectItem key={cat.id} value={cat.label}>{cat.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

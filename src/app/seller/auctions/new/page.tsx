@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useDynamicCategories } from "@/hooks/useDynamicCategories"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -14,16 +15,6 @@ import { toast } from "sonner"
 import { useApp } from "@/components/shared/app-provider"
 import { auctionsApi } from "@/lib/api-client"
 
-const CATEGORY_OPTIONS = [
-  { value: "pokemon", label: "Pokémon" },
-  { value: "mtg", label: "Magic: The Gathering" },
-  { value: "yugioh", label: "Yu-Gi-Oh!" },
-  { value: "plushies", label: "Plushies" },
-  { value: "stickers", label: "Stickers" },
-  { value: "accessories", label: "Accessories" },
-  { value: "other", label: "Other" },
-]
-
 const CONDITION_OPTIONS = [
   { value: "NEW", label: "Brand New" },
   { value: "LIKE NEW", label: "Near Mint" },
@@ -36,6 +27,7 @@ const CONDITION_OPTIONS = [
 export default function NewAuctionPage() {
   const router = useRouter()
   const { isAuthenticated, userRole } = useApp()
+  const { categories: dynamicCategories } = useDynamicCategories()
   const [loading, setLoading] = useState(false)
 
   const [formData, setFormData] = useState({
@@ -169,8 +161,8 @@ export default function NewAuctionPage() {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {CATEGORY_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      {dynamicCategories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.label}>{cat.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

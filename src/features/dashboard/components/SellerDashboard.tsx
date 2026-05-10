@@ -18,21 +18,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Image from "next/image"
 import { toast } from "sonner"
 import { productsApi } from "@/lib/api-client"
+import { useDynamicCategories } from "@/hooks/useDynamicCategories"
 import { SellerProductEditDialog } from "./SellerProductEditDialog"
 import { SellerOrdersTab } from "./SellerOrdersTab"
 import { SellerPreOrdersTab } from "./SellerPreOrdersTab"
 import type { EditForm } from "./SellerProductEditDialog"
 import type { Product, Auction } from "@/types"
-
-const CATEGORY_OPTIONS = [
-  { value: "pokemon", label: "Pok\u00e9mon" },
-  { value: "mtg", label: "Magic: The Gathering" },
-  { value: "yugioh", label: "Yu-Gi-Oh!" },
-  { value: "plushies", label: "Plushies" },
-  { value: "stickers", label: "Stickers" },
-  { value: "accessories", label: "Accessories" },
-  { value: "other", label: "Other" },
-]
 
 const CONDITION_OPTIONS = [
   { value: "NEW", label: "Brand New" },
@@ -61,6 +52,7 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
   const [loading, setLoading] = useState(false)
   const [auctions, setAuctions] = useState<Auction[]>([])
   const [auctionsLoading, setAuctionsLoading] = useState(false)
+  const { categories: dynamicCategories } = useDynamicCategories()
   const [editingAuction, setEditingAuction] = useState<Auction | null>(null)
   const [auctionEditForm, setAuctionEditForm] = useState<AuctionEditForm>({
     title: "", description: "", category: "", condition: "NEW", rarity: "",
@@ -544,7 +536,7 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
                 <Label htmlFor="ea-category">Category *</Label>
                 <Select value={auctionEditForm.category} onValueChange={(v) => setAuctionEditForm({ ...auctionEditForm, category: v })}>
                   <SelectTrigger id="ea-category"><SelectValue placeholder="Category" /></SelectTrigger>
-                  <SelectContent>{CATEGORY_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                  <SelectContent>{dynamicCategories.map((cat) => <SelectItem key={cat.id} value={cat.label}>{cat.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">

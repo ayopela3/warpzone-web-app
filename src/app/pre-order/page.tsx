@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
+import { useDynamicCategories } from "@/hooks/useDynamicCategories"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -16,12 +17,11 @@ import { useApp } from "@/components/shared/app-provider"
 import { preOrdersApi } from "@/lib/api-client"
 import type { PreOrder } from "@/types"
 
-const GAME_OPTIONS = ["All", "Pokemon", "MTG", "Yu-Gi-Oh!", "Plushies", "Accessories", "Other"]
-
 type StatusFilter = "all" | "active" | "closed"
 
 export default function PreOrderPage() {
   const { requireAuth, fiatSymbol, isAuthenticated, addToCart } = useApp()
+  const { categories: dynamicCategories } = useDynamicCategories()
 
   const [preOrders, setPreOrders] = useState<PreOrder[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,10 +56,13 @@ export default function PreOrderPage() {
       result = result.filter((p) => p.status === activeTab)
     }
     if (gameFilter !== "All") {
-      result = result.filter((p) => p.game === gameFilter)
+      result = result.filter((p) =>
+        p.game.toLowerCase() === gameFilter.toLowerCase() ||
+        p.game.toLowerCase() === (dynamicCategories.find((c) => c.label === gameFilter)?.slug ?? gameFilter).toLowerCase()
+      )
     }
     return result
-  }, [preOrders, searchQuery, activeTab, gameFilter])
+  }, [preOrders, searchQuery, activeTab, gameFilter, dynamicCategories])
 
   const hasFilters = searchQuery.trim() !== "" || activeTab !== "all" || gameFilter !== "All"
 
@@ -153,18 +156,31 @@ export default function PreOrderPage() {
             </TabsList>
           </Tabs>
           <div className="flex gap-1.5 flex-wrap">
-            {GAME_OPTIONS.map((g) => (
+            {/* Static "All" pill */}
+            <button
+              type="button"
+              onClick={() => setGameFilter("All")}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+                gameFilter === "All"
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary"
+              }`}
+            >
+              All
+            </button>
+            {/* Dynamic category pills */}
+            {dynamicCategories.map((cat) => (
               <button
-                key={g}
+                key={cat.id}
                 type="button"
-                onClick={() => setGameFilter(g)}
+                onClick={() => setGameFilter(cat.label)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
-                  gameFilter === g
+                  gameFilter === cat.label
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary"
                 }`}
               >
-                {g}
+                {cat.label}
               </button>
             ))}
           </div>

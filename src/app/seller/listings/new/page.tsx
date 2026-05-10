@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useDynamicCategories } from "@/hooks/useDynamicCategories"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -33,6 +34,7 @@ type CatalogProduct = {
 type Step = "search" | "match" | "create-listing" | "create-product"
 
 export default function NewListingPage() {
+  const { categories: dynamicCategories } = useDynamicCategories()
   const [step, setStep] = useState<Step>("search")
   const [searchQuery, setSearchQuery] = useState("")
   const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([])
@@ -580,13 +582,9 @@ export default function NewListingPage() {
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pokemon">Pokemon</SelectItem>
-                        <SelectItem value="mtg">Magic: The Gathering</SelectItem>
-                        <SelectItem value="yugioh">Yu-Gi-Oh!</SelectItem>
-                        <SelectItem value="plushies">Plushies</SelectItem>
-                        <SelectItem value="stickers">Stickers</SelectItem>
-                        <SelectItem value="accessories">Accessories</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        {dynamicCategories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.label}>{cat.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
