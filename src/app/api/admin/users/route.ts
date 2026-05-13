@@ -47,7 +47,12 @@ export async function GET(request: NextRequest) {
           p.role,
           p.business_name,
           p.is_banned,
-          p.ban_reason
+          p.ban_reason,
+          COALESCE((
+            SELECT SUM(pl.points)
+            FROM points_ledger pl
+            WHERE pl.user_id = u.id
+          ), 0) AS points_balance
         FROM users u
         LEFT JOIN profiles p ON p.user_id = u.id
         ORDER BY u.created_at DESC

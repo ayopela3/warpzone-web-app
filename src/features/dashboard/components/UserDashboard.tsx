@@ -7,9 +7,10 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Image from "next/image"
-import { Package, Gavel, Trophy, DollarSign, ArrowRight, Loader2, CalendarDays, MapPin } from "lucide-react"
+import { Package, Gavel, Trophy, DollarSign, ArrowRight, Loader2, CalendarDays, MapPin, Star } from "lucide-react"
 import { UserOrdersTab } from "./UserOrdersTab"
 import { UserPreOrdersTab } from "./UserPreOrdersTab"
+import { UserRewardsTab } from "./UserRewardsTab"
 
 type Stats = {
   totalOrders: number
@@ -66,6 +67,14 @@ export function UserDashboard({ fiatSymbol }: Props) {
   const [auctionsLoading, setAuctionsLoading] = useState(true)
   const [tournaments, setTournaments] = useState<UserTournament[]>([])
   const [tournamentsLoading, setTournamentsLoading] = useState(true)
+  const [pointsBalance, setPointsBalance] = useState(0)
+
+  const fetchPoints = () => {
+    fetch("/api/user/points", { headers: authHeaders() })
+      .then((r) => r.json())
+      .then((d: { success: boolean; balance: number }) => { if (d.success) setPointsBalance(d.balance) })
+      .catch(console.error)
+  }
 
   useEffect(() => {
     fetch("/api/user/stats", { headers: authHeaders() })
@@ -85,7 +94,9 @@ export function UserDashboard({ fiatSymbol }: Props) {
       .then((d) => { if (d.success) setTournaments(d.tournaments ?? []) })
       .catch(console.error)
       .finally(() => setTournamentsLoading(false))
-  }, [])
+
+    fetchPoints()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const statVal = (n: number) => statsLoading ? "—" : n.toLocaleString()
 
@@ -100,7 +111,7 @@ export function UserDashboard({ fiatSymbol }: Props) {
 
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
         {/* Stats row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card className="bg-primary text-white shadow-lg">
             <CardContent className="p-6 flex items-start justify-between">
               <div>
@@ -143,14 +154,25 @@ export function UserDashboard({ fiatSymbol }: Props) {
               <div className="p-3 bg-blue-100 rounded-xl"><DollarSign className="h-6 w-6 text-blue-600" /></div>
             </CardContent>
           </Card>
+          <Card className="bg-amber-400 text-white shadow-lg">
+            <CardContent className="p-6 flex items-start justify-between">
+              <div>
+                <p className="text-sm font-bold text-white/90">Loyalty Points</p>
+                <p className="text-4xl font-black mt-2">{pointsBalance.toLocaleString()}</p>
+                <p className="text-xs text-white/80 mt-1">Redeem for rewards</p>
+              </div>
+              <div className="p-3 bg-white/20 rounded-xl"><Star className="h-6 w-6 text-white fill-white" /></div>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4 bg-white p-1">
+          <TabsList className="grid w-full max-w-3xl grid-cols-5 bg-white p-1">
             <TabsTrigger value="orders" className="data-[state=active]:bg-primary data-[state=active]:text-white">Orders</TabsTrigger>
             <TabsTrigger value="pre-orders" className="data-[state=active]:bg-primary data-[state=active]:text-white">Pre-Orders</TabsTrigger>
             <TabsTrigger value="auctions" className="data-[state=active]:bg-primary data-[state=active]:text-white">Auctions</TabsTrigger>
             <TabsTrigger value="tournaments" className="data-[state=active]:bg-primary data-[state=active]:text-white">Tournaments</TabsTrigger>
+            <TabsTrigger value="rewards" className="data-[state=active]:bg-amber-400 data-[state=active]:text-white">⭐ Rewards</TabsTrigger>
           </TabsList>
 
           {/* Orders tab */}
@@ -280,6 +302,18 @@ export function UserDashboard({ fiatSymbol }: Props) {
                 ))}
               </div>
             )}
+          </TabsContent>
+          {/* Rewards tab */}
+          <TabsContent value="rewards" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Rewards</h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  You have <span className="font-bold text-amber-500">{pointsBalance.toLocaleString()} pts</span> — earn 1 pt for every ₱100 spent.
+                </p>
+              </div>
+            </div>
+            <UserRewardsTab balance={pointsBalance} onBalanceChange={fetchPoints} />
           </TabsContent>
         </Tabs>
       </div>

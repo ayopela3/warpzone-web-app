@@ -244,6 +244,48 @@ CREATE INDEX IF NOT EXISTS idx_pre_orders_seller_id       ON pre_orders(seller_i
 CREATE INDEX IF NOT EXISTS idx_pre_order_reservations_pre_order_id ON pre_order_reservations(pre_order_id);
 CREATE INDEX IF NOT EXISTS idx_pre_order_reservations_user_id      ON pre_order_reservations(user_id);
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Loyalty Points System
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS points_ledger (
+  id           TEXT    PRIMARY KEY,
+  user_id      TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type         TEXT    NOT NULL DEFAULT 'earn',
+  points       INTEGER NOT NULL DEFAULT 0,
+  source_type  TEXT,
+  source_id    TEXT,
+  note         TEXT,
+  created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_points_ledger_user_id ON points_ledger(user_id);
+CREATE INDEX IF NOT EXISTS idx_points_ledger_source  ON points_ledger(source_type, source_id);
+
+CREATE TABLE IF NOT EXISTS reward_items (
+  id           TEXT    PRIMARY KEY,
+  name         TEXT    NOT NULL,
+  description  TEXT,
+  image_url    TEXT,
+  points_cost  INTEGER NOT NULL DEFAULT 0,
+  stock        INTEGER,
+  is_active    INTEGER NOT NULL DEFAULT 1,
+  sort_order   INTEGER NOT NULL DEFAULT 0,
+  created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS reward_redemptions (
+  id             TEXT    PRIMARY KEY,
+  user_id        TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reward_item_id TEXT    NOT NULL REFERENCES reward_items(id) ON DELETE CASCADE,
+  points_spent   INTEGER NOT NULL DEFAULT 0,
+  status         TEXT    NOT NULL DEFAULT 'pending',
+  note           TEXT,
+  created_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_reward_redemptions_user_id ON reward_redemptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_reward_redemptions_status  ON reward_redemptions(status);
+
 -- Service fees table (tracks 5% pre-order / 10% auction fees owed by sellers to admin)
 CREATE TABLE IF NOT EXISTS service_fees (
   id            TEXT    PRIMARY KEY,

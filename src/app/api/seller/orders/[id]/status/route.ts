@@ -78,6 +78,38 @@ export async function PUT(
       .bind(status, id)
       .run()
 
+    // ── Award loyalty points when payment is confirmed (idempotent) ──
+    if (status === "confirmed") {
+      const fullOrder = await db
+        .prepare("SELECT user_id, total, points_awarded FROM orders WHERE id = ?")
+        .bind(id)
+        .first<{ user_id: string; total: number; points_awarded: number }>()
+
+      if (fullOrder && !fullOrder.points_awarded) {
+        const rateSetting = await db
+          .prepare("SELECT value FROM settings WHERE key = 'points_earn_rate'")
+          .first<{ value: string }>()
+        const earnRate = rateSetting ? parseInt(rateSetting.value, 10) : 100
+        const pointsEarned = Math.floor(fullOrder.total / earnRate)
+
+        if (pointsEarned > 0) {
+          await db.prepare(`
+            INSERT INTO points_ledger (id, user_id, type, points, source_type, source_id, note, created_at)
+            VALUES (?, ?, 'earn', ?, 'order', ?, ?, datetime('now'))
+          `).bind(
+            crypto.randomUUID(),
+            fullOrder.user_id,
+            pointsEarned,
+            id,
+            `Earned from order #${id.slice(0, 8).toUpperCase()} — ₱${fullOrder.total.toLocaleString()}`,
+          ).run()
+
+          await db.prepare("UPDATE orders SET points_awarded = 1, updated_at = datetime('now') WHERE id = ?")
+            .bind(id).run()
+        }
+      }
+    }
+
     return NextResponse.json({ success: true, status })
   } catch (error) {
     console.error("Order status update error:", error)
