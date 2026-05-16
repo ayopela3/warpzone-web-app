@@ -20,7 +20,7 @@ import type { PreOrder } from "@/types"
 type StatusFilter = "all" | "active" | "closed"
 
 export default function PreOrderPage() {
-  const { requireAuth, fiatSymbol, isAuthenticated, addToCart } = useApp()
+  const { requireAuth, fiatSymbol, isAuthenticated, addToCart, cartItems } = useApp()
   const { categories: dynamicCategories } = useDynamicCategories()
 
   const [preOrders, setPreOrders] = useState<PreOrder[]>([])
@@ -82,9 +82,22 @@ export default function PreOrderPage() {
     })
   }
 
-  const handleAddToCart = (preOrder: PreOrder) => {
+  const handleAddToCart = async (preOrder: PreOrder) => {
     if (!requireAuth()) return
     const qty = getQty(preOrder.id)
+
+    /** Create or update the DB reservation first — seller count should reflect real reservations */
+    try {
+      const result = await preOrdersApi.reserve(preOrder.id, qty)
+      if (!result.success) {
+        toast.error(result.error ?? "Failed to reserve slot")
+        return
+      }
+    } catch {
+      toast.error("Failed to reserve pre-order slot")
+      return
+    }
+
     addToCart(
       {
         id:          preOrder.id,
@@ -98,16 +111,11 @@ export default function PreOrderPage() {
       qty,
       preOrder.max_slots ?? undefined
     )
-    /** Also create the DB reservation so seller sees it */
-    preOrdersApi.reserve(preOrder.id, qty).catch(() => {})
+
     toast.success(`${preOrder.title} ×${qty} added to cart`)
-    setPreOrders((prev) =>
-      prev.map((p) =>
-        p.id === preOrder.id
-          ? { ...p, user_reserved: true, reservation_count: (p.reservation_count ?? 0) + 1 }
-          : p
-      )
-    )
+
+    /** Refresh reservation count from server so the displayed count is accurate */
+    fetchPreOrders()
   }
 
   return (
@@ -217,7 +225,7 @@ export default function PreOrderPage() {
             {filtered.map((po) => {
               const isClosed    = po.status === "closed"
               const isFull      = po.max_slots !== null && (po.reservation_count ?? 0) >= po.max_slots
-              const isReserved  = po.user_reserved === true
+              const isReserved  = cartItems.some((c) => c.id === po.id)
               const slotsLeft   = po.max_slots !== null ? po.max_slots - (po.reservation_count ?? 0) : null
 
               return (

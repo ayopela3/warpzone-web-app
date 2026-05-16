@@ -27,7 +27,7 @@ export async function GET() {
           pr.full_name as seller_name,
           pr.business_name as seller_business
         FROM products p
-        LEFT JOIN profiles pr ON p.created_by = pr.id
+        LEFT JOIN profiles pr ON p.created_by = pr.user_id
         WHERE p.approval_status = 'pending'
         ORDER BY p.created_at DESC
       `)
