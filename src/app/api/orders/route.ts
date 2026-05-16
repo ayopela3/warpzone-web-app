@@ -51,31 +51,58 @@ export async function POST(request: NextRequest) {
 
     const orderId = crypto.randomUUID()
 
-    await db
-      .prepare(
-        `INSERT INTO orders (id, user_id, seller_id, status, total, fulfillment_type, notes, created_at, updated_at)
-         VALUES (?, ?, ?, 'pending_payment', ?, ?, ?, datetime('now'), datetime('now'))`
-      )
-      .bind(orderId, userId, seller_id, total, fulfillment_type, notes ?? null)
-      .run()
+    console.log(`[Order Create] Creating order: ${orderId}, userId: ${userId}, sellerId: ${seller_id}`)
+    console.log(`[Order Create] Items:`, items.map(i => ({ product_id: i.product_id, listing_id: i.listing_id, seller_id: i.seller_id })))
 
-    for (const item of items) {
+    // Validate foreign keys exist
+    const userExists = await db.prepare("SELECT 1 FROM users WHERE id = ?").bind(userId).first()
+    const sellerExists = await db.prepare("SELECT 1 FROM profiles WHERE id = ?").bind(seller_id).first()
+
+    console.log(`[Order Create] userExists: ${!!userExists}, sellerExists: ${!!sellerExists}`)
+
+    if (!userExists) {
+      return NextResponse.json({ success: false, error: "Invalid user_id", details: `User ${userId} not found in database` }, { status: 400 })
+    }
+    if (!sellerExists) {
+      return NextResponse.json({ success: false, error: "Invalid seller_id", details: `Seller ${seller_id} not found in profiles` }, { status: 400 })
+    }
+
+    try {
       await db
         .prepare(
-          `INSERT INTO order_items (id, order_id, product_id, listing_id, seller_id, quantity, price, pre_order_id, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+          `INSERT INTO orders (id, user_id, seller_id, status, total, fulfillment_type, notes, created_at, updated_at)
+           VALUES (?, ?, ?, 'pending_payment', ?, ?, ?, datetime('now'), datetime('now'))`
         )
-        .bind(
-          crypto.randomUUID(),
-          orderId,
-          item.product_id,
-          item.listing_id,
-          item.seller_id,
-          item.quantity,
-          item.price,
-          item.pre_order_id ?? null
-        )
+        .bind(orderId, userId, seller_id, total, fulfillment_type, notes ?? null)
         .run()
+    } catch (e) {
+      console.error(`[Order Create] Failed to insert order. userId: ${userId}, sellerId: ${seller_id}`)
+      throw new Error(`Order insert failed: ${e instanceof Error ? e.message : String(e)}`)
+    }
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      try {
+        await db
+          .prepare(
+            `INSERT INTO order_items (id, order_id, product_id, listing_id, seller_id, quantity, price, pre_order_id, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+          )
+          .bind(
+            crypto.randomUUID(),
+            orderId,
+            item.product_id,
+            item.listing_id,
+            item.seller_id,
+            item.quantity,
+            item.price,
+            item.pre_order_id ?? null
+          )
+          .run()
+      } catch (e) {
+        console.error(`[Order Create] Failed to insert item ${i}:`, item)
+        throw new Error(`Item ${i} insert failed: ${e instanceof Error ? e.message : String(e)}`)
+      }
     }
 
     return NextResponse.json({ success: true, orderId })

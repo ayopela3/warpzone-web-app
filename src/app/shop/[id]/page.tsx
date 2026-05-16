@@ -21,6 +21,7 @@ type Product = {
   condition: string
   created_at: string
   created_by: string | null
+  listing_seller_id: string | null
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -52,21 +53,24 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const productResult = await db
     .prepare(`
       SELECT 
-        id,
-        sku,
-        name,
-        category,
-        rarity,
-        description,
-        image_url,
-        quantity,
-        price,
-        approval_status,
-        condition,
-        created_at,
-        created_by
-      FROM products
-      WHERE id = ? AND approval_status = 'approved' AND is_active = 1
+        p.id,
+        p.sku,
+        p.name,
+        p.category,
+        p.rarity,
+        p.description,
+        p.image_url,
+        p.quantity,
+        p.price,
+        p.approval_status,
+        p.condition,
+        p.created_at,
+        p.created_by,
+        pl.seller_id as listing_seller_id
+      FROM products p
+      LEFT JOIN product_listings pl ON pl.product_id = p.id
+      WHERE p.id = ? AND p.approval_status = 'approved' AND p.is_active = 1
+      LIMIT 1
     `)
     .bind(id)
     .first()
@@ -166,7 +170,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                 category={product.category}
                 inStock={product.quantity > 0}
                 quantity={product.quantity}
-                sellerId={product.created_by ?? undefined}
+                sellerId={product.listing_seller_id ?? undefined}
               />
             </div>
 
