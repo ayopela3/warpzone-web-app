@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   profile_picture TEXT,
   business_name TEXT,
   payment_qr_url TEXT,                                 -- GCash / Maya / bank QR for payment
+  is_banned INTEGER DEFAULT 0,                        -- 0 = not banned, 1 = banned
+  ban_reason TEXT,                                     -- Reason for ban (if banned)
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -228,7 +230,6 @@ CREATE INDEX IF NOT EXISTS idx_orders_seller_id ON orders(seller_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_auctions_seller_id ON auctions(seller_id);
-CREATE INDEX IF NOT EXISTS idx_auctions_product_id ON auctions(product_id);
 CREATE INDEX IF NOT EXISTS idx_auctions_status ON auctions(status);
 CREATE INDEX IF NOT EXISTS idx_auction_bids_auction_id ON auction_bids(auction_id);
 CREATE INDEX IF NOT EXISTS idx_auction_bids_user_id ON auction_bids(user_id);

@@ -89,9 +89,12 @@ export async function POST(request: NextRequest) {
       profileComplete,
     })
 
+    // Detect if running on HTTPS (production) or HTTP (localhost)
+    const isSecure = request.url.startsWith("https://")
+
     const cookieOptions = {
       httpOnly: false, // must be readable by middleware (edge), not JS
-      secure: true,
+      secure: isSecure,
       sameSite: "lax" as const,
       path: "/",
       maxAge: 7 * 24 * 60 * 60, // 7 days

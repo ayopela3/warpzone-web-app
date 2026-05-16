@@ -20,6 +20,9 @@ import {
   ShieldCheck,
   Search,
   Store,
+  Plus,
+  Minus,
+  Star,
 } from "lucide-react"
 import { toast } from "sonner"
 import { adminApi } from "@/lib/api-client"
@@ -44,12 +47,23 @@ export function UsersTab() {
   const [actionUser, setActionUser] = useState<AdminUser | null>(null)
   const [banReason, setBanReason] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [pointsUser, setPointsUser] = useState<AdminUser | null>(null)
+  const [pointsAmount, setPointsAmount] = useState("")
+  const [pointsNote, setPointsNote] = useState("")
+  const [pointsSubmitting, setPointsSubmitting] = useState(false)
+  const [userPoints, setUserPoints] = useState<Record<string, number>>({})
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     try {
       const data = await adminApi.listUsers()
-      if (data.success) setUsers(data.users)
+      if (data.success) {
+        setUsers(data.users)
+        // Fetch points for all users
+        await Promise.all(
+          data.users.map((user) => fetchUserPoints(user.user_id))
+        )
+      }
     } catch {
       toast.error("Failed to load users")
     } finally {
@@ -116,6 +130,70 @@ export function UsersTab() {
       toast.success(`${user.full_name ?? user.email} has been unbanned`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to unban user")
+    }
+  }
+
+  const fetchUserPoints = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/points`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("warpzone-session-id") ?? ""}` },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setUserPoints((prev) => ({ ...prev, [userId]: data.balance }))
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch user points:", error)
+    }
+  }
+
+  const openPointsDialog = (user: AdminUser) => {
+    setPointsAmount("")
+    setPointsNote("")
+    setPointsUser(user)
+    // Fetch current points if not already cached
+    if (!userPoints[user.user_id]) {
+      fetchUserPoints(user.user_id)
+    }
+  }
+
+  const handlePointsAdjust = async () => {
+    if (!pointsUser || !pointsAmount) return
+    
+    const points = parseInt(pointsAmount, 10)
+    if (isNaN(points) || points === 0) {
+      toast.error("Please enter a valid point amount")
+      return
+    }
+
+    setPointsSubmitting(true)
+    try {
+      const response = await fetch(`/api/admin/users/${pointsUser.user_id}/points`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("warpzone-session-id") ?? ""}`,
+        },
+        body: JSON.stringify({
+          points,
+          note: pointsNote.trim() || undefined,
+        }),
+      })
+      
+      const data = await response.json()
+      if (!data.success) throw new Error(data.error)
+      
+      setUserPoints((prev) => ({ ...prev, [pointsUser.user_id]: data.newBalance }))
+      toast.success(`Points ${points > 0 ? "awarded" : "deducted"} successfully`)
+      setPointsUser(null)
+      setPointsAmount("")
+      setPointsNote("")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to adjust points")
+    } finally {
+      setPointsSubmitting(false)
     }
   }
 
@@ -226,31 +304,52 @@ export function UsersTab() {
                     <p className='text-[11px] text-muted-foreground/60 mt-0.5'>
                       Joined {new Date(user.created_at).toLocaleDateString()}
                     </p>
+                    
+                    {/* Points display */}
+                    <div className='flex items-center gap-1.5 mt-2 pt-2 border-t border-border/50'>
+                      <Star className='h-3.5 w-3.5 text-amber-500 fill-amber-500' />
+                      <span className='text-sm font-medium text-amber-700'>
+                        {userPoints[user.user_id] ?? 0} pts
+                      </span>
+                    </div>
                   </div>
 
                   {/* Action */}
-                  {!isAdmin &&
-                    (isBanned ? (
+                  <div className='flex flex-col gap-2'>
+                    {!isAdmin && (
                       <Button
                         size='sm'
                         variant='outline'
-                        className='shrink-0 border-green-200 text-green-700 hover:bg-green-50 gap-1.5'
-                        onClick={() => handleUnban(user)}
+                        className='shrink-0 border-amber-200 text-amber-700 hover:bg-amber-50 gap-1.5'
+                        onClick={() => openPointsDialog(user)}
                       >
-                        <ShieldCheck className='h-3.5 w-3.5' />
-                        Unban
+                        <Star className='h-3.5 w-3.5' />
+                        Adjust Points
                       </Button>
-                    ) : (
-                      <Button
-                        size='sm'
-                        variant='outline'
-                        className='shrink-0 border-red-200 text-red-600 hover:bg-red-50 gap-1.5'
-                        onClick={() => openBanDialog(user)}
-                      >
-                        <ShieldOff className='h-3.5 w-3.5' />
-                        Ban
-                      </Button>
-                    ))}
+                    )}
+                    {!isAdmin &&
+                      (isBanned ? (
+                        <Button
+                          size='sm'
+                          variant='outline'
+                          className='shrink-0 border-green-200 text-green-700 hover:bg-green-50 gap-1.5'
+                          onClick={() => handleUnban(user)}
+                        >
+                          <ShieldCheck className='h-3.5 w-3.5' />
+                          Unban
+                        </Button>
+                      ) : (
+                        <Button
+                          size='sm'
+                          variant='outline'
+                          className='shrink-0 border-red-200 text-red-600 hover:bg-red-50 gap-1.5'
+                          onClick={() => openBanDialog(user)}
+                        >
+                          <ShieldOff className='h-3.5 w-3.5' />
+                          Ban
+                        </Button>
+                      ))}
+                  </div>
                 </CardContent>
               </Card>
             )
@@ -308,6 +407,112 @@ export function UsersTab() {
                 <Loader2 className='h-4 w-4 animate-spin' />
               ) : (
                 "Confirm Ban"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Points adjustment dialog */}
+      <Dialog
+        open={!!pointsUser}
+        onOpenChange={(open) => {
+          if (!open) setPointsUser(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
+              <Star className="h-5 w-5" />
+              Adjust Points
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-sm font-medium text-amber-800">
+                {pointsUser?.full_name ?? pointsUser?.email}
+              </p>
+              <p className="text-xs text-amber-600 mt-0.5">
+                Current balance: <span className="font-bold">{userPoints[pointsUser?.user_id ?? ""] ?? 0} pts</span>
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="points-amount">
+                Points Adjustment <span className="text-muted-foreground">(positive = award, negative = deduct)</span>
+              </Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPointsAmount("-100")}
+                  className="shrink-0"
+                >
+                  <Minus className="h-3 w-3" />
+                  100
+                </Button>
+                <Input
+                  id="points-amount"
+                  type="number"
+                  placeholder="Enter amount"
+                  value={pointsAmount}
+                  onChange={(e) => setPointsAmount(e.target.value)}
+                  className="text-center"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPointsAmount("100")}
+                  className="shrink-0"
+                >
+                  <Plus className="h-3 w-3" />
+                  100
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-1.5">
+              <Label htmlFor="points-note">
+                Note <span className="text-muted-foreground">(optional)</span>
+              </Label>
+              <Input
+                id="points-note"
+                placeholder="e.g. Bonus for tournament participation"
+                value={pointsNote}
+                onChange={(e) => setPointsNote(e.target.value)}
+              />
+            </div>
+            
+            {pointsAmount && !isNaN(parseInt(pointsAmount, 10)) && parseInt(pointsAmount, 10) !== 0 && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <p className="text-sm text-gray-600">
+                  New balance will be: 
+                  <span className="font-bold text-gray-900 ml-1">
+                    {(userPoints[pointsUser?.user_id ?? ""] ?? 0) + parseInt(pointsAmount, 10)} pts
+                  </span>
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setPointsUser(null)}
+              disabled={pointsSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={handlePointsAdjust}
+              disabled={pointsSubmitting || !pointsAmount || isNaN(parseInt(pointsAmount, 10)) || parseInt(pointsAmount, 10) === 0}
+            >
+              {pointsSubmitting ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
+              ) : (
+                <>Confirm Adjustment</>
               )}
             </Button>
           </DialogFooter>

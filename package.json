@@ -8,7 +8,7 @@
     "dev:next": "next dev",
     "build": "next build",
     "build:cf": "next build && npx @cloudflare/next-on-pages",
-    "init-local-db": "npx wrangler d1 execute DB --local --file=./schema.sql && npx wrangler d1 execute DB --local --file=./prisma/migrations/20260505_seed_users/migration.sql",
+    "init-local-db": "npx wrangler d1 execute DB --local --file=./schema.sql && npx wrangler d1 execute DB --local --file=./prisma/migrations/20260516_add_ban_columns/migration.sql && npx wrangler d1 execute DB --local --file=./prisma/migrations/20260505_seed_users/migration.sql",
     "deploy": "npm run build:cf && wrangler pages deploy .vercel/output/static --project-name=warpzone",
     "start": "next start",
     "lint": "eslint"
