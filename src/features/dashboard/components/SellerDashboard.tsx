@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Package, Gavel, ShoppingBag, DollarSign,
-  Plus, CheckCircle2, XCircle, Hourglass, Loader2, Edit2, X, LayoutGrid, List,
+  Plus, CheckCircle2, XCircle, Hourglass, Loader2, Edit2, X, LayoutGrid, List, Info,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -45,6 +45,8 @@ type AuctionEditForm = {
   start_time: string
   end_time: string
 }
+type FeeRates = { auctionFeeRate: number; preOrderFeeRate: number }
+
 type Props = { userId: string | null; fiatSymbol: string }
 
 export function SellerDashboard({ userId, fiatSymbol }: Props) {
@@ -65,6 +67,7 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
   const [editForm, setEditForm] = useState<EditForm>({ name: "", category: "", rarity: "", description: "", price: "", quantity: "" })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState("")
+  const [feeRates, setFeeRates] = useState<FeeRates>({ auctionFeeRate: 0.10, preOrderFeeRate: 0.05 })
 
   const fetchProducts = useCallback(async () => {
     const id = localStorage.getItem("warpzone-user-id") || userId
@@ -97,6 +100,19 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
 
   useEffect(() => { fetchProducts() }, [fetchProducts])
   useEffect(() => { fetchAuctions() }, [fetchAuctions])
+  useEffect(() => {
+    fetch("/api/settings/fees")
+      .then((r) => r.json())
+      .then((d: { success: boolean; auctionFeeRate?: number; preOrderFeeRate?: number }) => {
+        if (d.success) {
+          setFeeRates({
+            auctionFeeRate: d.auctionFeeRate ?? 0.10,
+            preOrderFeeRate: d.preOrderFeeRate ?? 0.05,
+          })
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const openAuctionEdit = (auction: Auction) => {
     setEditingAuction(auction)
@@ -213,6 +229,40 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
         </div>
 
         <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
+          {/* Platform fee notice */}
+          {(() => {
+            const EXAMPLE = 3600
+            const poFeeRate  = feeRates.preOrderFeeRate
+            const aucFeeRate = feeRates.auctionFeeRate
+            const poFee    = Math.round(EXAMPLE * poFeeRate * 100) / 100
+            const aucFee   = Math.round(EXAMPLE * aucFeeRate * 100) / 100
+            return (
+              <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Info className="h-4 w-4 text-amber-600 shrink-0" />
+                  <p className="text-sm font-semibold text-amber-800">Platform fees apply to all sales</p>
+                </div>
+                <p className="text-sm text-amber-700 pl-6">
+                  The buyer always pays your listed price in full. A platform fee is deducted from your payout — you keep the rest.
+                </p>
+                <div className="pl-6 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div className="rounded-lg bg-white border border-amber-200 p-2.5 space-y-1">
+                    <p className="font-semibold text-gray-700">Shop / Pre-orders — {(poFeeRate * 100).toFixed(0)}% fee</p>
+                    <div className="flex justify-between text-gray-500"><span>Buyer pays</span><span>{fiatSymbol}{EXAMPLE.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-red-500"><span>Platform fee ({(poFeeRate * 100).toFixed(0)}%)</span><span>− {fiatSymbol}{poFee.toLocaleString()}</span></div>
+                    <div className="flex justify-between font-semibold text-green-700 border-t pt-1"><span>You receive</span><span>{fiatSymbol}{(EXAMPLE - poFee).toLocaleString()}</span></div>
+                  </div>
+                  <div className="rounded-lg bg-white border border-amber-200 p-2.5 space-y-1">
+                    <p className="font-semibold text-gray-700">Auctions — {(aucFeeRate * 100).toFixed(0)}% fee</p>
+                    <div className="flex justify-between text-gray-500"><span>Winning bid</span><span>{fiatSymbol}{EXAMPLE.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-red-500"><span>Platform fee ({(aucFeeRate * 100).toFixed(0)}%)</span><span>− {fiatSymbol}{aucFee.toLocaleString()}</span></div>
+                    <div className="flex justify-between font-semibold text-green-700 border-t pt-1"><span>You receive</span><span>{fiatSymbol}{(EXAMPLE - aucFee).toLocaleString()}</span></div>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card className="bg-primary text-white shadow-lg">
               <CardContent className="p-6 flex items-start justify-between">
@@ -370,6 +420,12 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
             </TabsContent>
 
             <TabsContent value="auctions" className="space-y-4">
+              <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+                <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                <p className="text-sm text-blue-800">
+                  A <span className="font-semibold">{(feeRates.auctionFeeRate * 100).toFixed(0)}% platform fee</span> is deducted from the final winning bid. The buyer pays your full asking price — you receive <span className="font-semibold">{(100 - feeRates.auctionFeeRate * 100).toFixed(0)}%</span>. Fees are recorded when the auction is settled by admin.
+                </p>
+              </div>
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">Your Auctions</h2>
                 <div className="flex items-center gap-2">
@@ -499,6 +555,12 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
             </TabsContent>
 
             <TabsContent value="pre-orders" className="space-y-4">
+              <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+                <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                <p className="text-sm text-blue-800">
+                  A <span className="font-semibold">{(feeRates.preOrderFeeRate * 100).toFixed(0)}% platform fee</span> is deducted per paid reservation. The buyer pays your full listed price — you receive <span className="font-semibold">{(100 - feeRates.preOrderFeeRate * 100).toFixed(0)}%</span>. Fees are recorded when you mark a buyer&apos;s slot as paid.
+                </p>
+              </div>
               <SellerPreOrdersTab fiatSymbol={fiatSymbol} />
             </TabsContent>
 

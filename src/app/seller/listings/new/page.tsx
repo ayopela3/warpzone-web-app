@@ -461,6 +461,27 @@ export default function NewListingPage() {
                       onChange={(e) => setListingForm({ ...listingForm, price: e.target.value })}
                       className="placeholder:text-gray-400"
                     />
+                    {listingForm.price && parseFloat(listingForm.price) > 0 && (() => {
+                      const price = parseFloat(listingForm.price)
+                      const fee = Math.round(price * 0.05 * 100) / 100
+                      const payout = Math.round((price - fee) * 100) / 100
+                      return (
+                        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs space-y-1">
+                          <div className="flex justify-between text-gray-600">
+                            <span>Buyer pays</span>
+                            <span className="font-semibold text-gray-800">{price.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-red-600">
+                            <span>Platform fee (5%)</span>
+                            <span className="font-semibold">− {fee.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between border-t border-amber-200 pt-1 text-green-700">
+                            <span className="font-semibold">You receive</span>
+                            <span className="font-bold">{payout.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="listing-qty">Quantity Available *</Label>

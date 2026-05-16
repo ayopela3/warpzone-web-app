@@ -31,6 +31,9 @@ type PasswordForm = {
   confirm_password: string
 }
 
+/** Set to true to re-enable seller QR upload once the admin-QR flow is ready */
+const SHOW_SELLER_QR_UPLOAD = false
+
 const ROLE_LABELS: Record<string, string> = {
   "regular-user": "Customer",
   seller: "Seller",
@@ -402,7 +405,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Payment QR — seller / admin only */}
-        {isSeller && (
+        {isSeller && SHOW_SELLER_QR_UPLOAD && (
           <Card className="bg-white shadow-sm">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">

@@ -262,6 +262,28 @@ export default function NewAuctionPage() {
                     placeholder="0.00"
                     required
                   />
+                  {formData.starting_price && parseFloat(formData.starting_price) > 0 && (() => {
+                    const price = parseFloat(formData.starting_price)
+                    const fee = Math.round(price * 0.10 * 100) / 100
+                    const payout = Math.round((price - fee) * 100) / 100
+                    return (
+                      <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs space-y-1">
+                        <p className="text-amber-700 font-medium mb-1">If auction settles at starting bid:</p>
+                        <div className="flex justify-between text-gray-600">
+                          <span>Winning bid</span>
+                          <span className="font-semibold text-gray-800">{price.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-red-600">
+                          <span>Platform fee (10%)</span>
+                          <span className="font-semibold">− {fee.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-amber-200 pt-1 text-green-700">
+                          <span className="font-semibold">You receive</span>
+                          <span className="font-bold">{payout.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="min_bid_increment">Min Bid Increment *</Label>

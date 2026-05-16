@@ -20,10 +20,8 @@ import type { FulfillmentType, CartItem } from "@/types"
 
 type Step = "review" | "payment" | "confirmed"
 
-type SellerQr = {
+type PlatformQr = {
   payment_qr_url: string | null
-  seller_name: string | null
-  seller_business: string | null
 }
 
 type SellerGroup = {
@@ -42,7 +40,7 @@ export default function CheckoutPage() {
   /** Which seller group the user is currently paying (0-indexed) */
   const [currentGroupIdx, setCurrentGroupIdx] = useState(0)
 
-  const [sellerQr, setSellerQr] = useState<SellerQr | null>(null)
+  const [platformQr, setPlatformQr] = useState<PlatformQr | null>(null)
   const [loadingQr, setLoadingQr] = useState(false)
   const [placingOrder, setPlacingOrder] = useState(false)
   const [placedOrderIds, setPlacedOrderIds] = useState<string[]>([])
@@ -110,16 +108,14 @@ export default function CheckoutPage() {
     return sellerId && sellerId !== "__unknown__" ? sellerId : null
   }
 
-  /** Fetch the QR for a specific seller group */
-  const fetchQrForGroup = async (group: SellerGroup) => {
-    setSellerQr(null)
+  /** Fetch the platform-wide payment QR from admin settings */
+  const fetchQrForGroup = async () => {
+    setPlatformQr(null)
     setLoadingQr(true)
     try {
-      const sellerId = await resolveGroupSellerId(group)
-      if (!sellerId) return
-      const res = await fetch(`/api/seller/payment-qr-public?sellerId=${encodeURIComponent(sellerId)}`)
-      const data = await res.json() as SellerQr & { success: boolean }
-      if (data.success) setSellerQr(data)
+      const res = await fetch("/api/settings/payment-qr")
+      const data = await res.json() as PlatformQr & { success: boolean }
+      if (data.success) setPlatformQr(data)
     } catch {
       toast.error("Could not load payment details. Please try again.")
     } finally {
@@ -133,7 +129,7 @@ export default function CheckoutPage() {
       return
     }
     setCurrentGroupIdx(0)
-    await fetchQrForGroup(sellerGroups[0])
+    await fetchQrForGroup()
     setStep("payment")
   }
 
@@ -196,7 +192,7 @@ export default function CheckoutPage() {
         /** More seller groups remain — advance to the next one */
         setCurrentGroupIdx(nextIdx)
         setProofUrl(null)
-        await fetchQrForGroup(sellerGroups[nextIdx])
+        await fetchQrForGroup()
         toast.success(`Order placed! Now pay the next seller.`)
       } else {
         /** All groups paid — done */
@@ -472,7 +468,7 @@ export default function CheckoutPage() {
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     <p className="text-sm text-gray-500">Loading payment details...</p>
                   </div>
-                ) : sellerQr?.payment_qr_url ? (
+                ) : platformQr?.payment_qr_url ? (
                   <div className="flex flex-col items-center gap-4">
                     <p className="text-gray-700 text-center">
                       Scan the QR code below to send payment via GCash, Maya, or your bank.
@@ -480,20 +476,16 @@ export default function CheckoutPage() {
                     <div className="border-4 border-primary rounded-2xl p-3 bg-white shadow-lg">
                       <div className="relative h-56 w-56">
                         <Image
-                          src={sellerQr.payment_qr_url}
+                          src={platformQr.payment_qr_url}
                           alt="Payment QR Code"
                           fill
                           className="object-contain rounded-lg"
                         />
                       </div>
                     </div>
-                    {(sellerQr.seller_business ?? sellerQr.seller_name) && (
-                      <p className="text-sm text-gray-500 text-center">
-                        Pay to: <span className="font-semibold text-gray-800">
-                          {sellerQr.seller_business ?? sellerQr.seller_name}
-                        </span>
-                      </p>
-                    )}
+                    <p className="text-sm text-gray-500 text-center">
+                      Pay to: <span className="font-semibold text-gray-800">Warpzone</span>
+                    </p>
                     <div className="w-full bg-amber-50 border border-amber-200 rounded-xl p-4">
                       <p className="text-sm font-bold text-amber-800">Amount to pay</p>
                       <p className="text-3xl font-black text-amber-700 mt-1">
