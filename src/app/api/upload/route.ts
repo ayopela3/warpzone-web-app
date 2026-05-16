@@ -54,11 +54,17 @@ export async function POST(request: NextRequest) {
 
     // Return the public URL from environment variable
     const r2PublicUrl = process.env.R2_PUBLIC_URL
-    const publicUrl = `${r2PublicUrl}/${uniqueFileName}`
+    const directUrl = r2PublicUrl ? `${r2PublicUrl}/${uniqueFileName}` : null
+
+    // Also provide a proxied URL through the app's domain (avoids CORS issues)
+    // This uses the current request's origin to construct the proxied URL
+    const requestUrl = new URL(request.url)
+    const proxiedUrl = `${requestUrl.origin}/api/images/${encodeURIComponent(uniqueFileName)}`
 
     return NextResponse.json({
       success: true,
-      url: publicUrl,
+      url: proxiedUrl, // Use proxied URL by default (works on any domain)
+      directUrl, // Direct R2 URL (may not work on custom domains without proper CORS)
       filename: uniqueFileName
     })
   } catch (error) {
