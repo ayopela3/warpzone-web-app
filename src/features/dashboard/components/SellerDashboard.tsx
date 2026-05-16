@@ -22,6 +22,7 @@ import { useDynamicCategories } from "@/hooks/useDynamicCategories"
 import { SellerProductEditDialog } from "./SellerProductEditDialog"
 import { SellerOrdersTab } from "./SellerOrdersTab"
 import { SellerPreOrdersTab } from "./SellerPreOrdersTab"
+import { SellerCashoutTab } from "./SellerCashoutTab"
 import type { EditForm } from "./SellerProductEditDialog"
 import type { Product, Auction } from "@/types"
 
@@ -309,11 +310,12 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
           </div>
 
           <Tabs defaultValue="products" className="space-y-6">
-            <TabsList className="grid w-full max-w-2xl grid-cols-4 bg-white p-1">
+            <TabsList className="grid w-full max-w-3xl grid-cols-5 bg-white p-1">
               <TabsTrigger value="products" className="data-[state=active]:bg-primary data-[state=active]:text-white">Products</TabsTrigger>
               <TabsTrigger value="auctions" className="data-[state=active]:bg-primary data-[state=active]:text-white">Auctions</TabsTrigger>
               <TabsTrigger value="pre-orders" className="data-[state=active]:bg-primary data-[state=active]:text-white">Pre-Orders</TabsTrigger>
               <TabsTrigger value="orders" className="data-[state=active]:bg-primary data-[state=active]:text-white">Orders</TabsTrigger>
+              <TabsTrigger value="cashout" className="data-[state=active]:bg-primary data-[state=active]:text-white">Cashout</TabsTrigger>
             </TabsList>
 
             <TabsContent value="products" className="space-y-4">
@@ -567,6 +569,11 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
             <TabsContent value="orders" className="space-y-4">
               <h2 className="text-xl font-bold text-gray-900">Incoming Orders</h2>
               <SellerOrdersTab fiatSymbol={fiatSymbol} />
+            </TabsContent>
+
+            <TabsContent value="cashout" className="space-y-4">
+              <h2 className="text-xl font-bold text-gray-900">Cashout</h2>
+              <SellerCashoutTab fiatSymbol={fiatSymbol} />
             </TabsContent>
           </Tabs>
         </div>

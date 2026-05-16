@@ -16,6 +16,7 @@ import { ReportsTab } from "@/features/admin/components/ReportsTab"
 import { CategoriesTab } from "@/features/admin/components/CategoriesTab"
 import { ServiceFeesTab } from "@/features/admin/components/ServiceFeesTab"
 import { RewardsTab } from "@/features/admin/components/RewardsTab"
+import { CashoutsTab } from "@/features/admin/components/CashoutsTab"
 import { adminApi, productsApi } from "@/lib/api-client"
 import type { Product } from "@/types"
 
@@ -137,7 +138,7 @@ export default function AdminDashboard() {
         />
 
         <Tabs defaultValue='approvals' className='space-y-6'>
-          <TabsList className='grid grid-cols-11 w-full max-w-7xl'>
+          <TabsList className='grid grid-cols-12 w-full max-w-7xl'>
             <TabsTrigger value='approvals'>Approvals</TabsTrigger>
             <TabsTrigger value='sellers'>Sellers</TabsTrigger>
             <TabsTrigger value='products'>Products</TabsTrigger>
@@ -145,6 +146,7 @@ export default function AdminDashboard() {
             <TabsTrigger value='tournaments'>Tournaments</TabsTrigger>
             <TabsTrigger value='categories'>Categories</TabsTrigger>
             <TabsTrigger value='service-fees'>Fees</TabsTrigger>
+            <TabsTrigger value='cashouts'>Cashouts</TabsTrigger>
             <TabsTrigger value='rewards'>Rewards</TabsTrigger>
             <TabsTrigger value='users'>Users</TabsTrigger>
             <TabsTrigger value='reports'>Reports</TabsTrigger>
@@ -195,6 +197,10 @@ export default function AdminDashboard() {
 
           <TabsContent value='service-fees'>
             <ServiceFeesTab fiatSymbol={fiatSymbol} />
+          </TabsContent>
+
+          <TabsContent value='cashouts'>
+            <CashoutsTab fiatSymbol={fiatSymbol} />
           </TabsContent>
 
           <TabsContent value='rewards'>
