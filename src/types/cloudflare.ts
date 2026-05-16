@@ -33,7 +33,8 @@ export interface R2Object {
     contentType?: string
   }
   customMetadata?: Record<string, string>
-  write: () => ReadableStream
+  body?: ReadableStream<Uint8Array>
+  write?: () => ReadableStream<Uint8Array>
 }
 
 export interface R2Objects {
