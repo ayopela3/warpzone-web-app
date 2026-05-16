@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration: Convert R2 direct URLs to proxied URLs
+-- Migration: Convert R2 direct URLs to proxied URLs (Simplified for D1)
 -- Purpose: Fix image loading on warpzone.shop by routing through /api/images
 -- =============================================================================
 -- 
@@ -11,93 +11,64 @@
 --
 -- =============================================================================
 
--- =============================================================================
--- products table
--- =============================================================================
+-- Update all tables in one go using simpler patterns
+-- D1 has limitations on complex LIKE patterns, so we use simpler conditions
+
+-- products
 UPDATE products 
 SET image_url = REPLACE(image_url, 'https://pub-2e76a476c5744c96a96ed1522c349421.r2.dev/', 'https://warpzone.shop/api/images/')
-WHERE image_url LIKE 'https://pub-2e76a476c5744c96a96ed1522c349421.r2.dev/%';
+WHERE image_url IS NOT NULL AND instr(image_url, 'r2.dev') > 0;
 
--- =============================================================================
--- auctions table
--- =============================================================================
+-- auctions
 UPDATE auctions 
 SET image_url = REPLACE(image_url, 'https://pub-2e76a476c5744c96a96ed1522c349421.r2.dev/', 'https://warpzone.shop/api/images/')
-WHERE image_url LIKE 'https://pub-2e76a476c5744c96a96ed1522c349421.r2.dev/%';
+WHERE image_url IS NOT NULL AND instr(image_url, 'r2.dev') > 0;
 
--- =============================================================================
--- pre_orders table
--- =============================================================================
+-- pre_orders
 UPDATE pre_orders 
 SET image_url = REPLACE(image_url, 'https://pub-2e76a476c5744c96a96ed1522c349421.r2.dev/', 'https://warpzone.shop/api/images/')
-WHERE image_url LIKE 'https://pub-2e76a476c5744c96a96ed1522c349421.r2.dev/%';
+WHERE image_url IS NOT NULL AND instr(image_url, 'r2.dev') > 0;
 
--- =============================================================================
--- reward_items table
--- =============================================================================
+-- reward_items
 UPDATE reward_items 
 SET image_url = REPLACE(image_url, 'https://pub-2e76a476c5744c96a96ed1522c349421.r2.dev/', 'https://warpzone.shop/api/images/')
-WHERE image_url LIKE 'https://pub-2e76a476c5744c96a96ed1522c349421.r2.dev/%';
+WHERE image_url IS NOT NULL AND instr(image_url, 'r2.dev') > 0;
 
--- =============================================================================
--- categories table
--- =============================================================================
+-- categories
 UPDATE categories 
 SET image_url = REPLACE(image_url, 'https://pub-2e76a476c5744c96a96ed1522c349421.r2.dev/', 'https://warpzone.shop/api/images/')
-WHERE image_url LIKE 'https://pub-2e76a476c5744c96a96ed1522c349421.r2.dev/%';
+WHERE image_url IS NOT NULL AND instr(image_url, 'r2.dev') > 0;
 
--- =============================================================================
--- profiles table (payment_qr_url and profile_picture)
--- =============================================================================
+-- profiles (payment_qr_url)
 UPDATE profiles 
 SET payment_qr_url = REPLACE(payment_qr_url, 'https://pub-2e76a476c5744c96a96ed1522c349421.r2.dev/', 'https://warpzone.shop/api/images/')
-WHERE payment_qr_url LIKE 'https://pub-2e76a476c5744c96a96ed1522c349421.r2.dev/%';
+WHERE payment_qr_url IS NOT NULL AND instr(payment_qr_url, 'r2.dev') > 0;
 
+-- profiles (profile_picture)
 UPDATE profiles 
 SET profile_picture = REPLACE(profile_picture, 'https://pub-2e76a476c5744c96a96ed1522c349421.r2.dev/', 'https://warpzone.shop/api/images/')
-WHERE profile_picture LIKE 'https://pub-2e76a476c5744c96a96ed1522c349421.r2.dev/%';
+WHERE profile_picture IS NOT NULL AND instr(profile_picture, 'r2.dev') > 0;
 
--- =============================================================================
--- Verification query - shows counts after migration
--- =============================================================================
-SELECT 'products' as table_name, 
-       COUNT(CASE WHEN image_url LIKE '%r2.dev/%' THEN 1 END) as r2_urls,
-       COUNT(CASE WHEN image_url LIKE '%/api/images/%' THEN 1 END) as proxied_urls,
-       COUNT(*) as total
-FROM products
-UNION ALL
-SELECT 'auctions', 
-       COUNT(CASE WHEN image_url LIKE '%r2.dev/%' THEN 1 END),
-       COUNT(CASE WHEN image_url LIKE '%/api/images/%' THEN 1 END),
-       COUNT(*)
-FROM auctions
-UNION ALL
-SELECT 'pre_orders', 
-       COUNT(CASE WHEN image_url LIKE '%r2.dev/%' THEN 1 END),
-       COUNT(CASE WHEN image_url LIKE '%/api/images/%' THEN 1 END),
-       COUNT(*)
-FROM pre_orders
-UNION ALL
-SELECT 'reward_items', 
-       COUNT(CASE WHEN image_url LIKE '%r2.dev/%' THEN 1 END),
-       COUNT(CASE WHEN image_url LIKE '%/api/images/%' THEN 1 END),
-       COUNT(*)
-FROM reward_items
-UNION ALL
-SELECT 'categories', 
-       COUNT(CASE WHEN image_url LIKE '%r2.dev/%' THEN 1 END),
-       COUNT(CASE WHEN image_url LIKE '%/api/images/%' THEN 1 END),
-       COUNT(*)
-FROM categories
-UNION ALL
-SELECT 'profiles (payment_qr)', 
-       COUNT(CASE WHEN payment_qr_url LIKE '%r2.dev/%' THEN 1 END),
-       COUNT(CASE WHEN payment_qr_url LIKE '%/api/images/%' THEN 1 END),
-       COUNT(*)
-FROM profiles
-UNION ALL
-SELECT 'profiles (profile_pic)', 
-       COUNT(CASE WHEN profile_picture LIKE '%r2.dev/%' THEN 1 END),
-       COUNT(CASE WHEN profile_picture LIKE '%/api/images/%' THEN 1 END),
-       COUNT(*)
-FROM profiles;
+-- Verification queries (run separately to avoid D1 limits)
+-- Check each table individually after migration
+
+-- Verify products: should return 0
+SELECT COUNT(*) as products_remaining_r2 FROM products WHERE image_url IS NOT NULL AND instr(image_url, 'r2.dev') > 0;
+
+-- Verify auctions: should return 0  
+SELECT COUNT(*) as auctions_remaining_r2 FROM auctions WHERE image_url IS NOT NULL AND instr(image_url, 'r2.dev') > 0;
+
+-- Verify pre_orders: should return 0
+SELECT COUNT(*) as preorders_remaining_r2 FROM pre_orders WHERE image_url IS NOT NULL AND instr(image_url, 'r2.dev') > 0;
+
+-- Verify reward_items: should return 0
+SELECT COUNT(*) as rewards_remaining_r2 FROM reward_items WHERE image_url IS NOT NULL AND instr(image_url, 'r2.dev') > 0;
+
+-- Verify categories: should return 0
+SELECT COUNT(*) as categories_remaining_r2 FROM categories WHERE image_url IS NOT NULL AND instr(image_url, 'r2.dev') > 0;
+
+-- Verify profiles payment_qr: should return 0
+SELECT COUNT(*) as profiles_qr_remaining_r2 FROM profiles WHERE payment_qr_url IS NOT NULL AND instr(payment_qr_url, 'r2.dev') > 0;
+
+-- Verify profiles pictures: should return 0
+SELECT COUNT(*) as profiles_pic_remaining_r2 FROM profiles WHERE profile_picture IS NOT NULL AND instr(profile_picture, 'r2.dev') > 0;
