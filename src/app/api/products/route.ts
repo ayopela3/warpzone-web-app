@@ -70,7 +70,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query based on filters
-    let query = "SELECT p.*, pr.full_name as seller_name FROM products p LEFT JOIN profiles pr ON p.created_by = pr.user_id"
+    let query = `SELECT p.*, pr.full_name as seller_name, pl.seller_id as listing_seller_id 
+                 FROM products p 
+                 LEFT JOIN profiles pr ON p.created_by = pr.user_id
+                 LEFT JOIN product_listings pl ON pl.product_id = p.id`
     const conditions: string[] = []
     const params: (string | number)[] = []
 

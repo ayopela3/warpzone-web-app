@@ -13,9 +13,12 @@ export async function GET(
     if (!db) return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
 
     const product = await db
-      .prepare("SELECT id, name, category, price, quantity, created_by FROM products WHERE id = ?")
+      .prepare(`SELECT p.id, p.name, p.category, p.price, p.quantity, p.created_by, pl.id as listing_id 
+                FROM products p 
+                LEFT JOIN product_listings pl ON pl.product_id = p.id 
+                WHERE p.id = ?`)
       .bind(id)
-      .first<{ id: string; name: string; category: string; price: number; quantity: number; created_by: string | null }>()
+      .first<{ id: string; name: string; category: string; price: number; quantity: number; created_by: string | null; listing_id: string | null }>()
 
     if (!product) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 })
 

@@ -98,6 +98,8 @@ export type Product = {
   /** Joined from profiles */
   seller_name?: string | null
   seller_business?: string | null
+  /** Joined from product_listings - the actual seller profile id for checkout */
+  listing_seller_id?: string | null
 }
 
 export type ProductListItem = Pick<

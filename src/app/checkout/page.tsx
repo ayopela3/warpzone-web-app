@@ -162,17 +162,28 @@ export default function CheckoutPage() {
     setPlacingOrder(true)
     try {
       const sellerId = await resolveGroupSellerId(activeGroup) ?? ""
-      const items = activeGroup.items.map((item) => ({
-        product_id: item.id,
-        listing_id: item.id,
-        seller_id: sellerId,
-        quantity: item.quantity,
-        price: item.price,
-        pre_order_id: item.itemType === "pre_order" ? item.preOrderId : undefined,
-      }))
+
+      // Fetch listing_id for each product from the API
+      const itemsWithListingIds = await Promise.all(
+        activeGroup.items.map(async (item) => {
+          // Get listing_id from product API
+          const res = await fetch(`/api/products/${item.id}`)
+          const data = await res.json() as { success: boolean; product?: { listing_id?: string } }
+          const listingId = data.success && data.product?.listing_id ? data.product.listing_id : item.id
+
+          return {
+            product_id: item.id,
+            listing_id: listingId,
+            seller_id: sellerId,
+            quantity: item.quantity,
+            price: item.price,
+            pre_order_id: item.itemType === "pre_order" ? item.preOrderId : undefined,
+          }
+        })
+      )
 
       const result = await ordersApi.create({
-        items,
+        items: itemsWithListingIds,
         seller_id: sellerId,
         total: activeGroupTotal,
         fulfillment_type: fulfillment,
