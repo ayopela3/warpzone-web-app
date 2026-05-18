@@ -327,7 +327,29 @@ export async function PUT(
     if (body.game) { updates.push("game = ?"); binds.push(body.game) }
     if (body.image_url !== undefined) { updates.push("image_url = ?"); binds.push(body.image_url) }
     if (body.price !== undefined) { updates.push("price = ?"); binds.push(body.price) }
-    if (body.full_price !== undefined) { updates.push("full_price = ?"); binds.push(body.full_price) }
+    if (body.full_price !== undefined) {
+      updates.push("full_price = ?")
+      binds.push(body.full_price)
+
+      // Auto-recalculate display price and downpayment when full_price changes
+      if (body.price === undefined) {
+        const current = await db
+          .prepare("SELECT downpayment_pct FROM pre_orders WHERE id = ?")
+          .bind(id)
+          .first<{ downpayment_pct: number | null }>()
+        const pct = current?.downpayment_pct
+        if (pct && pct > 0) {
+          const dp = Math.round(body.full_price * pct * 100) / 100
+          updates.push("price = ?")
+          binds.push(dp)
+          updates.push("downpayment_amount = ?")
+          binds.push(dp)
+        } else {
+          updates.push("price = ?")
+          binds.push(body.full_price)
+        }
+      }
+    }
     if (body.downpayment_amount !== undefined) { 
       updates.push("downpayment_amount = ?"); 
       binds.push(body.downpayment_amount) 

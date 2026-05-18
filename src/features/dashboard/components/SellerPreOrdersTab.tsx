@@ -31,6 +31,7 @@ import {
   ChevronUp,
   Flag,
   AlertTriangle,
+  Pencil,
 } from "lucide-react"
 import { toast } from "sonner"
 import { preOrdersApi } from "@/lib/api-client"
@@ -83,6 +84,12 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
     name: string
     referenceId: string
   } | null>(null)
+
+  /** Inline edit state */
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState(INITIAL_FORM)
+  const [editSaving, setEditSaving] = useState(false)
+  const [editUploading, setEditUploading] = useState(false)
 
   /** Resolve seller's profile id once */
   useEffect(() => {
@@ -157,6 +164,76 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
       toast.error(err instanceof Error ? err.message : "Failed to update")
     } finally {
       setTogglingId(null)
+    }
+  }
+
+  /** Start editing a pre-order — populate form with current values */
+  const handleStartEdit = (po: PreOrder) => {
+    setEditingId(po.id)
+    setEditForm({
+      title: po.title,
+      description: po.description ?? "",
+      game: po.game,
+      full_price: String(po.full_price ?? po.price ?? ""),
+      downpayment_pct: po.downpayment_pct ? String(po.downpayment_pct * 100) : "",
+      cutoff_date: po.cutoff_date ? po.cutoff_date.split("T")[0] : "",
+      release_date: po.release_date ? po.release_date.split("T")[0] : "",
+      max_slots: po.max_slots ? String(po.max_slots) : "",
+      image_url: po.image_url ?? "",
+    })
+  }
+
+  /** Save edits via PUT /api/pre-orders/[id] */
+  const handleSaveEdit = async (id: string) => {
+    if (!editForm.title.trim() || !editForm.release_date) {
+      toast.error("Title and release date are required")
+      return
+    }
+    const fullPrice = parseFloat(editForm.full_price)
+    if (!fullPrice || fullPrice <= 0) {
+      toast.error("Full price is required and must be greater than 0")
+      return
+    }
+    setEditSaving(true)
+    try {
+      const result = await preOrdersApi.update(id, {
+        title: editForm.title.trim(),
+        description: editForm.description || "",
+        game: editForm.game,
+        image_url: editForm.image_url || undefined,
+        full_price: fullPrice,
+        release_date: editForm.release_date,
+        max_slots: editForm.max_slots ? parseInt(editForm.max_slots, 10) : undefined,
+      })
+      if (!result.success) throw new Error(result.error ?? "Failed to save")
+      toast.success("Pre-order updated")
+      setEditingId(null)
+      fetchMyPreOrders()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update pre-order")
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  /** Image upload for edit form */
+  const handleEditImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setEditUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append("file", file)
+      const res = await fetch("/api/upload", { method: "POST", body: fd })
+      const data = (await res.json()) as { success: boolean; url?: string; error?: string }
+      if (!data.success || !data.url) throw new Error(data.error ?? "Upload failed")
+      setEditForm((f) => ({ ...f, image_url: data.url! }))
+      toast.success("Image uploaded")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed")
+    } finally {
+      setEditUploading(false)
+      e.target.value = ""
     }
   }
 
@@ -546,16 +623,133 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
                       {po.max_slots ? <span className="text-gray-400">/{po.max_slots}</span> : ""}
                     </span>
 
-                    {/* Details toggle */}
-                    <button
-                      type="button"
-                      onClick={() => toggleExpand(po)}
-                      className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors"
-                      aria-label="Toggle reservations"
-                    >
-                      Details {isOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                    </button>
+                    {/* Actions */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => editingId === po.id ? setEditingId(null) : handleStartEdit(po)}
+                        className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors"
+                        aria-label="Edit pre-order"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        {editingId === po.id ? "Cancel" : "Edit"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(po)}
+                        className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors"
+                        aria-label="Toggle reservations"
+                      >
+                        Details {isOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
                   </div>
+
+                  {/* ── Inline edit form ── */}
+                  {editingId === po.id && (
+                    <div className="border-t border-border bg-amber-50/50 px-5 py-4 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`edit-title-${po.id}`}>Title *</Label>
+                          <Input
+                            id={`edit-title-${po.id}`}
+                            value={editForm.title}
+                            onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`edit-game-${po.id}`}>Game / Category *</Label>
+                          <Select value={editForm.game} onValueChange={(v) => setEditForm({ ...editForm, game: v })}>
+                            <SelectTrigger id={`edit-game-${po.id}`}><SelectValue placeholder="Select game" /></SelectTrigger>
+                            <SelectContent>
+                              {dynamicCategories.map((cat) => (
+                                <SelectItem key={cat.id} value={cat.label}>{cat.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`edit-price-${po.id}`}>Full Price ({fiatSymbol}) *</Label>
+                          <Input
+                            id={`edit-price-${po.id}`}
+                            type="number"
+                            min="0"
+                            value={editForm.full_price}
+                            onChange={(e) => setEditForm({ ...editForm, full_price: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`edit-date-${po.id}`}>Release Date *</Label>
+                          <Input
+                            id={`edit-date-${po.id}`}
+                            type="date"
+                            value={editForm.release_date}
+                            onChange={(e) => setEditForm({ ...editForm, release_date: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`edit-slots-${po.id}`}>Max Slots (blank = unlimited)</Label>
+                          <Input
+                            id={`edit-slots-${po.id}`}
+                            type="number"
+                            min="1"
+                            placeholder="Unlimited"
+                            value={editForm.max_slots}
+                            onChange={(e) => setEditForm({ ...editForm, max_slots: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label>Product Image</Label>
+                          <div className="flex items-center gap-2">
+                            <Label
+                              htmlFor={`edit-img-${po.id}`}
+                              className="flex items-center gap-2 cursor-pointer px-3 py-2 border rounded-md text-sm text-gray-600 hover:border-primary hover:text-primary transition"
+                            >
+                              {editUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                              {editUploading ? "Uploading…" : "Upload"}
+                            </Label>
+                            <input
+                              id={`edit-img-${po.id}`}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleEditImageUpload}
+                              disabled={editUploading}
+                            />
+                            {editForm.image_url && (
+                              <span className="text-xs text-green-600 flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" />Uploaded
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`edit-desc-${po.id}`}>Description</Label>
+                        <Textarea
+                          id={`edit-desc-${po.id}`}
+                          placeholder="Optional description..."
+                          rows={3}
+                          value={editForm.description}
+                          onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                          className="resize-none"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setEditingId(null)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleSaveEdit(po.id)}
+                          disabled={editSaving}
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                        >
+                          {editSaving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving…</> : "Save Changes"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* ── Inline accordion: reservations ── */}
                   {isOpen && (

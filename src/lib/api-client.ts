@@ -256,9 +256,21 @@ export const preOrdersApi = {
       body: JSON.stringify(body),
     }),
 
-  /** Admin: approve, reject, or close a pre-order */
-  update: (id: string, body: { approval_status?: string; status?: string }) =>
-    apiFetch<{ success: boolean; error?: string }>(`/api/pre-orders/${id}`, {
+  /** Admin/Seller: update a pre-order (approval, status, or editable fields) */
+  update: (id: string, body: {
+    approval_status?: string
+    status?: string
+    title?: string
+    description?: string
+    game?: string
+    image_url?: string
+    price?: number
+    full_price?: number
+    downpayment_amount?: number | null
+    release_date?: string
+    max_slots?: number
+  }) =>
+    authFetch<{ success: boolean; error?: string }>(`/api/pre-orders/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
