@@ -39,10 +39,10 @@ export function Navbar() {
     return () => { document.body.style.overflow = "" }
   }, [mobileMenuOpen])
 
-  // Show Sell with Us button only for unauthenticated users or regular users
+  // Show Sell with Us button only for unauthenticated users or regular users (not sellers/admins)
   const showSellButton = !isAuthenticated || userRole === "regular-user"
-  // Show cart button and shopping features only for non-seller, non-admin users
-  const showShoppingFeatures = !isAuthenticated || userRole === "regular-user"
+  // Show shopping nav/cart for everyone except admins — sellers are also buyers
+  const showShoppingFeatures = userRole !== "admin"
   // Dashboard href depends on role: admin → /admin, everyone else → /dashboard
   const dashboardHref = userRole === "admin" ? "/admin" : "/dashboard"
 
