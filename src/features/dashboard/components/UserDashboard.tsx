@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import Image from "next/image"
-import { Package, Gavel, Trophy, DollarSign, ArrowRight, Loader2, CalendarDays, MapPin, Star } from "lucide-react"
+import { Package, Gavel, Trophy, DollarSign, ArrowRight, Loader2, MapPin, Star, Eye } from "lucide-react"
 import { UserOrdersTab } from "./UserOrdersTab"
 import { UserPreOrdersTab } from "./UserPreOrdersTab"
 import { UserRewardsTab } from "./UserRewardsTab"
@@ -96,7 +95,7 @@ export function UserDashboard({ fiatSymbol }: Props) {
       .finally(() => setTournamentsLoading(false))
 
     fetchPoints()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   const statVal = (n: number) => statsLoading ? "—" : n.toLocaleString()
 
@@ -111,7 +110,7 @@ export function UserDashboard({ fiatSymbol }: Props) {
 
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
         {/* Stats row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
           <Card className="bg-primary text-white shadow-lg">
             <CardContent className="p-6 flex items-start justify-between">
               <div>
@@ -215,33 +214,43 @@ export function UserDashboard({ fiatSymbol }: Props) {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-3">
-                {auctions.slice(0, 5).map((auction) => (
-                  <Card key={auction.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex gap-4 items-center">
-                        <div className="relative w-16 h-16 shrink-0 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
-                          {auction.image_url
-                            ? <Image src={auction.image_url} alt={auction.title} fill className="object-contain" />
-                            : <Gavel className="h-7 w-7 text-amber-400" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="font-semibold text-gray-900 truncate">{auction.title}</p>
-                            <Badge variant="outline" className={`text-xs shrink-0 ${STATUS_COLORS[auction.status] ?? ""}`}>
-                              {auction.status === "active" ? "Live" : auction.status === "upcoming" ? "Upcoming" : "Ended"}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-gray-500 capitalize">{auction.category} · {auction.condition}</p>
-                          <div className="flex items-center justify-between mt-1">
-                            <span className="text-sm text-gray-500">Current bid</span>
-                            <span className="font-bold text-primary">{fiatSymbol}{(auction.current_bid || auction.starting_price).toLocaleString()}</span>
-                          </div>
-                        </div>
+              <div className="rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm">
+                <div className="grid grid-cols-[2fr_1.5fr_1.2fr_1.5fr_auto] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Auction</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">End Date</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Current Bid</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</span>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {auctions.slice(0, 5).map((auction) => (
+                    <div
+                      key={auction.id}
+                      className="grid grid-cols-[2fr_1.5fr_1.2fr_1.5fr_auto] gap-4 px-5 py-4 items-center hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-primary truncate">{auction.title}</p>
+                        <span className="text-xs text-gray-500 capitalize">{auction.category} · {auction.condition}</span>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      <span className="text-sm text-gray-700">
+                        {new Date(auction.end_time).toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric" })}
+                      </span>
+                      <div>
+                        <Badge variant="outline" className={`text-xs w-fit ${STATUS_COLORS[auction.status] ?? ""}`}>
+                          {auction.status === "active" ? "Live" : auction.status === "upcoming" ? "Upcoming" : "Ended"}
+                        </Badge>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900">
+                        {fiatSymbol}{(auction.current_bid || auction.starting_price).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                      </span>
+                      <Button asChild variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-100 gap-1.5">
+                        <Link href={`/auctions`}>
+                          View <Eye className="h-3.5 w-3.5" />
+                        </Link>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </TabsContent>
@@ -274,32 +283,45 @@ export function UserDashboard({ fiatSymbol }: Props) {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-3">
-                {tournaments.slice(0, 5).map((t) => (
-                  <Card key={t.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900">{t.name}</p>
-                          <div className="flex flex-wrap gap-3 mt-1 text-sm text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <CalendarDays className="h-3.5 w-3.5" />
-                              {new Date(t.tournament_date).toLocaleDateString()}
-                            </span>
-                            {t.location && (
-                              <span className="flex items-center gap-1">
-                                <MapPin className="h-3.5 w-3.5" />{t.location}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <Badge variant="outline" className={`text-xs shrink-0 ${STATUS_COLORS[t.status] ?? ""}`}>
+              <div className="rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm">
+                <div className="grid grid-cols-[2fr_1.5fr_1.2fr_1.2fr_auto] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tournament</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Fee</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</span>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {tournaments.slice(0, 5).map((t) => (
+                    <div
+                      key={t.id}
+                      className="grid grid-cols-[2fr_1.5fr_1.2fr_1.2fr_auto] gap-4 px-5 py-4 items-center hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-primary truncate">{t.name}</p>
+                        {t.location && <span className="text-xs text-gray-500 flex items-center gap-1"><MapPin className="h-3 w-3" />{t.location}</span>}
+                      </div>
+                      <span className="text-sm text-gray-700">
+                        {new Date(t.tournament_date).toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric" })}
+                      </span>
+                      <div>
+                        <Badge variant="outline" className={`text-xs w-fit capitalize ${STATUS_COLORS[t.status] ?? ""}`}>
                           {t.status}
                         </Badge>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      <span className="text-sm font-semibold text-gray-900">
+                        {t.preregistration_fee > 0
+                          ? `${fiatSymbol}${t.preregistration_fee.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`
+                          : <span className="text-gray-400 font-normal">Free</span>}
+                      </span>
+                      <Button asChild variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-100 gap-1.5">
+                        <Link href={`/dashboard/tournaments/${t.id}`}>
+                          View <Eye className="h-3.5 w-3.5" />
+                        </Link>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </TabsContent>

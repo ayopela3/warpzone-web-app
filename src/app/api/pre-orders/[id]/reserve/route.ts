@@ -35,11 +35,20 @@ export async function POST(
       return NextResponse.json({ success: false, error: "Quantity must be a positive integer" }, { status: 400 })
     }
 
-    // Verify pre-order exists, is active, and is approved
+    // Verify pre-order exists, is active, and is approved - get price info too
     const preOrder = await db
-      .prepare("SELECT id, status, approval_status, max_slots FROM pre_orders WHERE id = ?")
+      .prepare("SELECT id, status, approval_status, max_slots, price, full_price, downpayment_amount, cutoff_date FROM pre_orders WHERE id = ?")
       .bind(id)
-      .first<{ id: string; status: string; approval_status: string; max_slots: number | null }>()
+      .first<{
+        id: string
+        status: string
+        approval_status: string
+        max_slots: number | null
+        price: number
+        full_price: number
+        downpayment_amount: number | null
+        cutoff_date: string | null
+      }>()
 
     if (!preOrder) return NextResponse.json({ success: false, error: "Pre-order not found" }, { status: 404 })
     if (preOrder.status !== "active") {
@@ -47,6 +56,10 @@ export async function POST(
     }
     if (preOrder.approval_status !== "approved") {
       return NextResponse.json({ success: false, error: "Pre-order is not yet available" }, { status: 400 })
+    }
+    // Enforce cutoff date
+    if (preOrder.cutoff_date && new Date(preOrder.cutoff_date) < new Date()) {
+      return NextResponse.json({ success: false, error: "The reservation cutoff date has passed" }, { status: 400 })
     }
 
     // Check max_slots if set
@@ -74,16 +87,39 @@ export async function POST(
       return NextResponse.json({ success: true, reservationId: existing.id, updated: true })
     }
 
+    // Calculate payment amounts
+    const isDownpayment = preOrder.downpayment_amount !== null && preOrder.downpayment_amount > 0
+    const downpaymentAmount = isDownpayment ? preOrder.downpayment_amount! * quantity : 0
+    const fullAmount = preOrder.full_price * quantity
+    const remainingBalance = isDownpayment ? fullAmount - downpaymentAmount : 0
+
     const reservationId = crypto.randomUUID()
     await db
       .prepare(
-        `INSERT INTO pre_order_reservations (id, pre_order_id, user_id, quantity, reserved_at)
-         VALUES (?, ?, ?, ?, datetime('now'))`
+        `INSERT INTO pre_order_reservations 
+           (id, pre_order_id, user_id, quantity, downpayment_amount, remaining_balance, reserved_at)
+         VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
       )
-      .bind(reservationId, id, session.user_id, quantity)
+      .bind(
+        reservationId, 
+        id, 
+        session.user_id, 
+        quantity, 
+        downpaymentAmount,
+        remainingBalance
+      )
       .run()
 
-    return NextResponse.json({ success: true, reservationId })
+    return NextResponse.json({ 
+      success: true, 
+      reservationId,
+      payment: {
+        type: isDownpayment ? 'downpayment' : 'full',
+        amount: isDownpayment ? downpaymentAmount : fullAmount,
+        remaining_balance: remainingBalance,
+        full_total: fullAmount
+      }
+    })
   } catch (error) {
     console.error("Pre-order reserve error:", error)
     return NextResponse.json({ success: false, error: "Failed to reserve pre-order" }, { status: 500 })

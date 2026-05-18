@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
       .prepare(
         `SELECT
            por.id, por.pre_order_id, por.user_id, por.quantity, por.reserved_at,
+           por.paid, por.allocation_status,
            po.title, po.game, po.image_url, po.price, po.release_date, po.status
          FROM pre_order_reservations por
          JOIN pre_orders po ON por.pre_order_id = po.id

@@ -22,7 +22,7 @@ import { useDynamicCategories } from "@/hooks/useDynamicCategories"
 import { SellerProductEditDialog } from "./SellerProductEditDialog"
 import { SellerOrdersTab } from "./SellerOrdersTab"
 import { SellerPreOrdersTab } from "./SellerPreOrdersTab"
-import { SellerCashoutTab } from "./SellerCashoutTab"
+import { SellerRefundsTab } from "./SellerRefundsTab"
 import type { EditForm } from "./SellerProductEditDialog"
 import type { Product, Auction } from "@/types"
 
@@ -48,6 +48,12 @@ type AuctionEditForm = {
 }
 type FeeRates = { auctionFeeRate: number; preOrderFeeRate: number }
 
+type SellerStats = {
+  pendingOrders: number
+  revenue: number
+  preOrderReservations: number
+}
+
 type Props = { userId: string | null; fiatSymbol: string }
 
 export function SellerDashboard({ userId, fiatSymbol }: Props) {
@@ -69,6 +75,8 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState("")
   const [feeRates, setFeeRates] = useState<FeeRates>({ auctionFeeRate: 0.10, preOrderFeeRate: 0.05 })
+  const [sellerProfile, setSellerProfile] = useState<{ payment_qr_url: string | null; full_name: string; business_name: string | null } | null>(null)
+  const [sellerStats, setSellerStats] = useState<SellerStats>({ pendingOrders: 0, revenue: 0, preOrderReservations: 0 })
 
   const fetchProducts = useCallback(async () => {
     const id = localStorage.getItem("warpzone-user-id") || userId
@@ -102,6 +110,16 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
   useEffect(() => { fetchProducts() }, [fetchProducts])
   useEffect(() => { fetchAuctions() }, [fetchAuctions])
   useEffect(() => {
+    const sessionId = localStorage.getItem("warpzone-session-id")
+    if (!sessionId) return
+    fetch("/api/seller/stats", { headers: { Authorization: `Bearer ${sessionId}` } })
+      .then((r) => r.json())
+      .then((d: { success: boolean; stats?: SellerStats }) => {
+        if (d.success && d.stats) setSellerStats(d.stats)
+      })
+      .catch(() => {})
+  }, [])
+  useEffect(() => {
     fetch("/api/settings/fees")
       .then((r) => r.json())
       .then((d: { success: boolean; auctionFeeRate?: number; preOrderFeeRate?: number }) => {
@@ -109,6 +127,24 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
           setFeeRates({
             auctionFeeRate: d.auctionFeeRate ?? 0.10,
             preOrderFeeRate: d.preOrderFeeRate ?? 0.05,
+          })
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  // Fetch seller profile to check QR
+  useEffect(() => {
+    const sessionId = localStorage.getItem("warpzone-session-id")
+    if (!sessionId) return
+    fetch("/api/seller/payment-qr", { headers: { Authorization: `Bearer ${sessionId}` } })
+      .then((r) => r.json())
+      .then((d: { success: boolean; payment_qr_url?: string | null; full_name?: string; business_name?: string | null }) => {
+        if (d.success) {
+          setSellerProfile({
+            payment_qr_url: d.payment_qr_url ?? null,
+            full_name: d.full_name ?? "",
+            business_name: d.business_name ?? null,
           })
         }
       })
@@ -221,49 +257,22 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
               <h1 className="text-3xl font-bold text-gray-900">Seller Dashboard</h1>
               <p className="text-gray-600 mt-1">Manage your products, auctions, and orders</p>
             </div>
-            <Button asChild className="bg-primary hover:bg-primary/90 text-white">
-              <Link href="/seller/listings/new">
-                <Plus className="mr-2 h-4 w-4" />New Listing
-              </Link>
+            <Button
+              className="bg-primary hover:bg-primary/90 text-white"
+              onClick={() => {
+                if (!sellerProfile?.payment_qr_url) {
+                  toast.error("Please set up your payment QR code in Profile Settings before creating listings.")
+                  return
+                }
+                window.location.href = "/seller/listings/new"
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />New Listing
             </Button>
           </div>
         </div>
 
         <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-          {/* Platform fee notice */}
-          {(() => {
-            const EXAMPLE = 3600
-            const poFeeRate  = feeRates.preOrderFeeRate
-            const aucFeeRate = feeRates.auctionFeeRate
-            const poFee    = Math.round(EXAMPLE * poFeeRate * 100) / 100
-            const aucFee   = Math.round(EXAMPLE * aucFeeRate * 100) / 100
-            return (
-              <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Info className="h-4 w-4 text-amber-600 shrink-0" />
-                  <p className="text-sm font-semibold text-amber-800">Platform fees apply to all sales</p>
-                </div>
-                <p className="text-sm text-amber-700 pl-6">
-                  The buyer always pays your listed price in full. A platform fee is deducted from your payout — you keep the rest.
-                </p>
-                <div className="pl-6 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  <div className="rounded-lg bg-white border border-amber-200 p-2.5 space-y-1">
-                    <p className="font-semibold text-gray-700">Shop / Pre-orders — {(poFeeRate * 100).toFixed(0)}% fee</p>
-                    <div className="flex justify-between text-gray-500"><span>Buyer pays</span><span>{fiatSymbol}{EXAMPLE.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-red-500"><span>Platform fee ({(poFeeRate * 100).toFixed(0)}%)</span><span>− {fiatSymbol}{poFee.toLocaleString()}</span></div>
-                    <div className="flex justify-between font-semibold text-green-700 border-t pt-1"><span>You receive</span><span>{fiatSymbol}{(EXAMPLE - poFee).toLocaleString()}</span></div>
-                  </div>
-                  <div className="rounded-lg bg-white border border-amber-200 p-2.5 space-y-1">
-                    <p className="font-semibold text-gray-700">Auctions — {(aucFeeRate * 100).toFixed(0)}% fee</p>
-                    <div className="flex justify-between text-gray-500"><span>Winning bid</span><span>{fiatSymbol}{EXAMPLE.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-red-500"><span>Platform fee ({(aucFeeRate * 100).toFixed(0)}%)</span><span>− {fiatSymbol}{aucFee.toLocaleString()}</span></div>
-                    <div className="flex justify-between font-semibold text-green-700 border-t pt-1"><span>You receive</span><span>{fiatSymbol}{(EXAMPLE - aucFee).toLocaleString()}</span></div>
-                  </div>
-                </div>
-              </div>
-            )
-          })()}
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card className="bg-primary text-white shadow-lg">
               <CardContent className="p-6 flex items-start justify-between">
@@ -279,7 +288,7 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
               <CardContent className="p-6 flex items-start justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Orders</p>
-                  <p className="text-4xl font-bold mt-2 text-gray-900">0</p>
+                  <p className="text-4xl font-bold mt-2 text-gray-900">{sellerStats.pendingOrders}</p>
                   <p className="text-xs text-gray-500 mt-1">Pending fulfillment</p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-xl"><ShoppingBag className="h-6 w-6 text-blue-600" /></div>
@@ -289,8 +298,8 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
               <CardContent className="p-6 flex items-start justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Revenue</p>
-                  <p className="text-4xl font-bold mt-2 text-gray-900">{fiatSymbol}0</p>
-                  <p className="text-xs text-emerald-600 mt-1">+0% from last month</p>
+                  <p className="text-4xl font-bold mt-2 text-gray-900">{fiatSymbol}{sellerStats.revenue.toLocaleString()}</p>
+                  <p className="text-xs text-emerald-600 mt-1">Confirmed + ready orders</p>
                 </div>
                 <div className="p-3 bg-emerald-100 rounded-xl"><DollarSign className="h-6 w-6 text-emerald-600" /></div>
               </CardContent>
@@ -315,7 +324,7 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
               <TabsTrigger value="auctions" className="data-[state=active]:bg-primary data-[state=active]:text-white">Auctions</TabsTrigger>
               <TabsTrigger value="pre-orders" className="data-[state=active]:bg-primary data-[state=active]:text-white">Pre-Orders</TabsTrigger>
               <TabsTrigger value="orders" className="data-[state=active]:bg-primary data-[state=active]:text-white">Orders</TabsTrigger>
-              <TabsTrigger value="cashout" className="data-[state=active]:bg-primary data-[state=active]:text-white">Cashout</TabsTrigger>
+              <TabsTrigger value="refunds" className="data-[state=active]:bg-primary data-[state=active]:text-white">Refunds</TabsTrigger>
             </TabsList>
 
             <TabsContent value="products" className="space-y-4">
@@ -349,8 +358,17 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
                     </div>
                     <h3 className="mt-6 text-xl font-semibold text-gray-900">No listings yet</h3>
                     <p className="mt-2 text-gray-600">Add your first listing to start selling on Warpzone</p>
-                    <Button asChild className="mt-6 bg-primary hover:bg-primary/90 text-white">
-                      <Link href="/seller/listings/new"><Plus className="mr-2 h-4 w-4" />New Listing</Link>
+                    <Button
+                      className="mt-6 bg-primary hover:bg-primary/90 text-white"
+                      onClick={() => {
+                        if (!sellerProfile?.payment_qr_url) {
+                          toast.error("Please set up your payment QR code in Profile Settings before creating listings.")
+                          return
+                        }
+                        window.location.href = "/seller/listings/new"
+                      }}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />New Listing
                     </Button>
                   </CardContent>
                 </Card>
@@ -571,9 +589,8 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
               <SellerOrdersTab fiatSymbol={fiatSymbol} />
             </TabsContent>
 
-            <TabsContent value="cashout" className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-900">Cashout</h2>
-              <SellerCashoutTab fiatSymbol={fiatSymbol} />
+            <TabsContent value="refunds" className="space-y-4">
+              <SellerRefundsTab fiatSymbol={fiatSymbol} />
             </TabsContent>
           </Tabs>
         </div>

@@ -192,7 +192,11 @@ export type PreOrder = {
   description: string | null
   game: string
   image_url: string | null
-  price: number
+  price: number /** Price shown to buyer (downpayment or full price) */
+  full_price: number /** Total price buyer must eventually pay */
+  downpayment_amount: number | null /** If set, buyer only pays this amount initially */
+  downpayment_pct: number | null /** e.g. 0.30 = 30% downpayment required */
+  cutoff_date: string | null /** After this date buyers can no longer reserve */
   release_date: string
   status: PreOrderStatus
   approval_status: ApprovalStatus
@@ -208,6 +212,12 @@ export type PreOrder = {
   /** Whether the current user has already reserved */
   user_reserved?: boolean
   user_quantity?: number
+  /** Joined — user's allocation status */
+  user_allocation_status?: 'pending' | 'allocated' | 'shortlisted' | 'refunded'
+  /** Joined — user's payment status */
+  user_downpayment_paid?: boolean
+  user_total_paid?: number
+  user_remaining_balance?: number
 }
 
 export type PreOrderReservation = {
@@ -216,13 +226,50 @@ export type PreOrderReservation = {
   user_id: string
   quantity: number
   reserved_at: string
+  /** Downpayment tracking */
+  downpayment_paid: boolean
+  downpayment_amount: number
+  total_paid: number
+  remaining_balance: number
+  allocation_status: 'pending' | 'allocated' | 'shortlisted' | 'refunded'
   /** Joined from pre_orders */
   title?: string
   game?: string
   image_url?: string | null
   price?: number
+  full_price?: number
+  downpayment?: number | null
   release_date?: string
   status?: PreOrderStatus
+}
+
+// ---------------------------------------------------------------------------
+// Wallet
+// ---------------------------------------------------------------------------
+
+export type WalletCredit = {
+  id: string
+  user_id: string
+  amount: number
+  created_at: string
+  updated_at: string
+}
+
+export type WalletTransactionType = 'credit' | 'debit' | 'refund_request' | 'refunded'
+
+export type WalletTransaction = {
+  id: string
+  user_id: string
+  type: WalletTransactionType
+  amount: number
+  source_type: string | null
+  source_id: string | null
+  seller_id: string | null
+  note: string | null
+  created_at: string
+  /** Joined */
+  pre_order_title?: string | null
+  seller_name?: string | null
 }
 
 /** Extended reservation returned by GET /api/pre-orders/[id] (seller/admin view) */
@@ -232,7 +279,13 @@ export type PreOrderReservationDetail = {
   user_id: string
   quantity: number
   reserved_at: string
-  paid: number /** SQLite boolean: 0 | 1 */
+  paid: number /** SQLite boolean: 0 | 1 - legacy field */
+  /** Downpayment fields */
+  downpayment_paid: number /** 0 or 1 */
+  downpayment_amount: number
+  total_paid: number
+  remaining_balance: number
+  allocation_status: 'pending' | 'allocated' | 'shortlisted' | 'refunded'
   buyer_name: string | null
   buyer_email: string | null
   user_email: string | null
@@ -248,9 +301,11 @@ export type OrderItem = {
   product_id: string
   listing_id: string
   seller_id: string
+  /** Set when this line item is linked to a pre-order */
+  pre_order_id?: string | null
   quantity: number
   price: number
-  /** Joined from products */
+  /** Joined from products (or pre_orders when pre_order_id is set) */
   product_name?: string
   product_image_url?: string | null
   product_category?: string

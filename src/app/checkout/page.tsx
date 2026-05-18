@@ -22,6 +22,7 @@ type Step = "review" | "payment" | "confirmed"
 
 type PlatformQr = {
   payment_qr_url: string | null
+  seller_name?: string
 }
 
 type SellerGroup = {
@@ -108,14 +109,30 @@ export default function CheckoutPage() {
     return sellerId && sellerId !== "__unknown__" ? sellerId : null
   }
 
-  /** Fetch the platform-wide payment QR from admin settings */
+  /** Fetch the seller's payment QR for the active group */
   const fetchQrForGroup = async () => {
     setPlatformQr(null)
     setLoadingQr(true)
     try {
-      const res = await fetch("/api/settings/payment-qr")
-      const data = await res.json() as PlatformQr & { success: boolean }
-      if (data.success) setPlatformQr(data)
+      // Get seller ID from active group
+      const sellerId = await resolveGroupSellerId(activeGroup)
+      if (!sellerId) {
+        toast.error("Could not identify seller for this order.")
+        return
+      }
+      
+      // Fetch seller's public QR
+      const res = await fetch(`/api/seller/payment-qr-public?sellerId=${encodeURIComponent(sellerId)}`)
+      const data = await res.json() as { success: boolean; payment_qr_url?: string; seller_name?: string; seller_business?: string; error?: string }
+      
+      if (data.success && data.payment_qr_url) {
+        setPlatformQr({
+          payment_qr_url: data.payment_qr_url,
+          seller_name: data.seller_business || data.seller_name || "Seller"
+        })
+      } else {
+        toast.error(data.error || "Seller has not set up payment QR yet.")
+      }
     } catch {
       toast.error("Could not load payment details. Please try again.")
     } finally {
@@ -163,10 +180,22 @@ export default function CheckoutPage() {
     try {
       const sellerId = await resolveGroupSellerId(activeGroup) ?? ""
 
-      // Fetch listing_id for each product from the API
+      // Fetch listing_id for regular products, skip for pre-orders
       const itemsWithListingIds = await Promise.all(
         activeGroup.items.map(async (item) => {
-          // Get listing_id from product API
+          // Pre-orders don't have product_listings entries
+          if (item.itemType === "pre_order") {
+            return {
+              product_id: item.id,
+              listing_id: null, // Pre-orders don't use product_listings
+              seller_id: sellerId,
+              quantity: item.quantity,
+              price: item.price,
+              pre_order_id: item.preOrderId,
+            }
+          }
+
+          // Get listing_id from product API for regular products
           const res = await fetch(`/api/products/${item.id}`)
           const data = await res.json() as { success: boolean; product?: { listing_id?: string } }
           const listingId = data.success && data.product?.listing_id ? data.product.listing_id : item.id
@@ -177,10 +206,15 @@ export default function CheckoutPage() {
             seller_id: sellerId,
             quantity: item.quantity,
             price: item.price,
-            pre_order_id: item.itemType === "pre_order" ? item.preOrderId : undefined,
+            pre_order_id: undefined,
           }
         })
       )
+
+      // Payment proof is MANDATORY - must be provided with order
+      if (!proofUrl) {
+        throw new Error("Payment proof is required. Please upload your payment screenshot.")
+      }
 
       const result = await ordersApi.create({
         items: itemsWithListingIds,
@@ -188,11 +222,10 @@ export default function CheckoutPage() {
         total: activeGroupTotal,
         fulfillment_type: fulfillment,
         notes: notes.trim() || undefined,
+        payment_proof_url: proofUrl, // Include proof in creation
       })
 
       if (!result.success) throw new Error(result.error ?? "Failed to place order")
-
-      if (result.orderId) await ordersApi.uploadProof(result.orderId, proofUrl)
 
       /** Remove this group's items from the cart */
       activeGroup.items.forEach((item) => removeFromCart(item.id))
@@ -482,7 +515,7 @@ export default function CheckoutPage() {
                 ) : platformQr?.payment_qr_url ? (
                   <div className="flex flex-col items-center gap-4">
                     <p className="text-gray-700 text-center">
-                      Scan the QR code below to send payment via GCash, Maya, or your bank.
+                      Scan the QR code below to send payment directly to the seller via GCash, Maya, or your bank.
                     </p>
                     <div className="border-4 border-primary rounded-2xl p-3 bg-white shadow-lg">
                       <div className="relative h-56 w-56">
@@ -495,7 +528,7 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                     <p className="text-sm text-gray-500 text-center">
-                      Pay to: <span className="font-semibold text-gray-800">Warpzone</span>
+                      Pay to: <span className="font-semibold text-gray-800">{platformQr.seller_name}</span>
                     </p>
                     <div className="w-full bg-amber-50 border border-amber-200 rounded-xl p-4">
                       <p className="text-sm font-bold text-amber-800">Amount to pay</p>

@@ -38,9 +38,10 @@ export async function POST(request: NextRequest) {
       total: number
       fulfillment_type: "pickup" | "shipping"
       notes?: string
+      payment_proof_url?: string
     }
 
-    const { items, seller_id, total, fulfillment_type, notes } = body
+    const { items, seller_id, total, fulfillment_type, notes, payment_proof_url } = body
 
     if (!items?.length) {
       return NextResponse.json({ success: false, error: "Order must have at least one item" }, { status: 400 })
@@ -67,13 +68,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid seller_id", details: `Seller ${seller_id} not found in profiles` }, { status: 400 })
     }
 
+    // Validate payment proof is provided
+    if (!payment_proof_url) {
+      return NextResponse.json({ success: false, error: "Payment proof is required" }, { status: 400 })
+    }
+
     try {
       await db
         .prepare(
-          `INSERT INTO orders (id, user_id, seller_id, status, total, fulfillment_type, notes, created_at, updated_at)
-           VALUES (?, ?, ?, 'pending_payment', ?, ?, ?, datetime('now'), datetime('now'))`
+          `INSERT INTO orders (id, user_id, seller_id, status, total, fulfillment_type, notes, payment_proof_url, created_at, updated_at)
+           VALUES (?, ?, ?, 'payment_submitted', ?, ?, ?, ?, datetime('now'), datetime('now'))`
         )
-        .bind(orderId, userId, seller_id, total, fulfillment_type, notes ?? null)
+        .bind(orderId, userId, seller_id, total, fulfillment_type, notes ?? null, payment_proof_url)
         .run()
     } catch (e) {
       console.error(`[Order Create] Failed to insert order. userId: ${userId}, sellerId: ${seller_id}`)
@@ -91,14 +97,31 @@ export async function POST(request: NextRequest) {
           .bind(
             crypto.randomUUID(),
             orderId,
-            item.product_id,
-            item.listing_id,
+            item.pre_order_id ? null : item.product_id,  // pre-order items have no products row
+            item.pre_order_id ? null : item.listing_id,  // pre-order items have no product_listings row
             item.seller_id,
             item.quantity,
             item.price,
             item.pre_order_id ?? null
           )
           .run()
+
+        // Deduct product quantity (only for regular products, not pre-orders)
+        if (!item.pre_order_id && item.product_id) {
+          // Deduct from products table
+          await db
+            .prepare("UPDATE products SET quantity = MAX(0, quantity - ?), updated_at = datetime('now') WHERE id = ?")
+            .bind(item.quantity, item.product_id)
+            .run()
+
+          // Deduct from product_listings if listing_id provided
+          if (item.listing_id) {
+            await db
+              .prepare("UPDATE product_listings SET quantity = MAX(0, quantity - ?), updated_at = datetime('now') WHERE id = ?")
+              .bind(item.quantity, item.listing_id)
+              .run()
+          }
+        }
       } catch (e) {
         console.error(`[Order Create] Failed to insert item ${i}:`, item)
         throw new Error(`Item ${i} insert failed: ${e instanceof Error ? e.message : String(e)}`)
@@ -150,14 +173,24 @@ export async function GET(request: NextRequest) {
                oi.*,
                p.name       AS product_name,
                p.image_url  AS product_image_url,
-               p.category   AS product_category
+               p.category   AS product_category,
+               po.title     AS pre_order_title,
+               po.image_url AS pre_order_image_url,
+               po.game      AS pre_order_game
              FROM order_items oi
              LEFT JOIN products p ON oi.product_id = p.id
+             LEFT JOIN pre_orders po ON oi.pre_order_id = po.id
              WHERE oi.order_id = ?`
           )
           .bind(order.id as string)
           .all<Record<string, unknown>>()
-        order.items = itemsResult.results
+        
+        // Transform items to use pre-order data when applicable
+        order.items = itemsResult.results.map((item: Record<string, unknown>) => ({
+          ...item,
+          product_name: item.pre_order_title ?? item.product_name,
+          product_image_url: item.pre_order_image_url ?? item.product_image_url,
+        }))
       })
     )
 

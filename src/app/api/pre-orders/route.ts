@@ -118,7 +118,9 @@ export async function POST(request: NextRequest) {
       description?: string
       game: string
       image_url?: string
-      price: number
+      full_price: number /** Total amount buyer must pay */
+      downpayment_pct?: number | null /** e.g. 30 (%) or 0.30 (fraction) */
+      cutoff_date?: string | null /** ISO date after which no new reservations */
       release_date: string
       max_slots?: number
     }
@@ -130,14 +132,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Release date is required" }, { status: 400 })
     }
 
+    if (!body.full_price || body.full_price <= 0) {
+      return NextResponse.json({ success: false, error: "Full price is required and must be greater than 0" }, { status: 400 })
+    }
+
     const isAdmin = profile.role === "admin"
     const preOrderId = crypto.randomUUID()
+
+    const fullPrice = body.full_price
+    // Normalise pct: accept either 30 or 0.30
+    const rawPct = body.downpayment_pct ?? null
+    const downpaymentPct = rawPct !== null ? (rawPct > 1 ? rawPct / 100 : rawPct) : null
+    const downpaymentAmount = downpaymentPct !== null ? Math.round(fullPrice * downpaymentPct * 100) / 100 : null
+    const displayPrice = downpaymentAmount ?? fullPrice
+    const cutoffDate = body.cutoff_date ?? null
 
     await db
       .prepare(
         `INSERT INTO pre_orders
-           (id, title, description, game, image_url, price, release_date, status, approval_status, seller_id, max_slots, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, datetime('now'), datetime('now'))`
+           (id, title, description, game, image_url, price, full_price, downpayment_amount, downpayment_pct, cutoff_date, release_date, status, approval_status, seller_id, max_slots, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, datetime('now'), datetime('now'))`
       )
       .bind(
         preOrderId,
@@ -145,10 +159,14 @@ export async function POST(request: NextRequest) {
         body.description ?? null,
         body.game ?? "Other",
         body.image_url ?? null,
-        body.price ?? 0,
+        displayPrice,
+        fullPrice,
+        downpaymentAmount,
+        downpaymentPct,
+        cutoffDate,
         body.release_date,
-        isAdmin ? "approved" : "pending",   // admins auto-approved, sellers need review
-        isAdmin ? null : profile.id,        // admin-created = no seller_id (store-wide)
+        isAdmin ? "approved" : "pending",
+        isAdmin ? null : profile.id,
         body.max_slots ?? null
       )
       .run()

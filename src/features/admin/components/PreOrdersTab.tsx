@@ -24,7 +24,7 @@ const INITIAL_FORM = {
   title: "",
   description: "",
   game: "",
-  price: "",
+  full_price: "",
   release_date: "",
   max_slots: "",
   image_url: "",
@@ -89,7 +89,7 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
         description:  form.description || undefined,
         game:         form.game,
         image_url:    form.image_url || undefined,
-        price:        parseFloat(form.price) || 0,
+        full_price:   parseFloat(form.full_price) || 0,
         release_date: form.release_date,
         max_slots:    form.max_slots ? parseInt(form.max_slots, 10) : undefined,
       })
@@ -185,7 +185,7 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="po-price">Price ({fiatSymbol}) *</Label>
-                <Input id="po-price" type="number" min="0" placeholder="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+                <Input id="po-price" type="number" min="0" placeholder="0" value={form.full_price} onChange={(e) => setForm({ ...form, full_price: e.target.value })} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="po-date">Release Date *</Label>

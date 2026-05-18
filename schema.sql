@@ -81,19 +81,22 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 
 -- Order items table
+-- product_id / listing_id are nullable for pre-order items (no matching products/product_listings row)
 CREATE TABLE IF NOT EXISTS order_items (
-  id TEXT PRIMARY KEY,
-  order_id TEXT NOT NULL,
-  product_id TEXT NOT NULL,
-  listing_id TEXT NOT NULL,
-  seller_id TEXT NOT NULL,
-  quantity INTEGER NOT NULL,
-  price REAL NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-  FOREIGN KEY (listing_id) REFERENCES product_listings(id) ON DELETE CASCADE,
-  FOREIGN KEY (seller_id) REFERENCES profiles(id) ON DELETE CASCADE
+  id           TEXT    PRIMARY KEY,
+  order_id     TEXT    NOT NULL,
+  product_id   TEXT,                   -- NULL for pre-order items
+  listing_id   TEXT,                   -- NULL for pre-order items
+  seller_id    TEXT    NOT NULL,
+  quantity     INTEGER NOT NULL,
+  price        REAL    NOT NULL,
+  pre_order_id TEXT,                   -- Set for pre-order items
+  created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (order_id)     REFERENCES orders(id)            ON DELETE CASCADE,
+  FOREIGN KEY (product_id)   REFERENCES products(id)          ON DELETE CASCADE,
+  FOREIGN KEY (listing_id)   REFERENCES product_listings(id)  ON DELETE CASCADE,
+  FOREIGN KEY (seller_id)    REFERENCES profiles(id)          ON DELETE CASCADE,
+  FOREIGN KEY (pre_order_id) REFERENCES pre_orders(id)        ON DELETE SET NULL
 );
 
 -- Sessions table

@@ -15,6 +15,20 @@ async function apiFetch<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
   return data
 }
 
+/** apiFetch variant that attaches the stored session token as a Bearer header. */
+function authFetch<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
+  const sessionId = typeof window !== "undefined"
+    ? (localStorage.getItem("warpzone-session-id") ?? "")
+    : ""
+  return apiFetch<T>(input, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${sessionId}`,
+      ...(init?.headers ?? {}),
+    },
+  })
+}
+
 // ---------------------------------------------------------------------------
 // Products
 // ---------------------------------------------------------------------------
@@ -190,6 +204,24 @@ export const tournamentsApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }),
+
+  /** Buyer: list tournaments the authenticated user has registered for */
+  myTournaments: () =>
+    apiFetch<{ success: boolean; tournaments: (Tournament & { registered_at: string })[] }>("/api/user/tournaments"),
+
+  /** Buyer: get detail for a single tournament registration */
+  myTournamentDetail: (id: string) =>
+    apiFetch<{
+      success: boolean
+      tournament: Tournament
+      registration: { id: string; registered_at: string }
+    }>(`/api/user/tournaments/${id}`),
+
+  /** Buyer: cancel registration for an upcoming tournament */
+  cancelRegistration: (id: string) =>
+    apiFetch<{ success: boolean; error?: string }>(`/api/tournaments/${id}/register`, {
+      method: "DELETE",
+    }),
 }
 
 // ---------------------------------------------------------------------------
@@ -212,11 +244,13 @@ export const preOrdersApi = {
     description?: string
     game: string
     image_url?: string
-    price: number
+    full_price: number
+    downpayment_pct?: number | null
+    cutoff_date?: string | null
     release_date: string
     max_slots?: number
   }) =>
-    apiFetch<{ success: boolean; preOrderId?: string; error?: string }>("/api/pre-orders", {
+    authFetch<{ success: boolean; preOrderId?: string; error?: string }>("/api/pre-orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -248,19 +282,31 @@ export const preOrdersApi = {
 
   /** Seller/Admin: get pre-order detail + reservations */
   getDetail: (id: string) =>
-    apiFetch<{ success: boolean; preOrder: PreOrder; reservations: PreOrderReservationDetail[] }>(`/api/pre-orders/${id}`),
+    authFetch<{ success: boolean; preOrder: PreOrder; reservations: PreOrderReservationDetail[] }>(`/api/pre-orders/${id}`),
 
   /** Seller/Admin: mark a reservation as paid or unpaid */
   markPaid: (preOrderId: string, reservationId: string, paid: boolean) =>
-    apiFetch<{ success: boolean; error?: string }>(`/api/pre-orders/${preOrderId}`, {
+    authFetch<{ success: boolean; error?: string }>(`/api/pre-orders/${preOrderId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reservationId, paid }),
     }),
 
+  /** Seller/Admin: set allocation status for a reservation */
+  setAllocation: (preOrderId: string, reservationId: string, allocation_status: 'pending' | 'allocated' | 'shortlisted' | 'refunded') =>
+    authFetch<{ success: boolean; error?: string }>(`/api/pre-orders/${preOrderId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reservationId, allocation_status }),
+    }),
+
   /** Buyer: list their own reservations */
   myReservations: () =>
     apiFetch<{ success: boolean; reservations: PreOrderReservation[] }>("/api/user/pre-orders"),
+
+  /** Buyer: get detail for a single pre-order reservation */
+  myReservationDetail: (preOrderId: string) =>
+    apiFetch<{ success: boolean; preOrder: PreOrder; reservation: PreOrderReservation }>(`/api/user/pre-orders/${preOrderId}`),
 }
 
 // ---------------------------------------------------------------------------
@@ -270,11 +316,12 @@ export const preOrdersApi = {
 export const ordersApi = {
   /** Create a new order from the current cart */
   create: (body: {
-    items: { product_id: string; listing_id: string; seller_id: string; quantity: number; price: number; pre_order_id?: string }[]
+    items: { product_id: string; listing_id: string | null; seller_id: string; quantity: number; price: number; pre_order_id?: string }[]
     seller_id: string
     total: number
     fulfillment_type: "pickup" | "shipping"
     notes?: string
+    payment_proof_url?: string
   }) =>
     apiFetch<{ success: boolean; orderId?: string; error?: string }>("/api/orders", {
       method: "POST",
@@ -334,6 +381,42 @@ export const sellerOrdersApi = {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ payment_qr_url }),
+    }),
+}
+
+// ---------------------------------------------------------------------------
+// Wallet — buyer
+// ---------------------------------------------------------------------------
+
+export const walletApi = {
+  /** Get buyer's credit balance + transaction history */
+  getWallet: () =>
+    authFetch<{ success: boolean; balance: number; transactions: Record<string, unknown>[] }>("/api/user/wallet"),
+
+  /** Request a cash refund for a shortlisted reservation */
+  requestRefund: (reservation_id: string) =>
+    authFetch<{ success: boolean; error?: string }>("/api/user/wallet/refund-request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reservation_id }),
+    }),
+}
+
+// ---------------------------------------------------------------------------
+// Seller Refunds
+// ---------------------------------------------------------------------------
+
+export const sellerRefundsApi = {
+  /** List pending (or all) refund requests for the seller */
+  list: (showSettled = false) =>
+    authFetch<{ success: boolean; refunds: Record<string, unknown>[] }>(
+      `/api/seller/refunds${showSettled ? "?settled=true" : ""}`
+    ),
+
+  /** Mark a refund request as settled (paid out to buyer) */
+  settle: (txId: string) =>
+    authFetch<{ success: boolean; error?: string }>(`/api/seller/refunds/${txId}`, {
+      method: "PATCH",
     }),
 }
 

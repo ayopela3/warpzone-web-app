@@ -1,12 +1,11 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Package, Loader2, Calendar, CheckCircle2, ArrowRight, LockKeyhole } from "lucide-react"
+import { Package, Loader2, ArrowRight, LockKeyhole, CheckCircle2, Eye } from "lucide-react"
 import { preOrdersApi } from "@/lib/api-client"
 import type { PreOrderReservation } from "@/types"
 
@@ -16,7 +15,7 @@ export function UserPreOrdersTab({ fiatSymbol }: Props) {
   const [reservations, setReservations] = useState<PreOrderReservation[]>([])
   const [loading, setLoading]           = useState(true)
 
-  const fetch = useCallback(async () => {
+  const fetchReservations = useCallback(async () => {
     setLoading(true)
     try {
       const data = await preOrdersApi.myReservations()
@@ -26,7 +25,7 @@ export function UserPreOrdersTab({ fiatSymbol }: Props) {
     }
   }, [])
 
-  useEffect(() => { fetch() }, [fetch])
+  useEffect(() => { fetchReservations() }, [fetchReservations])
 
   if (loading) {
     return (
@@ -56,44 +55,72 @@ export function UserPreOrdersTab({ fiatSymbol }: Props) {
   }
 
   return (
-    <div className="space-y-3">
-      {reservations.map((r) => {
-        const isClosed = r.status === "closed"
+    <div className="space-y-4">
+      {/* Table */}
+      <div className="rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm">
+        {/* Header */}
+        <div className="grid grid-cols-[2fr_1.5fr_1.2fr_1.2fr_auto] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pre-Order</span>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Release Date</span>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</span>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Price</span>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</span>
+        </div>
 
-        return (
-          <Card key={r.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="relative h-14 w-14 shrink-0 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
-                {r.image_url
-                  ? <Image src={r.image_url} alt={r.title ?? ""} fill className="object-contain" />
-                  : <Package className="h-6 w-6 text-gray-400" />}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold text-gray-900 truncate">{r.title ?? "Pre-Order"}</p>
-                  {r.game && <Badge variant="outline" className="text-xs">{r.game}</Badge>}
-                  {isClosed
-                    ? <Badge variant="secondary" className="text-xs flex items-center gap-1"><LockKeyhole className="h-3 w-3" />Closed</Badge>
-                    : <Badge className="bg-green-500 text-white text-xs flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Reserved</Badge>}
-                </div>
-                <div className="flex items-center gap-4 text-xs text-gray-500 mt-0.5">
-                  <span className="font-semibold text-primary">{fiatSymbol}{(r.price ?? 0).toLocaleString()}</span>
-                  {r.release_date && (
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      Releases {new Date(r.release_date).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
-                    </span>
+        {/* Rows */}
+        <div className="divide-y divide-gray-100">
+          {reservations.map((r) => {
+            const isClosed = r.status === "closed"
+            return (
+              <div
+                key={r.id}
+                className="grid grid-cols-[2fr_1.5fr_1.2fr_1.2fr_auto] gap-4 px-5 py-4 items-center hover:bg-gray-50 transition-colors"
+              >
+                {/* Pre-Order title + game */}
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-primary truncate">{r.title ?? "Pre-Order"}</p>
+                  {r.game && (
+                    <span className="text-xs text-gray-500">{r.game} &middot; Qty: {r.quantity}</span>
                   )}
-                  <span>Qty: {r.quantity}</span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        )
-      })}
 
-      <div className="text-center pt-2">
+                {/* Release date */}
+                <span className="text-sm text-gray-700">
+                  {r.release_date
+                    ? new Date(r.release_date).toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric" })
+                    : "—"}
+                </span>
+
+                {/* Status badge */}
+                <div>
+                  {isClosed
+                    ? <Badge variant="secondary" className="text-xs flex items-center gap-1 w-fit"><LockKeyhole className="h-3 w-3" />Closed</Badge>
+                    : <Badge className="bg-green-500 text-white text-xs flex items-center gap-1 w-fit"><CheckCircle2 className="h-3 w-3" />Reserved</Badge>}
+                </div>
+
+                {/* Price */}
+                <span className="text-sm font-semibold text-gray-900">
+                  {fiatSymbol}{(r.price ?? 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                </span>
+
+                {/* Actions */}
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-100 gap-1.5"
+                >
+                  <Link href={`/dashboard/pre-orders/${r.pre_order_id}`}>
+                    View <Eye className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="text-center pt-1">
         <Button variant="outline" asChild size="sm">
           <Link href="/pre-order">
             Browse More Pre-Orders <ArrowRight className="h-3 w-3 ml-1" />

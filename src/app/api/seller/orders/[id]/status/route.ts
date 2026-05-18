@@ -78,12 +78,13 @@ export async function PUT(
       .bind(status, id)
       .run()
 
-    // ── Award loyalty points when payment is confirmed (idempotent) ──
-    if (status === "confirmed") {
+    // ── Award loyalty points and create service fee when order is positively confirmed (idempotent) ──
+    const POSITIVE_STATUSES = ["confirmed", "ready_for_pickup", "shortlisted"]
+    if (POSITIVE_STATUSES.includes(status)) {
       const fullOrder = await db
-        .prepare("SELECT user_id, total, points_awarded FROM orders WHERE id = ?")
+        .prepare("SELECT user_id, seller_id, total, points_awarded FROM orders WHERE id = ?")
         .bind(id)
-        .first<{ user_id: string; total: number; points_awarded: number }>()
+        .first<{ user_id: string; seller_id: string; total: number; points_awarded: number }>()
 
       if (fullOrder && !fullOrder.points_awarded) {
         const rateSetting = await db
@@ -106,6 +107,80 @@ export async function PUT(
 
           await db.prepare("UPDATE orders SET points_awarded = 1, updated_at = datetime('now') WHERE id = ?")
             .bind(id).run()
+        }
+      }
+
+      // Check if any items in this order are pre-order items
+      const preOrderItems = await db
+        .prepare(`
+          SELECT oi.pre_order_id, oi.quantity, oi.price,
+                 por.id AS reservation_id, por.fee_recorded
+          FROM order_items oi
+          LEFT JOIN pre_order_reservations por
+            ON por.pre_order_id = oi.pre_order_id AND por.user_id = (SELECT user_id FROM orders WHERE id = ?)
+          WHERE oi.order_id = ? AND oi.pre_order_id IS NOT NULL
+        `)
+        .bind(id, id)
+        .all<{ pre_order_id: string; quantity: number; price: number; reservation_id: string | null; fee_recorded: number | null }>()
+
+      if (preOrderItems.results.length > 0) {
+        // Handle pre-order items — mark reservations paid and record pre-order fees
+        const preOrderFeeRateSetting = await db
+          .prepare("SELECT value FROM settings WHERE key = 'pre_order_service_fee_rate'")
+          .first<{ value: string }>()
+        const preOrderFeeRate = preOrderFeeRateSetting ? parseFloat(preOrderFeeRateSetting.value) : 0.05
+
+        for (const item of preOrderItems.results) {
+          // Mark reservation as paid if found and not yet recorded
+          if (item.reservation_id && !item.fee_recorded) {
+            const gross = item.price * item.quantity
+            const fee   = Math.round(gross * preOrderFeeRate * 100) / 100
+
+            await db.prepare(`
+              INSERT OR IGNORE INTO service_fees
+                (id, seller_id, source_type, source_id, description, gross_amount, fee_rate, fee_amount, status, created_at, updated_at)
+              VALUES (?, ?, 'pre_order', ?, ?, ?, ?, ?, 'unpaid', datetime('now'), datetime('now'))
+            `).bind(
+              crypto.randomUUID(),
+              fullOrder!.seller_id,
+              item.pre_order_id,
+              `Pre-order payment — order #${id.slice(0, 8).toUpperCase()} qty ${item.quantity}`,
+              gross,
+              preOrderFeeRate,
+              fee,
+            ).run()
+
+            await db.prepare(`
+              UPDATE pre_order_reservations
+              SET paid = 1, is_paid = 1, fee_recorded = 1,
+                  total_paid = ?, updated_at = datetime('now')
+              WHERE id = ?
+            `).bind(item.price * item.quantity, item.reservation_id).run()
+          }
+        }
+      } else {
+        // Regular product order — record generic order-level service fee
+        const existingFee = await db
+          .prepare("SELECT id FROM service_fees WHERE source_type = 'order' AND source_id = ?")
+          .bind(id)
+          .first()
+
+        if (!existingFee && fullOrder) {
+          const feeRate   = 0.05
+          const feeAmount = Math.round(fullOrder.total * feeRate * 100) / 100
+
+          await db.prepare(`
+            INSERT INTO service_fees (id, seller_id, source_type, source_id, description, gross_amount, fee_rate, fee_amount, status, created_at, updated_at)
+            VALUES (?, ?, 'order', ?, ?, ?, ?, ?, 'unpaid', datetime('now'), datetime('now'))
+          `).bind(
+            crypto.randomUUID(),
+            fullOrder.seller_id,
+            id,
+            `Order #${id.slice(0, 8).toUpperCase()} - Product sale`,
+            fullOrder.total,
+            feeRate,
+            feeAmount,
+          ).run()
         }
       }
     }

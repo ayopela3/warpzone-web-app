@@ -30,6 +30,7 @@ import {
   ChevronDown,
   ChevronUp,
   Flag,
+  AlertTriangle,
 } from "lucide-react"
 import { toast } from "sonner"
 import { preOrdersApi } from "@/lib/api-client"
@@ -40,10 +41,19 @@ const INITIAL_FORM = {
   title: "",
   description: "",
   game: "",
-  price: "",
+  full_price: "",
+  downpayment_pct: "",
+  cutoff_date: "",
   release_date: "",
   max_slots: "",
   image_url: "",
+}
+
+const ALLOCATION_LABELS: Record<string, { label: string; color: string }> = {
+  pending:    { label: "Pending",   color: "bg-amber-50 text-amber-700 border-amber-200" },
+  allocated:  { label: "Allocated", color: "bg-green-50 text-green-700 border-green-200" },
+  shortlisted:{ label: "Cut",       color: "bg-red-50 text-red-700 border-red-200" },
+  refunded:   { label: "Refunded",  color: "bg-gray-50 text-gray-500 border-gray-200" },
 }
 
 type Props = { fiatSymbol: string }
@@ -66,6 +76,7 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
   >({})
   const [loadingDetailId, setLoadingDetailId] = useState<string | null>(null)
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [allocatingId, setAllocatingId] = useState<string | null>(null)
   /** Report dialog state */
   const [reportTarget, setReportTarget] = useState<{
     userId: string
@@ -110,8 +121,8 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
       return
     }
     setExpandedId(po.id)
-    /** Only fetch if not already cached */
-    if (reservationMap[po.id]) return
+    /** Only use cache if it has rows — empty arrays may be stale 403 results */
+    if (reservationMap[po.id]?.length) return
     setLoadingDetailId(po.id)
     try {
       const data = await preOrdersApi.getDetail(po.id)
@@ -172,9 +183,52 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
     }
   }
 
+  const handleSetAllocation = async (
+    preOrderId: string,
+    r: PreOrderReservationDetail,
+    status: 'pending' | 'allocated' | 'shortlisted' | 'refunded'
+  ) => {
+    if (status === 'shortlisted') {
+      const confirmed = window.confirm(
+        `Confirm cutting ${r.buyer_name ?? r.buyer_email ?? 'this buyer'} from allocation?\n\nTheir paid amount will be added to their shop credit.`
+      )
+      if (!confirmed) return
+    }
+    setAllocatingId(r.id)
+    try {
+      const result = await preOrdersApi.setAllocation(preOrderId, r.id, status)
+      if (!result.success) throw new Error(result.error)
+      setReservationMap((prev) => ({
+        ...prev,
+        [preOrderId]: (prev[preOrderId] ?? []).map((x) =>
+          x.id === r.id ? { ...x, allocation_status: status } : x
+        ),
+      }))
+      toast.success(
+        status === 'shortlisted'
+          ? 'Buyer cut — shop credit issued'
+          : `Allocation set to ${ALLOCATION_LABELS[status]?.label ?? status}`
+      )
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update allocation')
+    } finally {
+      setAllocatingId(null)
+    }
+  }
+
   const handleSubmit = async () => {
     if (!form.title.trim() || !form.release_date) {
       toast.error("Title and release date are required")
+      return
+    }
+    const fullPrice = parseFloat(form.full_price)
+    if (!fullPrice || fullPrice <= 0) {
+      toast.error("Full price is required and must be greater than 0")
+      return
+    }
+    const downpaymentPct = form.downpayment_pct ? parseFloat(form.downpayment_pct) : null
+    if (downpaymentPct !== null && (downpaymentPct <= 0 || downpaymentPct > 100)) {
+      toast.error("Downpayment % must be between 1 and 100")
       return
     }
     setSaving(true)
@@ -184,7 +238,9 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
         description: form.description || undefined,
         game: form.game,
         image_url: form.image_url || undefined,
-        price: parseFloat(form.price) || 0,
+        full_price: fullPrice,
+        downpayment_pct: downpaymentPct,
+        cutoff_date: form.cutoff_date || null,
         release_date: form.release_date,
         max_slots: form.max_slots ? parseInt(form.max_slots, 10) : undefined,
       })
@@ -264,13 +320,13 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
                   />
                 </div>
                 <div className='space-y-1.5'>
-                  <Label htmlFor='sel-po-game'>Game *</Label>
+                  <Label htmlFor='sel-po-game'>Category *</Label>
                   <Select
                     value={form.game}
                     onValueChange={(v) => setForm({ ...form, game: v })}
                   >
                     <SelectTrigger id='sel-po-game'>
-                      <SelectValue />
+                      <SelectValue placeholder='Select category' />
                     </SelectTrigger>
                     <SelectContent>
                       {dynamicCategories.map((cat) => (
@@ -282,15 +338,45 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
                   </Select>
                 </div>
                 <div className='space-y-1.5'>
-                  <Label htmlFor='sel-po-price'>Price ({fiatSymbol}) *</Label>
+                  <Label htmlFor='sel-po-price'>Full Price ({fiatSymbol}) *</Label>
                   <Input
                     id='sel-po-price'
                     type='number'
                     min='0'
                     placeholder='0'
-                    value={form.price}
+                    value={form.full_price}
                     onChange={(e) =>
-                      setForm({ ...form, price: e.target.value })
+                      setForm({ ...form, full_price: e.target.value })
+                    }
+                  />
+                </div>
+                <div className='space-y-1.5'>
+                  <Label htmlFor='sel-po-dp'>Downpayment % <span className='text-muted-foreground font-normal'>(blank = full payment)</span></Label>
+                  <Input
+                    id='sel-po-dp'
+                    type='number'
+                    min='1'
+                    max='100'
+                    placeholder='e.g. 30'
+                    value={form.downpayment_pct}
+                    onChange={(e) =>
+                      setForm({ ...form, downpayment_pct: e.target.value })
+                    }
+                  />
+                  {form.downpayment_pct && parseFloat(form.downpayment_pct) > 0 && form.full_price && (
+                    <p className='text-xs text-muted-foreground'>
+                      Buyer pays {fiatSymbol}{(parseFloat(form.full_price) * parseFloat(form.downpayment_pct) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} upfront
+                    </p>
+                  )}
+                </div>
+                <div className='space-y-1.5'>
+                  <Label htmlFor='sel-po-cutoff'>Reservation Cutoff Date <span className='text-muted-foreground font-normal'>(optional)</span></Label>
+                  <Input
+                    id='sel-po-cutoff'
+                    type='date'
+                    value={form.cutoff_date}
+                    onChange={(e) =>
+                      setForm({ ...form, cutoff_date: e.target.value })
                     }
                   />
                 </div>
@@ -623,7 +709,8 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
                                   </p>
                                 </div>
                                 {/* Status + action */}
-                                <div className='flex items-center gap-2 shrink-0'>
+                                <div className='flex items-center gap-2 shrink-0 flex-wrap justify-end'>
+                                  {/* Payment badge */}
                                   <span
                                     className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold border ${
                                       r.paid === 1
@@ -638,6 +725,33 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
                                     )}
                                     {r.paid === 1 ? "Paid" : "Pending"}
                                   </span>
+                                  {/* Allocation dropdown */}
+                                  <Select
+                                    value={r.allocation_status ?? 'pending'}
+                                    onValueChange={(v) =>
+                                      handleSetAllocation(po.id, r, v as 'pending' | 'allocated' | 'shortlisted' | 'refunded')
+                                    }
+                                    disabled={allocatingId === r.id}
+                                  >
+                                    <SelectTrigger
+                                      className={`h-7 text-xs w-32 rounded-lg border font-semibold ${
+                                        ALLOCATION_LABELS[r.allocation_status ?? 'pending']?.color ?? ''
+                                      }`}
+                                    >
+                                      {allocatingId === r.id
+                                        ? <Loader2 className='h-3 w-3 animate-spin' />
+                                        : <SelectValue />}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value='pending'>Pending</SelectItem>
+                                      <SelectItem value='allocated'>Allocated</SelectItem>
+                                      <SelectItem value='shortlisted'>
+                                        <span className='flex items-center gap-1 text-red-600'>
+                                          <AlertTriangle className='h-3 w-3' />Cut
+                                        </span>
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                   <Button
                                     size='sm'
                                     variant={

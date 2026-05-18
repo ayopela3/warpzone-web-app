@@ -5,13 +5,12 @@ export const runtime = "edge"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { ShoppingBag, ArrowLeft } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 import { useApp } from "@/components/shared/app-provider"
+import { UserOrdersTab } from "@/features/dashboard/components/UserOrdersTab"
 
 export default function DashboardOrdersPage() {
-  const { isAuthenticated } = useApp()
+  const { isAuthenticated, fiatSymbol } = useApp()
   const router = useRouter()
 
   useEffect(() => {
@@ -33,18 +32,7 @@ export default function DashboardOrdersPage() {
       </div>
 
       <div className="mx-auto max-w-4xl px-4 py-8 lg:px-8">
-        <Card className="bg-white shadow-md">
-          <CardContent className="p-12 text-center">
-            <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
-              <ShoppingBag className="h-8 w-8 text-gray-400" />
-            </div>
-            <h3 className="mt-6 text-xl font-semibold text-gray-900">No orders yet</h3>
-            <p className="mt-2 text-gray-600">Your completed purchases will appear here once checkout is available.</p>
-            <Button asChild className="mt-6 bg-primary hover:bg-primary/90 text-white">
-              <Link href="/shop">Browse Shop</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <UserOrdersTab fiatSymbol={fiatSymbol} />
       </div>
     </div>
   )

@@ -2,13 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import {
-  ShoppingBag, Package, Loader2, ChevronDown, ChevronUp, CalendarDays, User,
-  CheckCheck, ImageIcon,
+  ShoppingBag, Package, Loader2, ChevronDown, ChevronUp,
+  CheckCheck, ImageIcon, Info,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
@@ -35,6 +34,7 @@ export function SellerOrdersTab({ fiatSymbol }: Props) {
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const [showFeeInfo, setShowFeeInfo] = useState(false)
 
   const fetchOrders = useCallback(async () => {
     setLoading(true)
@@ -108,58 +108,109 @@ export function SellerOrdersTab({ fiatSymbol }: Props) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Platform fee info with toggle */}
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={() => setShowFeeInfo(!showFeeInfo)}
+          className="flex items-center gap-1.5 text-sm text-amber-600 hover:text-amber-700 font-medium px-3 py-1.5 rounded-lg hover:bg-amber-50 transition-colors"
+        >
+          <Info className="h-4 w-4" />
+          {showFeeInfo ? "Hide fee info" : "How fees work"}
+        </button>
+      </div>
+
+      {showFeeInfo && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          <p className="text-sm text-amber-800">
+            <span className="font-semibold">Platform fees apply to all sales.</span> The buyer pays your listed price in full. A platform fee is deducted from your payout — you keep the rest.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="rounded-lg bg-white border border-amber-200 p-3 space-y-1.5">
+              <p className="font-semibold text-gray-700">Shop Orders — 5% fee</p>
+              <div className="flex justify-between text-gray-500"><span>Buyer pays</span><span>{fiatSymbol}620</span></div>
+              <div className="flex justify-between text-red-500"><span>Platform fee (5%)</span><span>− {fiatSymbol}31</span></div>
+              <div className="flex justify-between font-semibold text-green-700 border-t pt-1"><span>You receive</span><span>{fiatSymbol}589</span></div>
+            </div>
+            <div className="rounded-lg bg-white border border-amber-200 p-3 space-y-1.5">
+              <p className="font-semibold text-gray-700">Auctions — 10% fee</p>
+              <div className="flex justify-between text-gray-500"><span>Winning bid</span><span>{fiatSymbol}620</span></div>
+              <div className="flex justify-between text-red-500"><span>Platform fee (10%)</span><span>− {fiatSymbol}62</span></div>
+              <div className="flex justify-between font-semibold text-green-700 border-t pt-1"><span>You receive</span><span>{fiatSymbol}558</span></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm">
+        {/* Header */}
+        <div className="grid grid-cols-[1fr_1.5fr_1.5fr_1.5fr_1.2fr_auto] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Order</span>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Buyer</span>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</span>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</span>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</span>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</span>
+        </div>
+
+        <div className="divide-y divide-gray-100">
       {orders.map((order) => {
         const isExpanded = expandedId === order.id
         const isUpdating = updatingId === order.id
 
         return (
-          <Card key={order.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-5">
-              {/* Header row */}
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-gray-900 text-sm font-mono">
-                      #{order.id.slice(0, 8).toUpperCase()}
-                    </span>
-                    <OrderStatusBadge status={order.status} size="sm" />
-                    <Badge
-                      variant="outline"
-                      className="text-xs bg-gray-50 text-gray-600 border-gray-200 capitalize"
-                    >
-                      {order.fulfillment_type}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <User className="h-3 w-3" />
-                      {order.buyer_name ?? order.buyer_email ?? "Unknown buyer"}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <CalendarDays className="h-3 w-3" />
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-black text-primary text-base">
-                    {fiatSymbol}{order.total.toLocaleString()}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                    className="p-1 rounded hover:bg-gray-100 text-gray-400"
-                    aria-label="Toggle details"
-                  >
-                    {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </button>
-                </div>
+          <div key={order.id} className="bg-white">
+            {/* Table row */}
+            <div
+              className={`grid grid-cols-[1fr_1.5fr_1.5fr_1.5fr_1.2fr_auto] gap-4 px-5 py-4 items-center hover:bg-gray-50 transition-colors ${isExpanded ? "bg-gray-50" : ""}`}
+            >
+              {/* Order # */}
+              <span className="text-sm font-bold text-primary font-mono">
+                #{order.id.slice(0, 6).toUpperCase()}
+              </span>
+
+              {/* Buyer */}
+              <div className="min-w-0">
+                <p className="text-sm text-gray-800 truncate">{order.buyer_name ?? "—"}</p>
+                {order.buyer_email && <p className="text-xs text-gray-400 truncate">{order.buyer_email}</p>}
               </div>
 
-              {/* Expanded details */}
-              {isExpanded && (
-                <div className="mt-4 space-y-4 border-t pt-4">
+              {/* Date */}
+              <span className="text-sm text-gray-700">
+                {new Date(order.created_at).toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric" })}
+              </span>
+
+              {/* Status */}
+              <div>
+                <OrderStatusBadge status={order.status} size="sm" />
+              </div>
+
+              {/* Total */}
+              <span className="text-sm font-semibold text-gray-900">
+                {fiatSymbol}{order.total.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                {(order.items?.length ?? 0) > 0 && (
+                  <span className="text-xs font-normal text-gray-500 ml-1">
+                    for {order.items!.length} {order.items!.length === 1 ? "item" : "items"}
+                  </span>
+                )}
+              </span>
+
+              {/* Actions */}
+              <button
+                type="button"
+                onClick={() => setExpandedId(isExpanded ? null : order.id)}
+                className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors"
+                aria-label="Toggle details"
+              >
+                Details {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+
+            {/* Expanded details panel */}
+            {isExpanded && (
+              <div className="px-5 pb-5 space-y-4 border-t border-gray-100 pt-4 bg-white">
                   {/* Items */}
                   <div>
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Items</p>
@@ -201,27 +252,26 @@ export function SellerOrdersTab({ fiatSymbol }: Props) {
                   )}
 
                   {/* Payment proof */}
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Payment Proof</p>
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Payment Proof</p>
                     {order.payment_proof_url ? (
                       <div className="space-y-3">
                         <a
                           href={order.payment_proof_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="block"
+                          className="block bg-white rounded-lg overflow-hidden border border-gray-200"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={order.payment_proof_url}
                             alt="Payment proof"
-                            className="max-h-48 w-full object-contain rounded-xl border border-border bg-muted cursor-zoom-in"
+                            className="max-h-64 w-full object-contain cursor-zoom-in"
                           />
                         </a>
                         {(order.status === "pending_payment" || order.status === "payment_submitted" || order.status === "confirming_payment") && (
                           <Button
-                            size="sm"
-                            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold"
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-11"
                             disabled={confirmingId === order.id}
                             onClick={() => handleConfirmPayment(order.id)}
                           >
@@ -232,22 +282,24 @@ export function SellerOrdersTab({ fiatSymbol }: Props) {
                         )}
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-xl px-4 py-3">
-                        <ImageIcon className="h-4 w-4 shrink-0" />
-                        No payment screenshot uploaded yet.
+                      <div className="flex items-center gap-3 text-sm text-gray-500 bg-white rounded-lg px-4 py-4 border border-gray-200 border-dashed">
+                        <div className="p-2 bg-gray-100 rounded-full">
+                          <ImageIcon className="h-4 w-4 shrink-0" />
+                        </div>
+                        <span>No payment screenshot uploaded yet.</span>
                       </div>
                     )}
                   </div>
 
                   {/* Status action */}
-                  <div className="flex items-center gap-3 pt-1">
-                    <p className="text-sm font-medium text-gray-700 shrink-0">Update status:</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 pt-2 border-t border-gray-100">
+                    <p className="text-sm font-medium text-gray-700">Update status</p>
                     <Select
                       value={order.status}
                       onValueChange={(v) => handleStatusChange(order.id, v as OrderStatus)}
                       disabled={isUpdating || order.status === "cancelled"}
                     >
-                      <SelectTrigger className="w-56 h-9 text-sm">
+                      <SelectTrigger className="w-full sm:w-64 h-10 text-sm bg-white">
                         {isUpdating
                           ? <span className="flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" />Updating…</span>
                           : <SelectValue />}
@@ -259,12 +311,13 @@ export function SellerOrdersTab({ fiatSymbol }: Props) {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </div>
         )
       })}
+        </div>
+      </div>
     </div>
   )
 }

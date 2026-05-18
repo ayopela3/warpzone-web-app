@@ -61,7 +61,7 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
     }
 
-    // Fetch reservations with buyer display info
+    // Fetch reservations with buyer display info and downpayment fields
     const reservations = await db
       .prepare(`
         SELECT
@@ -71,8 +71,13 @@ export async function GET(
           por.quantity,
           por.reserved_at,
           por.paid,
+          por.downpayment_paid,
+          por.downpayment_amount,
+          por.total_paid,
+          por.remaining_balance,
+          por.allocation_status,
           p.full_name   AS buyer_name,
-          p.email       AS buyer_email,
+          u.email       AS buyer_email,
           u.email       AS user_email
         FROM pre_order_reservations por
         LEFT JOIN users u ON por.user_id = u.id
@@ -118,22 +123,103 @@ export async function PATCH(
     const isOwner = preOrder.seller_id === profile.id
     if (!isAdmin && !isOwner) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
-    const body = await request.json() as { reservationId: string; paid: boolean }
+    const body = await request.json() as { 
+      reservationId: string; 
+      paid?: boolean;
+      downpayment_paid?: boolean;
+      allocation_status?: 'pending' | 'allocated' | 'shortlisted' | 'refunded';
+    }
     if (!body.reservationId) {
       return NextResponse.json({ success: false, error: "reservationId is required" }, { status: 400 })
     }
 
-    await db
-      .prepare("UPDATE pre_order_reservations SET paid = ? WHERE id = ? AND pre_order_id = ?")
-      .bind(body.paid ? 1 : 0, body.reservationId, id)
-      .run()
+    // Build update based on what was provided
+    const updates: string[] = []
+    const binds: (string | number | null)[] = []
+    
+    if (body.paid !== undefined) {
+      updates.push("paid = ?")
+      binds.push(body.paid ? 1 : 0)
+    }
+    
+    if (body.downpayment_paid !== undefined) {
+      updates.push("downpayment_paid = ?")
+      binds.push(body.downpayment_paid ? 1 : 0)
+    }
+    
+    if (body.allocation_status !== undefined) {
+      updates.push("allocation_status = ?")
+      binds.push(body.allocation_status)
+
+      if (body.allocation_status === 'allocated') {
+        updates.push("total_paid = downpayment_amount")
+      }
+    }
+
+    if (updates.length > 0) {
+      binds.push(body.reservationId, id)
+      await db
+        .prepare(`UPDATE pre_order_reservations SET ${updates.join(", ")} WHERE id = ? AND pre_order_id = ?`)
+        .bind(...binds)
+        .run()
+    }
+
+    // ── When seller marks buyer as shortlisted (cut), credit their paid amount to wallet ──
+    if (body.allocation_status === 'shortlisted') {
+      const reservation = await db
+        .prepare(`
+          SELECT por.user_id, por.total_paid, por.quantity, por.paid,
+                 po.seller_id, po.title, po.full_price
+          FROM pre_order_reservations por
+          JOIN pre_orders po ON po.id = por.pre_order_id
+          WHERE por.id = ? AND por.pre_order_id = ?
+        `)
+        .bind(body.reservationId, id)
+        .first<{ user_id: string; total_paid: number; quantity: number; paid: number; seller_id: string | null; title: string; full_price: number }>()
+
+      if (reservation) {
+        // Amount to credit = what buyer actually paid (total_paid or full price if paid=1 and total_paid=0)
+        const creditAmount = reservation.total_paid > 0
+          ? reservation.total_paid
+          : (reservation.paid === 1 ? reservation.full_price * reservation.quantity : 0)
+
+        if (creditAmount > 0) {
+          // Upsert wallet_credits balance
+          const existingWallet = await db
+            .prepare("SELECT id, amount FROM wallet_credits WHERE user_id = ?")
+            .bind(reservation.user_id)
+            .first<{ id: string; amount: number }>()
+
+          if (existingWallet) {
+            await db.prepare("UPDATE wallet_credits SET amount = amount + ?, updated_at = datetime('now') WHERE user_id = ?")
+              .bind(creditAmount, reservation.user_id).run()
+          } else {
+            await db.prepare("INSERT INTO wallet_credits (id, user_id, amount) VALUES (?, ?, ?)")
+              .bind(crypto.randomUUID(), reservation.user_id, creditAmount).run()
+          }
+
+          // Log the credit transaction
+          await db.prepare(`
+            INSERT INTO wallet_transactions (id, user_id, type, amount, source_type, source_id, seller_id, note)
+            VALUES (?, ?, 'credit', ?, 'pre_order_refund', ?, ?, ?)
+          `).bind(
+            crypto.randomUUID(),
+            reservation.user_id,
+            creditAmount,
+            body.reservationId,
+            reservation.seller_id,
+            `Allocation refund — ${reservation.title}`,
+          ).run()
+        }
+      }
+    }
 
     // ── Record service fee when marking paid (idempotent via fee_recorded flag) ──
     if (body.paid) {
       const reservation = await db
-        .prepare("SELECT quantity, fee_recorded FROM pre_order_reservations WHERE id = ?")
+        .prepare("SELECT quantity, downpayment_amount, fee_recorded FROM pre_order_reservations WHERE id = ?")
         .bind(body.reservationId)
-        .first<{ quantity: number; fee_recorded: number | null }>()
+        .first<{ quantity: number; downpayment_amount: number; fee_recorded: number | null }>()
 
       const po = await db
         .prepare("SELECT price, seller_id FROM pre_orders WHERE id = ?")
@@ -146,8 +232,9 @@ export async function PATCH(
           .prepare("SELECT value FROM settings WHERE key = 'pre_order_service_fee_rate'")
           .first<{ value: string }>()
         const feeRate = rateSetting ? parseFloat(rateSetting.value) : 0.05
-        const grossAmount = po.price * (reservation.quantity ?? 1)
-        const feeAmount   = Math.round(grossAmount * feeRate * 100) / 100
+        // Use downpayment_amount for fee calculation if available, otherwise use display price
+        const feeBase = reservation.downpayment_amount || po.price * (reservation.quantity ?? 1)
+        const feeAmount = Math.round(feeBase * feeRate * 100) / 100
 
         await db.prepare(`
           INSERT OR IGNORE INTO service_fees
@@ -157,14 +244,14 @@ export async function PATCH(
           crypto.randomUUID(),
           po.seller_id,
           id,
-          `Pre-order reservation payment — qty ${reservation.quantity ?? 1} × ${po.price}`,
-          grossAmount,
+          `Pre-order downpayment — qty ${reservation.quantity ?? 1}`,
+          feeBase,
           feeRate,
           feeAmount,
         ).run()
 
-        // Mark so we don't double-charge if toggled again
-        await db.prepare("UPDATE pre_order_reservations SET fee_recorded = 1 WHERE id = ?")
+        // Update total_paid to reflect downpayment
+        await db.prepare("UPDATE pre_order_reservations SET fee_recorded = 1, total_paid = downpayment_amount WHERE id = ?")
           .bind(body.reservationId).run()
       }
     }
@@ -213,7 +300,9 @@ export async function PUT(
       description?: string
       game?: string
       image_url?: string
-      price?: number
+      price?: number /** Display price (downpayment if applicable) */
+      full_price?: number /** Total price buyer must pay */
+      downpayment_amount?: number | null /** Optional downpayment amount */
       release_date?: string
       max_slots?: number
     }
@@ -235,6 +324,11 @@ export async function PUT(
     if (body.game) { updates.push("game = ?"); binds.push(body.game) }
     if (body.image_url !== undefined) { updates.push("image_url = ?"); binds.push(body.image_url) }
     if (body.price !== undefined) { updates.push("price = ?"); binds.push(body.price) }
+    if (body.full_price !== undefined) { updates.push("full_price = ?"); binds.push(body.full_price) }
+    if (body.downpayment_amount !== undefined) { 
+      updates.push("downpayment_amount = ?"); 
+      binds.push(body.downpayment_amount) 
+    }
     if (body.release_date) { updates.push("release_date = ?"); binds.push(body.release_date) }
     if (body.max_slots !== undefined) { updates.push("max_slots = ?"); binds.push(body.max_slots) }
 

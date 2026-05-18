@@ -62,16 +62,25 @@ export async function GET(request: NextRequest) {
         .prepare(
           `SELECT
              oi.*,
-             p.name      AS product_name,
-             p.image_url AS product_image_url,
-             p.category  AS product_category
+             p.name       AS product_name,
+             p.image_url  AS product_image_url,
+             p.category   AS product_category,
+             po.title     AS pre_order_title,
+             po.image_url AS pre_order_image_url,
+             po.game      AS pre_order_game
            FROM order_items oi
-           LEFT JOIN products p ON oi.product_id = p.id
+           LEFT JOIN products   p  ON oi.product_id   = p.id
+           LEFT JOIN pre_orders po ON oi.pre_order_id = po.id
            WHERE oi.order_id = ?`
         )
         .bind(order.id as string)
         .all<Record<string, unknown>>()
-      order.items = itemsResult.results
+
+      order.items = itemsResult.results.map((item: Record<string, unknown>) => ({
+        ...item,
+        product_name:      item.pre_order_title     ?? item.product_name,
+        product_image_url: item.pre_order_image_url ?? item.product_image_url,
+      }))
     }
 
     return NextResponse.json({ success: true, orders })

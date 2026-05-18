@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Trophy, ArrowLeft, Loader2, CalendarDays, MapPin, Users, DollarSign } from "lucide-react"
+import { Trophy, ArrowLeft, Loader2, CalendarDays, MapPin, Users, DollarSign, Eye } from "lucide-react"
 import { useApp } from "@/components/shared/app-provider"
 
 type UserTournament = {
@@ -113,9 +113,16 @@ export default function DashboardTournamentsPage() {
                       <p className="font-bold text-gray-900 text-lg">{t.name}</p>
                       {t.format && <p className="text-sm text-gray-500">{t.format}</p>}
                     </div>
-                    <Badge variant="outline" className={`text-xs shrink-0 ${STATUS_COLORS[t.status] ?? ""}`}>
-                      {t.status}
-                    </Badge>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant="outline" className={`text-xs ${STATUS_COLORS[t.status] ?? ""}`}>
+                        {t.status}
+                      </Badge>
+                      <Button asChild variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-100 gap-1.5">
+                        <Link href={`/dashboard/tournaments/${t.id}`}>
+                          View <Eye className="h-3.5 w-3.5" />
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                     <span className="flex items-center gap-1.5 text-gray-600">
