@@ -226,6 +226,8 @@ export type PreOrderReservation = {
   user_id: string
   quantity: number
   reserved_at: string
+  /** Legacy paid flag — set by seller via Mark Paid button. 0 | 1 from SQLite */
+  paid: number
   /** Downpayment tracking */
   downpayment_paid: boolean
   downpayment_amount: number

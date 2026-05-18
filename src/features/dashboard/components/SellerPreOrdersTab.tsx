@@ -128,6 +128,8 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
       const data = await preOrdersApi.getDetail(po.id)
       if (data.success) {
         setReservationMap((prev) => ({ ...prev, [po.id]: data.reservations }))
+      } else {
+        toast.error((data as { error?: string }).error ?? "Failed to load reservations")
       }
     } catch {
       toast.error("Failed to load reservations")

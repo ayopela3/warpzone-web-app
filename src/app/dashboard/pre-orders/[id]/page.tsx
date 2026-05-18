@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, Package, Loader2, Calendar, CheckCircle2, LockKeyhole, Clock, AlertTriangle, Wallet, Banknote } from "lucide-react"
+import { ArrowLeft, Package, Loader2, Calendar, CheckCircle2, LockKeyhole, Clock, AlertTriangle, Wallet, Banknote, ExternalLink, Truck, ShoppingBag } from "lucide-react"
 import { useApp } from "@/components/shared/app-provider"
 import { preOrdersApi, walletApi } from "@/lib/api-client"
 import { Badge } from "@/components/ui/badge"
@@ -22,6 +22,18 @@ const ALLOCATION_LABEL: Record<string, { label: string; className: string }> = {
   refunded:    { label: "Refunded",            className: "bg-gray-50 text-gray-500 border-gray-200" },
 }
 
+/** Human-readable order status labels for the linked order */
+const ORDER_STATUS_LABEL: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
+  payment_submitted:   { label: "Payment Submitted — awaiting seller confirmation", className: "bg-amber-50 text-amber-700 border-amber-200", icon: <Clock className="h-3.5 w-3.5" /> },
+  confirming_payment:  { label: "Seller is reviewing your payment",                className: "bg-blue-50 text-blue-700 border-blue-200",   icon: <Loader2 className="h-3.5 w-3.5" /> },
+  confirmed:           { label: "Order Confirmed — item reserved for you",         className: "bg-green-50 text-green-700 border-green-200", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
+  ready_for_pickup:    { label: "Ready for Pickup — head to the store!",           className: "bg-green-50 text-green-800 border-green-300", icon: <ShoppingBag className="h-3.5 w-3.5" /> },
+  shortlisted:         { label: "Shortlisted — seller reviewing allocation",       className: "bg-red-50 text-red-700 border-red-200",     icon: <AlertTriangle className="h-3.5 w-3.5" /> },
+  out_of_stock:        { label: "Out of Stock — refund will be issued",            className: "bg-red-50 text-red-700 border-red-200",     icon: <AlertTriangle className="h-3.5 w-3.5" /> },
+  cancelled:           { label: "Cancelled",                                       className: "bg-gray-50 text-gray-500 border-gray-200",   icon: <LockKeyhole className="h-3.5 w-3.5" /> },
+  shipped:             { label: "Shipped — on the way!",                           className: "bg-blue-50 text-blue-700 border-blue-200",   icon: <Truck className="h-3.5 w-3.5" /> },
+}
+
 export default function PreOrderDetailPage() {
   const { isAuthenticated, fiatSymbol } = useApp()
   const router = useRouter()
@@ -29,6 +41,7 @@ export default function PreOrderDetailPage() {
 
   const [preOrder,     setPreOrder]     = useState<PreOrder | null>(null)
   const [reservation,  setReservation]  = useState<PreOrderReservation | null>(null)
+  const [linkedOrder,  setLinkedOrder]  = useState<{ id: string; status: string } | null>(null)
   const [loading,      setLoading]      = useState(true)
   const [error,        setError]        = useState<string | null>(null)
   const [refundLoading, setRefundLoading] = useState(false)
@@ -43,6 +56,7 @@ export default function PreOrderDetailPage() {
       if (data.success) {
         setPreOrder(data.preOrder)
         setReservation(data.reservation)
+        setLinkedOrder(data.linkedOrder)
       } else {
         setError("Pre-order reservation not found.")
       }
@@ -91,9 +105,13 @@ export default function PreOrderDetailPage() {
       })
     : null
 
-  const isDownpayment = Boolean(preOrder.downpayment_amount && preOrder.downpayment_amount > 0)
-  const lineTotal     = (preOrder.price ?? 0) * reservation.quantity
-  const allocationCfg = ALLOCATION_LABEL[reservation.allocation_status ?? "pending"]
+  const isDownpayment   = Boolean(preOrder.downpayment_amount && preOrder.downpayment_amount > 0)
+  const lineTotal       = (preOrder.price ?? 0) * reservation.quantity
+  const allocationCfg   = ALLOCATION_LABEL[reservation.allocation_status ?? "pending"]
+  /** If there is a linked order, its status is the authoritative fulfilment status */
+  const orderStatusCfg  = linkedOrder ? (ORDER_STATUS_LABEL[linkedOrder.status] ?? null) : null
+  /** Use the `paid` field (set by seller's Mark Paid button) as the source of truth for payment */
+  const isPaid = Boolean(reservation.paid)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -120,7 +138,9 @@ export default function PreOrderDetailPage() {
           {" "}was reserved on{" "}
           <span className="font-semibold text-gray-800">{reservedOn}</span>
           {" "}and is currently{" "}
-          <span className="font-semibold text-gray-800">{allocationCfg?.label ?? reservation.allocation_status}</span>.
+          <span className="font-semibold text-gray-800">
+            {orderStatusCfg ? orderStatusCfg.label : (allocationCfg?.label ?? reservation.allocation_status)}
+          </span>.
         </p>
 
         {/* Product card */}
@@ -271,24 +291,43 @@ export default function PreOrderDetailPage() {
 
             {/* Payment status */}
             <div className="grid grid-cols-2 items-center px-6 py-3">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Downpayment Paid:</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                {isDownpayment ? "Downpayment Paid:" : "Payment:"}
+              </span>
               <span className="text-sm">
-                {reservation.downpayment_paid
-                  ? <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> Paid</span>
-                  : <span className="text-amber-600 font-medium flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Pending</span>}
+                {isPaid
+                  ? <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> Confirmed by seller</span>
+                  : <span className="text-amber-600 font-medium flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Pending confirmation</span>}
               </span>
             </div>
 
-            {/* Allocation status */}
+            {/* Allocation / order status — unified source of truth */}
             <div className="grid grid-cols-2 items-center px-6 py-4">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Allocation Status:</span>
-              <Badge
-                variant="outline"
-                className={`${allocationCfg?.className ?? ""} text-xs w-fit`}
-              >
-                {allocationCfg?.label ?? reservation.allocation_status}
-              </Badge>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status:</span>
+              {orderStatusCfg ? (
+                <Badge variant="outline" className={`${orderStatusCfg.className} text-xs w-fit flex items-center gap-1`}>
+                  {orderStatusCfg.icon}{orderStatusCfg.label}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className={`${allocationCfg?.className ?? ""} text-xs w-fit`}>
+                  {allocationCfg?.label ?? reservation.allocation_status}
+                </Badge>
+              )}
             </div>
+
+            {/* Link to full order detail if order exists */}
+            {linkedOrder && (
+              <div className="grid grid-cols-2 items-center px-6 py-3">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Order:</span>
+                <Link
+                  href={`/dashboard/orders/${linkedOrder.id}`}
+                  className="text-sm text-primary font-medium flex items-center gap-1 hover:underline"
+                >
+                  #{linkedOrder.id.slice(0, 6).toUpperCase()}
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
@@ -367,14 +406,21 @@ export default function PreOrderDetailPage() {
           </div>
         )}
 
-        {/* Info notice — only for non-cut reservations */}
+        {/* Info notice — context-aware based on current status */}
         {reservation.allocation_status !== 'shortlisted' && (
           <div className="rounded-lg bg-blue-50 border border-blue-100 px-5 py-4 text-sm text-blue-700">
             <p className="font-medium mb-0.5">What happens next?</p>
-            <p className="text-blue-600 text-xs">
-              Once the pre-order closes and stock is allocated, you will be notified to pay the remaining balance.
-              Your reservation is guaranteed as long as your downpayment has been received.
-            </p>
+            {linkedOrder?.status === 'ready_for_pickup' ? (
+              <p className="text-blue-600 text-xs">Your item is ready! Head to the store to collect your <strong>{preOrder.title}</strong>. Bring this page or your order ID as reference.</p>
+            ) : linkedOrder?.status === 'confirmed' ? (
+              <p className="text-blue-600 text-xs">Your payment has been confirmed. The seller will notify you when your item is ready for pickup or shipping.</p>
+            ) : linkedOrder ? (
+              <p className="text-blue-600 text-xs">Your order is being processed. Check your <Link href={`/dashboard/orders/${linkedOrder.id}`} className="underline font-medium">order page</Link> for the latest status.</p>
+            ) : reservation.allocation_status === 'allocated' ? (
+              <p className="text-blue-600 text-xs">You&apos;ve been allocated a slot. The seller will create your order once payment is verified.</p>
+            ) : (
+              <p className="text-blue-600 text-xs">Once the pre-order closes and stock is allocated, you will be notified. Your reservation is guaranteed as long as your payment has been received.</p>
+            )}
           </div>
         )}
       </div>

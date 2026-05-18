@@ -140,6 +140,9 @@ export async function PATCH(
     if (body.paid !== undefined) {
       updates.push("paid = ?")
       binds.push(body.paid ? 1 : 0)
+      // Keep downpayment_paid in sync — it is the field the buyer-facing page reads
+      updates.push("downpayment_paid = ?")
+      binds.push(body.paid ? 1 : 0)
     }
     
     if (body.downpayment_paid !== undefined) {

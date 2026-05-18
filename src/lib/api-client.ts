@@ -306,7 +306,7 @@ export const preOrdersApi = {
 
   /** Buyer: get detail for a single pre-order reservation */
   myReservationDetail: (preOrderId: string) =>
-    apiFetch<{ success: boolean; preOrder: PreOrder; reservation: PreOrderReservation }>(`/api/user/pre-orders/${preOrderId}`),
+    apiFetch<{ success: boolean; preOrder: PreOrder; reservation: PreOrderReservation; linkedOrder: { id: string; status: string } | null }>(`/api/user/pre-orders/${preOrderId}`),
 }
 
 // ---------------------------------------------------------------------------

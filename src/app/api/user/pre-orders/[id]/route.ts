@@ -52,7 +52,7 @@ export async function GET(
       .prepare(
         `SELECT
            por.id, por.pre_order_id, por.user_id, por.quantity, por.reserved_at,
-           por.downpayment_paid, por.downpayment_amount, por.total_paid,
+           por.paid, por.downpayment_paid, por.downpayment_amount, por.total_paid,
            por.remaining_balance, por.allocation_status
          FROM pre_order_reservations por
          WHERE por.pre_order_id = ? AND por.user_id = ?`
@@ -64,7 +64,20 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Reservation not found" }, { status: 404 })
     }
 
-    return NextResponse.json({ success: true, preOrder, reservation })
+    // Fetch the linked order for this pre-order item (buyer may have checked out)
+    const linkedOrder = await db
+      .prepare(
+        `SELECT o.id, o.status
+         FROM orders o
+         JOIN order_items oi ON oi.order_id = o.id
+         WHERE oi.pre_order_id = ? AND o.user_id = ?
+         ORDER BY o.created_at DESC
+         LIMIT 1`
+      )
+      .bind(id, session.user_id)
+      .first<{ id: string; status: string } | null>()
+
+    return NextResponse.json({ success: true, preOrder, reservation, linkedOrder: linkedOrder ?? null })
   } catch (error) {
     console.error("User pre-order detail error:", error)
     return NextResponse.json({ success: false, error: "Failed to fetch pre-order detail" }, { status: 500 })
