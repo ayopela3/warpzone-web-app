@@ -32,7 +32,7 @@ type PasswordForm = {
 }
 
 /** Set to true to re-enable seller QR upload once the admin-QR flow is ready */
-const SHOW_SELLER_QR_UPLOAD = false
+const SHOW_SELLER_QR_UPLOAD = true
 
 const ROLE_LABELS: Record<string, string> = {
   "regular-user": "Customer",
