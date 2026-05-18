@@ -38,7 +38,7 @@ export function ProductCard({ product, fiatSymbol, onAddToCart }: Props) {
     <div className="group bg-white rounded-xl border border-neutral-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-150 flex flex-col">
 
       {/* ── Image panel ── */}
-      <Link href={`/shop/${product.id}`} className="block relative">
+      <Link href={`/shop/${product.id}`} prefetch={false} className="block relative">
         <div className="relative flex items-center justify-center bg-neutral-100 overflow-hidden" style={{ height: "210px" }}>
           {product.image_url ? (
             <Image
@@ -83,7 +83,7 @@ export function ProductCard({ product, fiatSymbol, onAddToCart }: Props) {
 
       {/* ── Content ── */}
       <div className="flex flex-col flex-1 px-3 pt-2 pb-3 gap-2.5">
-        <Link href={`/shop/${product.id}`}>
+        <Link href={`/shop/${product.id}`} prefetch={false}>
           <h3 className="font-bold text-sm leading-snug text-neutral-900 line-clamp-2 hover:text-primary transition-colors">
             {product.name}
           </h3>

@@ -44,7 +44,7 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
           {/* Brand */}
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
-            <Link href="/">
+            <Link href="/" prefetch={false}>
               <Image src="/images/warpzone.png" alt="The Warpzone" width={140} height={40} className="h-9 w-auto object-contain" />
             </Link>
             <p className="mt-4 text-sm text-muted-foreground">
@@ -55,6 +55,7 @@ export function Footer() {
                 <Link
                   key={item.name}
                   href={item.href}
+                  prefetch={false}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <span className="sr-only">{item.name}</span>
@@ -72,6 +73,7 @@ export function Footer() {
                 <li key={item.name}>
                   <Link
                     href={item.href}
+                    prefetch={false}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {item.name}
@@ -89,6 +91,7 @@ export function Footer() {
                 <li key={item.name}>
                   <Link
                     href={item.href}
+                    prefetch={false}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {item.name}
@@ -106,6 +109,7 @@ export function Footer() {
                 <li key={item.name}>
                   <Link
                     href={item.href}
+                    prefetch={false}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {item.name}
@@ -123,6 +127,7 @@ export function Footer() {
                 <li key={item.name}>
                   <Link
                     href={item.href}
+                    prefetch={false}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {item.name}

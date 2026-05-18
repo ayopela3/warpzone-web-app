@@ -105,7 +105,7 @@ export function AuctionCard({ auction, fiatSymbol, isAuthenticated, onJoin }: Pr
         </div>
         {isLive ? (
           <Button className="w-full mt-2" asChild>
-            <Link href={`/auctions/${auction.id}`}>
+            <Link href={`/auctions/${auction.id}`} prefetch={false}>
               Place a Bid <ArrowUpRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>

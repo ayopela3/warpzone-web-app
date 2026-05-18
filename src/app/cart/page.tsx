@@ -31,7 +31,7 @@ export default function CartPage() {
                 Add products from the shop or reserve pre-orders to start building your cart.
               </p>
               <Button className="mt-6" asChild>
-                <Link href="/shop">Shop products</Link>
+                <Link href="/shop" prefetch={false}>Shop products</Link>
               </Button>
             </CardContent>
           </Card>

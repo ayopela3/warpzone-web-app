@@ -28,7 +28,7 @@ function ProductTile({
   return (
     <div className="group bg-white rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-200 flex flex-col">
       {/* Image */}
-      <Link href={`/shop/${product.id}`} className="block relative">
+      <Link href={`/shop/${product.id}`} prefetch={false} className="block relative">
         <div className="flex items-center justify-center bg-[#fdf6e3] overflow-hidden" style={{ height: "200px" }}>
           {product.image_url ? (
             <img
@@ -55,7 +55,7 @@ function ProductTile({
       {/* Info */}
       <div className="flex flex-col flex-1 p-4 gap-3">
         <div>
-          <Link href={`/shop/${product.id}`}>
+          <Link href={`/shop/${product.id}`} prefetch={false}>
             <h3 className="font-bold text-sm leading-snug text-foreground line-clamp-2 hover:text-primary transition-colors">
               {product.name}
             </h3>
@@ -131,7 +131,7 @@ export function FeaturedProductsSection({ products, isSeller, fiatSymbol, onAddT
             <h2 className="text-2xl font-black text-foreground">Great additions to your collection</h2>
           </div>
           <Button variant="outline" asChild className="shrink-0">
-            <Link href="/shop">View all →</Link>
+            <Link href="/shop" prefetch={false}>View all →</Link>
           </Button>
         </div>
 

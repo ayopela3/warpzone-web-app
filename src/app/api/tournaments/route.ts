@@ -40,6 +40,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status")
     const userId = searchParams.get("userId")
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "20", 10), 100)
+    const offset = parseInt(searchParams.get("offset") ?? "0", 10)
 
     const db = await getDb()
     if (!db) {
@@ -47,7 +49,7 @@ export async function GET(request: NextRequest) {
     }
 
     const conditions: string[] = []
-    const params: string[] = []
+    const params: (string | number)[] = []
 
     // When a userId is supplied, join registrations to mark which ones the user joined
     let selectClause = "SELECT t.*"
@@ -68,14 +70,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (conditions.length) query += " WHERE " + conditions.join(" AND ")
-    query += " ORDER BY t.tournament_date ASC"
+    query += " ORDER BY t.tournament_date ASC LIMIT ? OFFSET ?"
+    params.push(limit, offset)
 
     const tournaments = await db
       .prepare(query)
       .bind(...params)
       .all()
 
-    return NextResponse.json({ success: true, tournaments: tournaments.results })
+    return NextResponse.json({ success: true, tournaments: tournaments.results, pagination: { limit, offset } })
   } catch (error) {
     console.error("Tournaments fetch error:", error)
     return NextResponse.json({ success: false, error: "Failed to fetch tournaments" }, { status: 500 })

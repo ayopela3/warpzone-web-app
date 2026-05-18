@@ -1,24 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import { resolveSession } from "@/lib/auth"
 
 export const runtime = "edge"
-
-/** Resolve the authenticated user's ID and profile ID from session cookie or Authorization header. */
-async function resolveSession(request: NextRequest, db: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
-  const sessionId =
-    request.cookies.get("wz_session")?.value ??
-    request.headers.get("Authorization")?.replace("Bearer ", "")
-
-  if (!sessionId) return null
-
-  const session = await db
-    .prepare("SELECT user_id, expires_at FROM sessions WHERE id = ?")
-    .bind(sessionId)
-    .first<{ user_id: string; expires_at: string }>()
-
-  if (!session || new Date(session.expires_at) < new Date()) return null
-  return session.user_id
-}
 
 // ---------------------------------------------------------------------------
 // POST /api/orders — create order from cart
@@ -29,8 +13,8 @@ export async function POST(request: NextRequest) {
     const db = await getDb()
     if (!db) return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
 
-    const userId = await resolveSession(request, db)
-    if (!userId) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
+    const session = await resolveSession(request, db)
+    if (!session) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
 
     const body = await request.json() as {
       items: { product_id: string; listing_id: string; seller_id: string; quantity: number; price: number; pre_order_id?: string }[]
@@ -52,17 +36,17 @@ export async function POST(request: NextRequest) {
 
     const orderId = crypto.randomUUID()
 
-    console.log(`[Order Create] Creating order: ${orderId}, userId: ${userId}, sellerId: ${seller_id}`)
+    console.log(`[Order Create] Creating order: ${orderId}, userId: ${session.userId}, sellerId: ${seller_id}`)
     console.log(`[Order Create] Items:`, items.map(i => ({ product_id: i.product_id, listing_id: i.listing_id, seller_id: i.seller_id })))
 
     // Validate foreign keys exist
-    const userExists = await db.prepare("SELECT 1 FROM users WHERE id = ?").bind(userId).first()
+    const userExists = await db.prepare("SELECT 1 FROM users WHERE id = ?").bind(session.userId).first()
     const sellerExists = await db.prepare("SELECT 1 FROM profiles WHERE id = ?").bind(seller_id).first()
 
     console.log(`[Order Create] userExists: ${!!userExists}, sellerExists: ${!!sellerExists}`)
 
     if (!userExists) {
-      return NextResponse.json({ success: false, error: "Invalid user_id", details: `User ${userId} not found in database` }, { status: 400 })
+      return NextResponse.json({ success: false, error: "Invalid user_id", details: `User ${session.userId} not found in database` }, { status: 400 })
     }
     if (!sellerExists) {
       return NextResponse.json({ success: false, error: "Invalid seller_id", details: `Seller ${seller_id} not found in profiles` }, { status: 400 })
@@ -79,10 +63,10 @@ export async function POST(request: NextRequest) {
           `INSERT INTO orders (id, user_id, seller_id, status, total, fulfillment_type, notes, payment_proof_url, created_at, updated_at)
            VALUES (?, ?, ?, 'payment_submitted', ?, ?, ?, ?, datetime('now'), datetime('now'))`
         )
-        .bind(orderId, userId, seller_id, total, fulfillment_type, notes ?? null, payment_proof_url)
+        .bind(orderId, session.userId, seller_id, total, fulfillment_type, notes ?? null, payment_proof_url)
         .run()
     } catch (e) {
-      console.error(`[Order Create] Failed to insert order. userId: ${userId}, sellerId: ${seller_id}`)
+      console.error(`[Order Create] Failed to insert order. userId: ${session.userId}, sellerId: ${seller_id}`)
       throw new Error(`Order insert failed: ${e instanceof Error ? e.message : String(e)}`)
     }
 
@@ -148,6 +132,12 @@ export async function GET(request: NextRequest) {
     const userId = await resolveSession(request, db)
     if (!userId) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
 
+    // Parse pagination params
+    const { searchParams } = new URL(request.url)
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "20", 10), 100)
+    const offset = parseInt(searchParams.get("offset") ?? "0", 10)
+
+    // Fetch paginated orders
     const ordersResult = await db
       .prepare(
         `SELECT
@@ -158,43 +148,57 @@ export async function GET(request: NextRequest) {
          FROM orders o
          LEFT JOIN profiles sp ON o.seller_id = sp.id
          WHERE o.user_id = ?
-         ORDER BY o.created_at DESC`
+         ORDER BY o.created_at DESC
+         LIMIT ? OFFSET ?`
       )
-      .bind(userId)
+      .bind(userId, limit, offset)
       .all<Record<string, unknown>>()
 
     const orders = ordersResult.results
 
-    await Promise.all(
-      orders.map(async (order) => {
-        const itemsResult = await db
-          .prepare(
-            `SELECT
-               oi.*,
-               p.name       AS product_name,
-               p.image_url  AS product_image_url,
-               p.category   AS product_category,
-               po.title     AS pre_order_title,
-               po.image_url AS pre_order_image_url,
-               po.game      AS pre_order_game
-             FROM order_items oi
-             LEFT JOIN products p ON oi.product_id = p.id
-             LEFT JOIN pre_orders po ON oi.pre_order_id = po.id
-             WHERE oi.order_id = ?`
-          )
-          .bind(order.id as string)
-          .all<Record<string, unknown>>()
-        
-        // Transform items to use pre-order data when applicable
-        order.items = itemsResult.results.map((item: Record<string, unknown>) => ({
+    // Fetch all items for these orders in a single query (fixes N+1)
+    if (orders.length > 0) {
+      const orderIds = orders.map((o) => o.id as string)
+      const placeholders = orderIds.map(() => "?").join(",")
+      
+      const itemsResult = await db
+        .prepare(
+          `SELECT
+             oi.*,
+             p.name       AS product_name,
+             p.image_url  AS product_image_url,
+             p.category   AS product_category,
+             po.title     AS pre_order_title,
+             po.image_url AS pre_order_image_url,
+             po.game      AS pre_order_game
+           FROM order_items oi
+           LEFT JOIN products p ON oi.product_id = p.id
+           LEFT JOIN pre_orders po ON oi.pre_order_id = po.id
+           WHERE oi.order_id IN (${placeholders})`
+        )
+        .bind(...orderIds)
+        .all<Record<string, unknown>>()
+
+      // Group items by order_id
+      type OrderItem = Record<string, unknown>
+      const itemsByOrder = itemsResult.results.reduce<Record<string, OrderItem[]>>((acc, item) => {
+        const orderId = item.order_id as string
+        if (!acc[orderId]) acc[orderId] = []
+        acc[orderId].push({
           ...item,
           product_name: item.pre_order_title ?? item.product_name,
           product_image_url: item.pre_order_image_url ?? item.product_image_url,
-        }))
-      })
-    )
+        })
+        return acc
+      }, {})
 
-    return NextResponse.json({ success: true, orders })
+      // Attach items to each order
+      orders.forEach((order) => {
+        order.items = itemsByOrder[order.id as string] ?? []
+      })
+    }
+
+    return NextResponse.json({ success: true, orders, pagination: { limit, offset } })
   } catch (error) {
     console.error("Orders fetch error:", error)
     return NextResponse.json({ success: false, error: "Failed to fetch orders" }, { status: 500 })

@@ -47,7 +47,7 @@ export function UserPreOrdersTab({ fiatSymbol }: Props) {
           <h3 className="mt-6 text-xl font-semibold text-gray-900">No pre-orders reserved</h3>
           <p className="mt-2 text-gray-600">Reserve upcoming card releases to see them here</p>
           <Button asChild className="mt-6 bg-primary hover:bg-primary/90 text-white">
-            <Link href="/pre-order">Browse Pre-Orders</Link>
+            <Link href="/pre-order" prefetch={false}>Browse Pre-Orders</Link>
           </Button>
         </CardContent>
       </Card>
@@ -110,7 +110,7 @@ export function UserPreOrdersTab({ fiatSymbol }: Props) {
                   size="sm"
                   className="border-gray-300 text-gray-700 hover:bg-gray-100 gap-1.5"
                 >
-                  <Link href={`/dashboard/pre-orders/${r.pre_order_id}`}>
+                  <Link href={`/dashboard/pre-orders/${r.pre_order_id}`} prefetch={false}>
                     View <Eye className="h-3.5 w-3.5" />
                   </Link>
                 </Button>

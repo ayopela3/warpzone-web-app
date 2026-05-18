@@ -113,7 +113,7 @@ export default function SignUpPage() {
 
               <p className="text-center text-sm text-neutral-600">
                 Already have an account?{" "}
-                <Link href="/auth/signin" className="font-bold text-black underline">
+                <Link href="/auth/signin" prefetch={false} className="font-bold text-black underline">
                   Sign in
                 </Link>
               </p>

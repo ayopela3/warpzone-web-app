@@ -191,6 +191,7 @@ export default function AuctionDetailPage() {
         {/* ── Back link ── */}
         <Link
           href="/auctions"
+          prefetch={false}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />

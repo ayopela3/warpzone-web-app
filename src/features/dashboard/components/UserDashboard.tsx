@@ -190,7 +190,7 @@ export function UserDashboard({ fiatSymbol }: Props) {
           <TabsContent value="auctions" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900">Active Bids</h2>
-              <Link href="/dashboard/auctions">
+              <Link href="/dashboard/auctions" prefetch={false}>
                 <Button variant="outline" size="sm" className="border-2">View All <ArrowRight className="ml-2 h-4 w-4" /></Button>
               </Link>
             </div>
@@ -209,7 +209,7 @@ export function UserDashboard({ fiatSymbol }: Props) {
                   <h3 className="mt-6 text-xl font-semibold text-gray-900">No active bids</h3>
                   <p className="mt-2 text-gray-600">Join auctions to see your active bids here</p>
                   <Button asChild className="mt-6 bg-primary hover:bg-primary/90 text-white">
-                    <Link href="/auctions">Browse Auctions</Link>
+                    <Link href="/auctions" prefetch={false}>Browse Auctions</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -259,7 +259,7 @@ export function UserDashboard({ fiatSymbol }: Props) {
           <TabsContent value="tournaments" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900">Registered Tournaments</h2>
-              <Link href="/dashboard/tournaments">
+              <Link href="/dashboard/tournaments" prefetch={false}>
                 <Button variant="outline" size="sm" className="border-2">View All <ArrowRight className="ml-2 h-4 w-4" /></Button>
               </Link>
             </div>
@@ -278,7 +278,7 @@ export function UserDashboard({ fiatSymbol }: Props) {
                   <h3 className="mt-6 text-xl font-semibold text-gray-900">No tournaments yet</h3>
                   <p className="mt-2 text-gray-600">Register for tournaments to see them here</p>
                   <Button asChild className="mt-6 bg-primary hover:bg-primary/90 text-white">
-                    <Link href="/tournaments">Browse Tournaments</Link>
+                    <Link href="/tournaments" prefetch={false}>Browse Tournaments</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -315,7 +315,7 @@ export function UserDashboard({ fiatSymbol }: Props) {
                           : <span className="text-gray-400 font-normal">Free</span>}
                       </span>
                       <Button asChild variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-100 gap-1.5">
-                        <Link href={`/dashboard/tournaments/${t.id}`}>
+                        <Link href={`/dashboard/tournaments/${t.id}`} prefetch={false}>
                           View <Eye className="h-3.5 w-3.5" />
                         </Link>
                       </Button>

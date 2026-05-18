@@ -47,7 +47,7 @@ export function UserOrdersTab({ fiatSymbol }: Props) {
           <h3 className="mt-6 text-xl font-semibold text-gray-900">No orders yet</h3>
           <p className="mt-2 text-gray-600">Start shopping to see your orders here</p>
           <Button asChild className="mt-6 bg-primary hover:bg-primary/90 text-white">
-            <Link href="/shop">Browse Shop</Link>
+            <Link href="/shop" prefetch={false}>Browse Shop</Link>
           </Button>
         </CardContent>
       </Card>
@@ -112,7 +112,7 @@ export function UserOrdersTab({ fiatSymbol }: Props) {
                   size="sm"
                   className="border-gray-300 text-gray-700 hover:bg-gray-100 gap-1.5"
                 >
-                  <Link href={`/dashboard/orders/${order.id}`}>
+                  <Link href={`/dashboard/orders/${order.id}`} prefetch={false}>
                     View <Eye className="h-3.5 w-3.5" />
                   </Link>
                 </Button>
@@ -124,7 +124,7 @@ export function UserOrdersTab({ fiatSymbol }: Props) {
 
       <div className="text-center pt-1">
         <Button variant="outline" asChild size="sm">
-          <Link href="/dashboard/orders">
+          <Link href="/dashboard/orders" prefetch={false}>
             View All Orders <ArrowRight className="h-3 w-3 ml-1" />
           </Link>
         </Button>

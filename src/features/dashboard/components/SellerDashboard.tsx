@@ -408,7 +408,7 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">Your Auctions</h2>
                 <Button asChild className="bg-primary hover:bg-primary/90 text-white">
-                  <Link href="/seller/auctions/new"><Plus className="mr-2 h-4 w-4" />Create Auction</Link>
+                  <Link href="/seller/auctions/new" prefetch={false}><Plus className="mr-2 h-4 w-4" />Create Auction</Link>
                 </Button>
               </div>
               {auctionsLoading ? (
@@ -424,7 +424,7 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
                   <h3 className="mt-6 text-xl font-semibold text-gray-900">No auctions yet</h3>
                   <p className="mt-2 text-gray-600">Create your first auction to start bidding wars on your products</p>
                   <Button asChild className="mt-6 bg-primary hover:bg-primary/90 text-white">
-                    <Link href="/seller/auctions/new"><Plus className="mr-2 h-4 w-4" />Create Your First Auction</Link>
+                    <Link href="/seller/auctions/new" prefetch={false}><Plus className="mr-2 h-4 w-4" />Create Your First Auction</Link>
                   </Button>
                 </div>
               ) : (
@@ -444,13 +444,13 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
                         key={auction.id}
                         className="grid grid-cols-[auto_2fr_1fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3.5 items-center hover:bg-gray-50 transition-colors"
                       >
-                        <Link href={`/auctions/${auction.id}`} className="relative w-10 h-10 shrink-0 rounded-md overflow-hidden bg-amber-50 flex items-center justify-center">
+                        <Link href={`/auctions/${auction.id}`} prefetch={false} className="relative w-10 h-10 shrink-0 rounded-md overflow-hidden bg-amber-50 flex items-center justify-center">
                           {auction.image_url
                             ? <Image src={auction.image_url} alt={auction.title} fill className="object-contain" />
                             : <Gavel className="h-5 w-5 text-amber-400" />}
                         </Link>
                         <div className="min-w-0">
-                          <Link href={`/auctions/${auction.id}`} className="text-sm font-semibold text-gray-900 hover:text-primary transition-colors truncate block">{auction.title}</Link>
+                          <Link href={`/auctions/${auction.id}`} prefetch={false} className="text-sm font-semibold text-gray-900 hover:text-primary transition-colors truncate block">{auction.title}</Link>
                           <span className="text-xs text-gray-400 capitalize">{auction.condition}</span>
                         </div>
                         <span className="text-sm text-gray-600 capitalize">{auction.category}</span>

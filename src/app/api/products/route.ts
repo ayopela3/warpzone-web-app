@@ -48,7 +48,8 @@ export async function GET(request: NextRequest) {
     const approvalStatus = searchParams.get("approvalStatus")
     const showAll = searchParams.get("showAll") === "true"
     const search = searchParams.get("search")
-    const limit = parseInt(searchParams.get("limit") ?? "50", 10)
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "20", 10), 100)
+    const offset = parseInt(searchParams.get("offset") ?? "0", 10)
 
     const db = await getDb()
     if (!db) {
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
       query += " WHERE " + conditions.join(" AND ")
     }
 
-    query += ` ORDER BY p.created_at DESC LIMIT ${limit}`
+    query += ` ORDER BY p.created_at DESC LIMIT ${limit} OFFSET ${offset}`
 
     let products
     if (params.length > 0) {

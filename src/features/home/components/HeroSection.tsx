@@ -90,18 +90,18 @@ export function HeroSection({ isSeller, featuredProducts, activeFeaturedIndex, f
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               {isSeller ? (
                 <Button size="lg" className="bg-primary text-black font-bold hover:bg-primary/90" asChild>
-                  <Link href="/dashboard">Go to Dashboard <ArrowRight className="h-4 w-4" /></Link>
+                  <Link href="/dashboard" prefetch={false}>Go to Dashboard <ArrowRight className="h-4 w-4" /></Link>
                 </Button>
               ) : (
                 <>
                   <Button size="lg" className="bg-primary text-black font-bold hover:bg-primary/90" asChild>
-                    <Link href="/shop">Shop now <ArrowRight className="h-4 w-4" /></Link>
+                    <Link href="/shop" prefetch={false}>Shop now <ArrowRight className="h-4 w-4" /></Link>
                   </Button>
                   <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 hover:text-white" asChild>
-                    <Link href="/auctions">Live auctions <Gavel className="h-4 w-4" /></Link>
+                    <Link href="/auctions" prefetch={false}>Live auctions <Gavel className="h-4 w-4" /></Link>
                   </Button>
                   <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 hover:text-white" asChild>
-                    <Link href="/tournaments">Tournaments <Trophy className="h-4 w-4" /></Link>
+                    <Link href="/tournaments" prefetch={false}>Tournaments <Trophy className="h-4 w-4" /></Link>
                   </Button>
                 </>
               )}
@@ -157,6 +157,7 @@ export function HeroSection({ isSeller, featuredProducts, activeFeaturedIndex, f
                   </p>
                   <Link
                     href={`/shop/${active?.id ?? ""}`}
+                    prefetch={false}
                     className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-opacity hover:opacity-90"
                     style={{ background: "#facc15", color: "#000" }}
                   >
@@ -210,7 +211,7 @@ export function CtaSection({ isSeller }: CtaSectionProps) {
           Auction block
         </h2>
         <p className="mb-6 mt-2 text-neutral-600">Bid on graded slabs, sealed boxes, and hard-to-find singles.</p>
-        <Button asChild><Link href="/auctions">Browse auctions</Link></Button>
+        <Button asChild><Link href="/auctions" prefetch={false}>Browse auctions</Link></Button>
       </div>
       <div className="rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm">
         <span className="inline-flex w-fit rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Events</span>
@@ -219,7 +220,7 @@ export function CtaSection({ isSeller }: CtaSectionProps) {
           Upcoming tournaments
         </h2>
         <p className="mb-6 mt-2 text-neutral-600">Join our community events and tournaments.</p>
-        <Button variant="outline" asChild><Link href="/tournaments">See event calendar</Link></Button>
+        <Button variant="outline" asChild><Link href="/tournaments" prefetch={false}>See event calendar</Link></Button>
       </div>
     </section>
   )

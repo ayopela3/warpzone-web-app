@@ -39,6 +39,7 @@ export function CategoryTiles() {
               <Link
                 key={cat.id}
                 href={`/shop?category=${encodeURIComponent(cat.slug)}`}
+                prefetch={false}
                 className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 py-4 px-2 transition-all duration-150 ${cat.color}`}
               >
                 <div className="h-10 w-full flex items-center justify-center">

@@ -51,7 +51,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <nav className="mx-auto flex max-w-7xl items-center justify-between p-4 lg:px-8" aria-label="Global">
         <div className="flex lg:flex-1">
-          <Link href="/" className="-m-1.5 p-1.5">
+          <Link href="/" prefetch={false} className="-m-1.5 p-1.5">
             <span className="sr-only">The Warpzone</span>
             <Image src="/images/warpzone.png" alt="The Warpzone" width={160} height={48} className="h-10 w-auto object-contain" priority />
           </Link>
@@ -77,6 +77,7 @@ export function Navbar() {
             <Link
               key={item.name}
               href={item.href}
+              prefetch={false}
               className="rounded-full px-3 py-2 text-sm font-bold leading-6 text-black transition-colors hover:bg-primary/15"
             >
               {item.name}
@@ -92,7 +93,7 @@ export function Navbar() {
           )}
           {showSellButton && (
             <Button variant="outline" asChild>
-              <Link href="/auth/become-seller">
+              <Link href="/auth/become-seller" prefetch={false}>
                 <Store className="h-4 w-4" />
                 Sell with us
               </Link>
@@ -100,7 +101,7 @@ export function Navbar() {
           )}
           {showShoppingFeatures && (
             <Button size="icon" aria-label="Shopping cart" className="relative" asChild>
-              <Link href="/cart">
+              <Link href="/cart" prefetch={false}>
                 <ShoppingCart className="h-5 w-5" />
                 {mounted && cartCount > 0 && (
                   <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-black px-1 text-xs font-black text-white">
@@ -119,11 +120,11 @@ export function Navbar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href={dashboardHref}>Dashboard</Link>
+                  <Link href={dashboardHref} prefetch={false}>Dashboard</Link>
                 </DropdownMenuItem>
                 {userRole !== "admin" && (
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings">Settings</Link>
+                    <Link href="/dashboard/settings" prefetch={false}>Settings</Link>
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => signOut()}>
@@ -133,7 +134,7 @@ export function Navbar() {
             </DropdownMenu>
           ) : (
             <Button variant="ghost" size="icon" aria-label="Sign in" asChild>
-              <Link href="/auth/signin">
+              <Link href="/auth/signin" prefetch={false}>
                 <User className="h-5 w-5" />
               </Link>
             </Button>
@@ -148,7 +149,7 @@ export function Navbar() {
         <div className="fixed inset-0 z-9999 flex flex-col bg-white overflow-hidden lg:hidden">
           {/* Header row */}
           <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 p-4">
-            <Link href="/" className="-m-1.5 p-1.5" onClick={() => setMobileMenuOpen(false)}>
+            <Link href="/" prefetch={false} className="-m-1.5 p-1.5" onClick={() => setMobileMenuOpen(false)}>
               <Image src="/images/warpzone.png" alt="The Warpzone" width={140} height={40} className="h-9 w-auto object-contain" />
             </Link>
             <button
@@ -168,6 +169,7 @@ export function Navbar() {
                 <Link
                   key={item.name}
                   href={item.href}
+                  prefetch={false}
                   className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -177,6 +179,7 @@ export function Navbar() {
               {showSellButton && (
                 <Link
                   href="/auth/become-seller"
+                  prefetch={false}
                   className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -190,6 +193,7 @@ export function Navbar() {
                 <div className="space-y-1">
                   <Link
                     href={dashboardHref}
+                    prefetch={false}
                     className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
                     onClick={() => setMobileMenuOpen(false)}
                   >
@@ -198,6 +202,7 @@ export function Navbar() {
                   {userRole !== "admin" && (
                     <Link
                       href="/dashboard/orders"
+                      prefetch={false}
                       className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -207,6 +212,7 @@ export function Navbar() {
                   {userRole !== "admin" && (
                     <Link
                       href="/dashboard/settings"
+                      prefetch={false}
                       className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -228,6 +234,7 @@ export function Navbar() {
                 <div className="space-y-1">
                   <Link
                     href="/auth/signin"
+                    prefetch={false}
                     className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
                     onClick={() => setMobileMenuOpen(false)}
                   >
@@ -235,6 +242,7 @@ export function Navbar() {
                   </Link>
                   <Link
                     href="/auth/signup"
+                    prefetch={false}
                     className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
                     onClick={() => setMobileMenuOpen(false)}
                   >

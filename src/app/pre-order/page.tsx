@@ -10,8 +10,9 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Calendar, Package, Search, X, Loader2, CheckCircle2,
-  Users, Clock, Tag, LockKeyhole, ShoppingCart, Minus, Plus as PlusIcon,
+  Users, Clock, Tag, LockKeyhole, ShoppingCart, Minus, Plus as PlusIcon, Info,
 } from "lucide-react"
+import Link from "next/link"
 import { toast } from "sonner"
 import { useApp } from "@/components/shared/app-provider"
 import { preOrdersApi } from "@/lib/api-client"
@@ -129,21 +130,25 @@ export default function PreOrderPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        {/* Info banner */}
-        <Card className="mb-6 border-primary/30 bg-primary/5">
-          <CardContent className="p-4 flex items-start gap-4">
-            <div className="p-2 bg-white rounded-lg shadow-sm shrink-0">
-              <Package className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">How Pre-Orders Work</p>
-              <p className="text-sm text-gray-600 mt-0.5">
-                Reserve an item now to guarantee your slot. Pay when the item arrives — pick up
-                in-store or contact the seller to arrange shipping.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Info button */}
+        <Link href="/pre-orders/how-it-works">
+          <Card className="mb-4 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer">
+            <CardContent className="p-3 flex items-center gap-3">
+              <div className="p-1.5 bg-white rounded-lg shadow-sm shrink-0">
+                <Info className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-foreground text-sm">How Pre-Orders Work</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  Down payments, allocation, cancellations, and more.
+                </p>
+              </div>
+              <div className="text-primary font-semibold text-xs whitespace-nowrap hidden sm:block">
+                Learn more →
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-3 mb-4 flex-wrap">

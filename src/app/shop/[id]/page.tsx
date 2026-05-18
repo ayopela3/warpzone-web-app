@@ -99,6 +99,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         {/* ── Back link ── */}
         <Link
           href="/shop"
+          prefetch={false}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />

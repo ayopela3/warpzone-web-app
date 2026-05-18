@@ -85,7 +85,7 @@ export default function SignInPage() {
 
               <p className="text-center text-sm text-neutral-600">
                 Don&apos;t have an account?{" "}
-                <Link href="/auth/signup" className="font-bold text-black underline">
+                <Link href="/auth/signup" prefetch={false} className="font-bold text-black underline">
                   Sign up
                 </Link>
               </p>
