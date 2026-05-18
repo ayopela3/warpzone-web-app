@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select"
 import {
   Package, Plus, Loader2, CheckCircle2, XCircle, LockKeyhole,
-  Unlock, ChevronDown, ChevronUp, Upload, Users, Calendar, Pencil,
+  Unlock, ChevronDown, ChevronUp, Upload, Users, Calendar, Pencil, Trash2,
 } from "lucide-react"
 import { toast } from "sonner"
 import { preOrdersApi } from "@/lib/api-client"
@@ -202,6 +202,30 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
     } finally {
       setEditUploading(false)
       e.target.value = ""
+    }
+  }
+
+  /** Admin: permanently delete a pre-order after confirmation */
+  const handleDelete = async (po: PreOrder) => {
+    const reservations = po.reservation_count ?? 0
+    const warning = reservations > 0
+      ? `This pre-order has ${reservations} reservation${reservations === 1 ? '' : 's'}. Deleting it will also remove all reservations.\n\n`
+      : ''
+    const confirmed = window.confirm(
+      `${warning}Are you sure you want to permanently delete "${po.title}"? This cannot be undone.`
+    )
+    if (!confirmed) return
+
+    setActionId(po.id)
+    try {
+      const result = await preOrdersApi.delete(po.id)
+      if (!result.success) throw new Error(result.error ?? 'Failed to delete')
+      toast.success('Pre-order deleted')
+      setPreOrders((prev) => prev.filter((p) => p.id !== po.id))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete pre-order')
+    } finally {
+      setActionId(null)
     }
   }
 
@@ -412,6 +436,15 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
                           : po.status === "active"
                             ? <><LockKeyhole className="h-3 w-3 mr-1" />Close</>
                             : <><Unlock className="h-3 w-3 mr-1" />Reopen</>}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDelete(po)}
+                        disabled={actionId === po.id}
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                       <button
                         type="button"

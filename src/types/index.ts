@@ -225,6 +225,9 @@ export type PreOrderReservation = {
   pre_order_id: string
   user_id: string
   quantity: number
+  /** Price snapshot at reservation time */
+  unit_price: number
+  unit_full_price: number
   reserved_at: string
   /** Legacy paid flag — set by seller via Mark Paid button. 0 | 1 from SQLite */
   paid: number
@@ -280,6 +283,9 @@ export type PreOrderReservationDetail = {
   pre_order_id: string
   user_id: string
   quantity: number
+  /** Price snapshot at reservation time */
+  unit_price: number
+  unit_full_price: number
   reserved_at: string
   paid: number /** SQLite boolean: 0 | 1 - legacy field */
   /** Downpayment fields */

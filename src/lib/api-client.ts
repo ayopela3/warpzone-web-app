@@ -312,6 +312,12 @@ export const preOrdersApi = {
       body: JSON.stringify({ reservationId, allocation_status }),
     }),
 
+  /** Admin: permanently delete a pre-order and its reservations */
+  delete: (id: string) =>
+    authFetch<{ success: boolean; error?: string }>(`/api/pre-orders/${id}`, {
+      method: "DELETE",
+    }),
+
   /** Buyer: list their own reservations */
   myReservations: () =>
     apiFetch<{ success: boolean; reservations: PreOrderReservation[] }>("/api/user/pre-orders"),

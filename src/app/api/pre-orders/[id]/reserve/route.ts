@@ -97,14 +97,16 @@ export async function POST(
     await db
       .prepare(
         `INSERT INTO pre_order_reservations 
-           (id, pre_order_id, user_id, quantity, downpayment_amount, remaining_balance, reserved_at)
-         VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
+           (id, pre_order_id, user_id, quantity, unit_price, unit_full_price, downpayment_amount, remaining_balance, reserved_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
       )
       .bind(
         reservationId, 
         id, 
         session.user_id, 
-        quantity, 
+        quantity,
+        preOrder.price,
+        preOrder.full_price,
         downpaymentAmount,
         remainingBalance
       )

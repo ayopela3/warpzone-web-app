@@ -798,7 +798,7 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
                               {fiatSymbol}
                               {rows
                                 .filter((r) => r.paid === 1)
-                                .reduce((s, r) => s + r.quantity * po.price, 0)
+                                .reduce((s, r) => s + r.quantity * (r.unit_price || po.price), 0)
                                 .toLocaleString()}
                             </p>
                           </div>
@@ -882,7 +882,7 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
                                     </span>{" "}
                                     <span className='text-primary font-medium'>
                                       {fiatSymbol}
-                                      {(r.quantity * po.price).toLocaleString()}
+                                      {(r.quantity * (r.unit_price || po.price)).toLocaleString()}
                                     </span>
                                     {" · "}
                                     {new Date(

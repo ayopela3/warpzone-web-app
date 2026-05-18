@@ -69,6 +69,8 @@ export async function GET(
           por.pre_order_id,
           por.user_id,
           por.quantity,
+          por.unit_price,
+          por.unit_full_price,
           por.reserved_at,
           por.paid,
           por.downpayment_paid,
@@ -220,9 +222,9 @@ export async function PATCH(
     // ── Record service fee when marking paid (idempotent via fee_recorded flag) ──
     if (body.paid) {
       const reservation = await db
-        .prepare("SELECT quantity, downpayment_amount, fee_recorded FROM pre_order_reservations WHERE id = ?")
+        .prepare("SELECT quantity, unit_price, downpayment_amount, fee_recorded FROM pre_order_reservations WHERE id = ?")
         .bind(body.reservationId)
-        .first<{ quantity: number; downpayment_amount: number; fee_recorded: number | null }>()
+        .first<{ quantity: number; unit_price: number; downpayment_amount: number; fee_recorded: number | null }>()
 
       const po = await db
         .prepare("SELECT price, seller_id FROM pre_orders WHERE id = ?")
@@ -235,8 +237,9 @@ export async function PATCH(
           .prepare("SELECT value FROM settings WHERE key = 'pre_order_service_fee_rate'")
           .first<{ value: string }>()
         const feeRate = rateSetting ? parseFloat(rateSetting.value) : 0.05
-        // Use downpayment_amount for fee calculation if available, otherwise use display price
-        const feeBase = reservation.downpayment_amount || po.price * (reservation.quantity ?? 1)
+        // Use downpayment_amount for fee calculation if available, otherwise use snapshotted unit_price
+        const snapshotPrice = reservation.unit_price || po.price
+        const feeBase = reservation.downpayment_amount || snapshotPrice * (reservation.quantity ?? 1)
         const feeAmount = Math.round(feeBase * feeRate * 100) / 100
 
         await db.prepare(`
@@ -368,5 +371,46 @@ export async function PUT(
   } catch (error) {
     console.error("Pre-order update error:", error)
     return NextResponse.json({ success: false, error: "Failed to update pre-order" }, { status: 500 })
+  }
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/pre-orders/[id] — admin-only hard delete
+// ---------------------------------------------------------------------------
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const db = await getDb()
+    if (!db) return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
+
+    const profile = await resolveProfile(request, db)
+    if (!profile) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
+    if (profile.role !== "admin") {
+      return NextResponse.json({ success: false, error: "Admin access required" }, { status: 403 })
+    }
+
+    // Delete reservations first (in case PRAGMA foreign_keys is off)
+    await db
+      .prepare("DELETE FROM pre_order_reservations WHERE pre_order_id = ?")
+      .bind(id)
+      .run()
+
+    const result = await db
+      .prepare("DELETE FROM pre_orders WHERE id = ?")
+      .bind(id)
+      .run()
+
+    if (!result.meta?.changes) {
+      return NextResponse.json({ success: false, error: "Pre-order not found" }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Pre-order delete error:", error)
+    return NextResponse.json({ success: false, error: "Failed to delete pre-order" }, { status: 500 })
   }
 }

@@ -215,6 +215,8 @@ CREATE TABLE IF NOT EXISTS pre_order_reservations (
   pre_order_id    TEXT    NOT NULL REFERENCES pre_orders(id) ON DELETE CASCADE,
   user_id         TEXT    NOT NULL REFERENCES users(id)  ON DELETE CASCADE,
   quantity        INTEGER NOT NULL DEFAULT 1,
+  unit_price      REAL    NOT NULL DEFAULT 0,
+  unit_full_price REAL    NOT NULL DEFAULT 0,
   reserved_at     TEXT    NOT NULL DEFAULT (datetime('now')),
   UNIQUE(pre_order_id, user_id)
 );
