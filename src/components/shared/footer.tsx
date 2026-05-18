@@ -1,6 +1,20 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Globe, MessageCircle, Video, Share2 } from "lucide-react"
+import { Mail } from "lucide-react"
+
+/** Lucide does not include brand icons, so we define a minimal Facebook SVG. */
+function FacebookIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+    >
+      <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
+    </svg>
+  )
+}
 
 const footerNavigation = {
   shop: [
@@ -12,36 +26,24 @@ const footerNavigation = {
   ],
   events: [
     { name: "Tournaments", href: "/tournaments" },
-    { name: "Calendar", href: "/tournaments/calendar" },
-    { name: "Results", href: "/tournaments/results" },
-    { name: "Pre-order", href: "/pre-order" },
+    { name: "Pre-orders", href: "/pre-order" },
   ],
   support: [
-    { name: "Contact Us", href: "/contact" },
-    { name: "FAQ", href: "/faq" },
-    { name: "Shipping Info", href: "/shipping" },
-    { name: "Returns", href: "/returns" },
-  ],
-  company: [
-    { name: "About Us", href: "/about" },
-    { name: "Careers", href: "/careers" },
-    { name: "Press", href: "/press" },
-    { name: "Partners", href: "/partners" },
+    { name: "Contact Us", href: "https://www.facebook.com/warpzonePH", external: true },
+    { name: "How Pre-orders Work", href: "/pre-orders/how-it-works", external: false },
   ],
 }
 
 const socialLinks = [
-  { name: "Facebook", href: "#", icon: Globe },
-  { name: "Twitter", href: "#", icon: MessageCircle },
-  { name: "Instagram", href: "#", icon: Share2 },
-  { name: "YouTube", href: "#", icon: Video },
+  { name: "Email", href: "mailto:warpzone_ph@proton.me", icon: Mail },
+  { name: "Facebook", href: "https://www.facebook.com/warpzonePH", icon: FacebookIcon },
 ]
 
 export function Footer() {
   return (
     <footer className="bg-muted">
       <div className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           {/* Brand */}
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
             <Link href="/" prefetch={false}>
@@ -52,15 +54,16 @@ export function Footer() {
             </p>
             <div className="mt-4 flex gap-4">
               {socialLinks.map((item) => (
-                <Link
+                <a
                   key={item.name}
                   href={item.href}
-                  prefetch={false}
+                  target={item.href.startsWith("mailto:") ? undefined : "_blank"}
+                  rel={item.href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <span className="sr-only">{item.name}</span>
                   <item.icon className="h-5 w-5" />
-                </Link>
+                </a>
               ))}
             </div>
           </div>
@@ -107,31 +110,24 @@ export function Footer() {
             <ul className="mt-4 space-y-2">
               {footerNavigation.support.map((item) => (
                 <li key={item.name}>
-                  <Link
-                    href={item.href}
-                    prefetch={false}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Company */}
-          <div>
-            <h3 className="text-sm font-semibold">Company</h3>
-            <ul className="mt-4 space-y-2">
-              {footerNavigation.company.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    href={item.href}
-                    prefetch={false}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {item.name}
-                  </Link>
+                  {item.external ? (
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {item.name}
+                    </a>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      prefetch={false}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {item.name}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
