@@ -176,9 +176,9 @@ export function SettingsTab({ fiatSymbol, onSaved }: Props) {
   }
 
   return (
-    <div className="space-y-6 max-w-md">
+    <div className="flex flex-wrap gap-6 items-start">
       {/* Currency Symbol */}
-      <Card className="bg-white shadow-lg">
+      <Card className="bg-white shadow-lg w-80">
         <CardHeader>
           <CardTitle>App Settings</CardTitle>
         </CardHeader>
@@ -210,7 +210,7 @@ export function SettingsTab({ fiatSymbol, onSaved }: Props) {
       </Card>
 
       {/* Service Fee Rates */}
-      <Card className="bg-white shadow-lg">
+      <Card className="bg-white shadow-lg w-96">
         <CardHeader>
           <CardTitle>Platform Service Fees</CardTitle>
         </CardHeader>
@@ -290,7 +290,7 @@ export function SettingsTab({ fiatSymbol, onSaved }: Props) {
         </CardContent>
       </Card>
       {/* Platform Payment QR */}
-      <Card className="bg-white shadow-lg">
+      <Card className="bg-white shadow-lg w-80">
         <CardHeader>
           <div className="flex items-center gap-2">
             <QrCode className="h-5 w-5 text-primary" />

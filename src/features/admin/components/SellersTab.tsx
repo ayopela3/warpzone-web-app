@@ -87,21 +87,11 @@ export function SellersTab() {
         </Button>
       </div>
 
-      {/* Pending */}
+      {/* Pending table */}
       {pending.length > 0 && (
         <div>
           <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3">Pending approval</h3>
-          <div className="space-y-3">
-            {pending.map((s) => (
-              <SellerRow
-                key={s.user_id}
-                seller={s}
-                actioning={actioning === s.user_id}
-                onApprove={() => handleAction(s.user_id, "approve")}
-                onReject={() => handleAction(s.user_id, "reject")}
-              />
-            ))}
-          </div>
+          <SellerTable sellers={pending} actioning={actioning} onAction={handleAction} />
         </div>
       )}
 
@@ -112,95 +102,92 @@ export function SellersTab() {
         </div>
       )}
 
-      {/* Approved */}
+      {/* Approved table */}
       {approved.length > 0 && (
         <div>
           <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3">Approved sellers</h3>
-          <div className="space-y-3">
-            {approved.map((s) => (
-              <SellerRow
-                key={s.user_id}
-                seller={s}
-                actioning={actioning === s.user_id}
-                onApprove={() => handleAction(s.user_id, "approve")}
-                onReject={() => handleAction(s.user_id, "reject")}
-              />
-            ))}
-          </div>
+          <SellerTable sellers={approved} actioning={actioning} onAction={handleAction} />
         </div>
       )}
     </div>
   )
 }
 
-function SellerRow({
-  seller,
+function SellerTable({
+  sellers,
   actioning,
-  onApprove,
-  onReject,
+  onAction,
 }: {
-  seller: SellerEntry
-  actioning: boolean
-  onApprove: () => void
-  onReject: () => void
+  sellers: SellerEntry[]
+  actioning: string | null
+  onAction: (userId: string, action: "approve" | "reject") => void
 }) {
-  const isPending = seller.role === "pending-seller"
-
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-white p-4">
-      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-        <Store className="h-5 w-5 text-primary" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-bold text-sm text-neutral-900 truncate">{seller.full_name}</p>
-        {seller.business_name && (
-          <p className="text-xs text-neutral-500 truncate">{seller.business_name}</p>
-        )}
-        <p className="text-xs text-neutral-400 truncate">{seller.email}</p>
-        {(seller.city || seller.province) && (
-          <p className="text-xs text-neutral-400">{[seller.city, seller.province].filter(Boolean).join(", ")}</p>
-        )}
+    <div className="rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm">
+      {/* Header */}
+      <div className="grid grid-cols-[auto_2fr_1.5fr_1fr_1fr_auto] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200">
+        <span className="w-9" />
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Seller</span>
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</span>
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Location</span>
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</span>
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</span>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
-        <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 ${
-          isPending
-            ? "bg-amber-50 text-amber-700 border border-amber-200"
-            : "bg-green-50 text-green-700 border border-green-200"
-        }`}>
-          {isPending ? "Pending" : "Approved"}
-        </span>
-        {isPending ? (
-          <>
-            <Button
-              size="sm"
-              className="h-7 text-xs"
-              onClick={onApprove}
-              disabled={actioning}
-            >
-              {actioning ? <Loader2 className="h-3 w-3 animate-spin" /> : <><CheckCircle className="h-3 w-3 mr-1" />Approve</>}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50"
-              onClick={onReject}
-              disabled={actioning}
-            >
-              <XCircle className="h-3 w-3 mr-1" />Reject
-            </Button>
-          </>
-        ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50"
-            onClick={onReject}
-            disabled={actioning}
-          >
-            <XCircle className="h-3 w-3 mr-1" />Revoke
-          </Button>
-        )}
+      <div className="divide-y divide-gray-100">
+        {sellers.map((s) => {
+          const isPending = s.role === "pending-seller"
+          const isActioning = actioning === s.user_id
+          return (
+            <div key={s.user_id} className="grid grid-cols-[auto_2fr_1.5fr_1fr_1fr_auto] gap-4 px-5 py-3.5 items-center hover:bg-gray-50 transition-colors">
+              {/* Icon */}
+              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <Store className="h-4 w-4 text-primary" />
+              </div>
+              {/* Name + business */}
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">{s.full_name}</p>
+                {s.business_name && <p className="text-xs text-gray-400 truncate">{s.business_name}</p>}
+              </div>
+              {/* Email */}
+              <p className="text-sm text-gray-600 truncate">{s.email}</p>
+              {/* Location */}
+              <p className="text-sm text-gray-500 truncate">
+                {[s.city, s.province].filter(Boolean).join(", ") || "—"}
+              </p>
+              {/* Status badge */}
+              <span className={`text-xs font-bold rounded-full px-2.5 py-1 w-fit ${
+                isPending
+                  ? "bg-amber-50 text-amber-700 border border-amber-200"
+                  : "bg-green-50 text-green-700 border border-green-200"
+              }`}>
+                {isPending ? "Pending" : "Approved"}
+              </span>
+              {/* Actions */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {isPending && (
+                  <Button
+                    size="sm"
+                    className="h-8 text-xs gap-1"
+                    onClick={() => onAction(s.user_id, "approve")}
+                    disabled={isActioning}
+                  >
+                    {isActioning ? <Loader2 className="h-3 w-3 animate-spin" /> : <><CheckCircle className="h-3 w-3" />Approve</>}
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs text-red-600 border-red-200 hover:bg-red-50 gap-1"
+                  onClick={() => onAction(s.user_id, "reject")}
+                  disabled={isActioning}
+                >
+                  <XCircle className="h-3 w-3" />{isPending ? "Reject" : "Revoke"}
+                </Button>
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

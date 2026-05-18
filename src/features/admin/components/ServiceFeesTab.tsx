@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import {
   Loader2, CheckCircle2, ChevronDown, ChevronUp,
-  Gavel, Package, DollarSign, AlertCircle,
+  Gavel, Package, DollarSign,
 } from "lucide-react"
 
 type FeeSummary = {
@@ -256,124 +256,117 @@ export function ServiceFeesTab({ fiatSymbol }: Props) {
           </Card>
         )}
 
-        <div className="space-y-3">
-          {visibleSummary.map((seller) => {
-            const isExpanded = expandedSeller === seller.seller_id
-            const sellerFees = fees.filter((f) => f.seller_id === seller.seller_id)
+        {/* Seller summary table */}
+        {visibleSummary.length > 0 && (
+          <div className="rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm">
+            {/* Table header */}
+            <div className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Seller</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Outstanding</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Settled</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Billed</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</span>
+            </div>
 
-            return (
-              <Card key={seller.seller_id} className={seller.total_unpaid > 0 ? "border-red-100" : "border-green-100"}>
-                <CardContent className="p-4">
-                  {/* Seller row */}
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-bold text-gray-900">
-                          {seller.seller_business ?? seller.seller_name}
-                        </p>
-                        {seller.seller_business && (
-                          <p className="text-xs text-gray-400">({seller.seller_name})</p>
-                        )}
+            <div className="divide-y divide-gray-100">
+              {visibleSummary.map((seller) => {
+                const isExpanded = expandedSeller === seller.seller_id
+                const sellerFees = fees.filter((f) => f.seller_id === seller.seller_id)
+
+                return (
+                  <div key={seller.seller_id}>
+                    {/* Summary row */}
+                    <div className={`grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3.5 items-center hover:bg-gray-50 transition-colors ${isExpanded ? "bg-gray-50" : ""}`}>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{seller.seller_business ?? seller.seller_name}</p>
+                        {seller.seller_business && <p className="text-xs text-gray-400 truncate">{seller.seller_name}</p>}
+                        <p className="text-xs text-gray-400">{seller.unpaid_count} unpaid fee(s)</p>
+                      </div>
+                      <span className={`text-sm font-bold ${seller.total_unpaid > 0 ? "text-red-600" : "text-gray-400"}`}>
+                        {fmt(seller.total_unpaid)}
+                      </span>
+                      <span className="text-sm font-semibold text-green-700">{fmt(seller.total_paid)}</span>
+                      <span className="text-sm text-gray-700">{fmt(seller.total_all)}</span>
+                      <div className="flex items-center gap-2 shrink-0">
                         {seller.total_unpaid > 0 && (
-                          <Badge variant="destructive" className="text-xs">
-                            <AlertCircle className="h-3 w-3 mr-1" />
-                            {fmt(seller.total_unpaid)} due
-                          </Badge>
+                          <Button
+                            size="sm"
+                            className="h-8 gap-1.5 bg-green-600 hover:bg-green-700 text-white text-xs"
+                            disabled={markingId === seller.seller_id}
+                            onClick={() => handleMarkAllPaid(seller.seller_id, seller.seller_business ?? seller.seller_name)}
+                          >
+                            {markingId === seller.seller_id
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <DollarSign className="h-3.5 w-3.5" />}
+                            Mark All Paid
+                          </Button>
                         )}
-                        {seller.total_unpaid === 0 && (
-                          <Badge className="text-xs bg-green-100 text-green-700 border-green-200">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            All settled
-                          </Badge>
+                        <button
+                          type="button"
+                          onClick={() => setExpanded(isExpanded ? null : seller.seller_id)}
+                          className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors"
+                        >
+                          Details {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expanded: per-fee table */}
+                    {isExpanded && (
+                      <div className="border-t border-gray-100 bg-gray-50/50">
+                        {sellerFees.length === 0 ? (
+                          <p className="px-5 py-4 text-sm text-gray-400">No fee records found.</p>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-[auto_2fr_1fr_1fr_1fr_auto] gap-3 px-8 py-2 border-b border-gray-100">
+                              <span className="w-6" />
+                              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Description</span>
+                              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Date</span>
+                              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Gross / Rate</span>
+                              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Fee</span>
+                              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Action</span>
+                            </div>
+                            {sellerFees.map((fee) => (
+                              <div
+                                key={fee.id}
+                                className="grid grid-cols-[auto_2fr_1fr_1fr_1fr_auto] gap-3 px-8 py-2.5 items-center border-b border-gray-100 last:border-0 hover:bg-white transition-colors"
+                              >
+                                <div className="p-1 rounded bg-white border w-6 flex items-center justify-center">
+                                  {fee.source_type === "auction"
+                                    ? <Gavel className="h-3 w-3 text-purple-500" />
+                                    : <Package className="h-3 w-3 text-blue-500" />}
+                                </div>
+                                <p className="text-sm text-gray-800 truncate">{fee.description}</p>
+                                <span className="text-xs text-gray-500">{new Date(fee.created_at).toLocaleDateString()}</span>
+                                <span className="text-xs text-gray-500">{fmt(fee.gross_amount)} @ {(fee.fee_rate * 100).toFixed(0)}%</span>
+                                <span className={`text-sm font-bold ${fee.status === "paid" ? "text-green-700" : "text-red-600"}`}>{fmt(fee.fee_amount)}</span>
+                                {fee.status === "paid" ? (
+                                  <Badge className="text-[10px] bg-green-100 text-green-700 border-green-200 h-5 px-1.5 whitespace-nowrap">
+                                    <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />
+                                    Paid {fee.paid_at ? new Date(fee.paid_at).toLocaleDateString() : ""}
+                                  </Badge>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    className="h-7 text-xs shrink-0 bg-green-600 hover:bg-green-700 text-white"
+                                    disabled={markingId === fee.id}
+                                    onClick={() => handleMarkOnePaid(fee.id)}
+                                  >
+                                    {markingId === fee.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Mark Paid"}
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </>
                         )}
                       </div>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {seller.unpaid_count} unpaid fee(s) · {fmt(seller.total_all)} total billed
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      {seller.total_unpaid > 0 && (
-                        <Button
-                          size="sm"
-                          className="h-8 gap-1.5 bg-green-600 hover:bg-green-700 text-white"
-                          disabled={markingId === seller.seller_id}
-                          onClick={() => handleMarkAllPaid(seller.seller_id, seller.seller_business ?? seller.seller_name)}
-                        >
-                          {markingId === seller.seller_id
-                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            : <DollarSign className="h-3.5 w-3.5" />}
-                          Mark All Paid
-                        </Button>
-                      )}
-                      <Button
-                        size="sm" variant="outline" className="h-8 gap-1"
-                        onClick={() => setExpanded(isExpanded ? null : seller.seller_id)}
-                      >
-                        {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                        {isExpanded ? "Hide" : "Details"}
-                      </Button>
-                    </div>
+                    )}
                   </div>
-
-                  {/* Expanded fee rows */}
-                  {isExpanded && (
-                    <div className="mt-4 space-y-2 border-t pt-4">
-                      {sellerFees.length === 0 ? (
-                        <p className="text-sm text-gray-400">No fee records found.</p>
-                      ) : (
-                        sellerFees.map((fee) => (
-                          <div
-                            key={fee.id}
-                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm ${
-                              fee.status === "paid" ? "bg-green-50" : "bg-red-50"
-                            }`}
-                          >
-                            {/* Icon */}
-                            <div className="shrink-0 p-1.5 rounded-md bg-white border">
-                              {fee.source_type === "auction"
-                                ? <Gavel className="h-3.5 w-3.5 text-purple-500" />
-                                : <Package className="h-3.5 w-3.5 text-blue-500" />}
-                            </div>
-
-                            {/* Description */}
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-gray-800 truncate">{fee.description}</p>
-                              <p className="text-xs text-gray-400">
-                                {new Date(fee.created_at).toLocaleDateString()} ·
-                                {(fee.fee_rate * 100).toFixed(0)}% of {fmt(fee.gross_amount)} =&nbsp;
-                                <span className="font-bold">{fmt(fee.fee_amount)}</span>
-                              </p>
-                            </div>
-
-                            {/* Status / action */}
-                            {fee.status === "paid" ? (
-                              <Badge className="text-xs bg-green-100 text-green-700 border-green-200 shrink-0">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                Paid {fee.paid_at ? new Date(fee.paid_at).toLocaleDateString() : ""}
-                              </Badge>
-                            ) : (
-                              <Button
-                                size="sm"
-                                className="h-7 text-xs shrink-0 bg-green-600 hover:bg-green-700 text-white"
-                                disabled={markingId === fee.id}
-                                onClick={() => handleMarkOnePaid(fee.id)}
-                              >
-                                {markingId === fee.id
-                                  ? <Loader2 className="h-3 w-3 animate-spin" />
-                                  : "Mark Paid"}
-                              </Button>
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
         </>
       )}
     </div>

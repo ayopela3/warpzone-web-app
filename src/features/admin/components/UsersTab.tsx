@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -223,39 +222,47 @@ export function UsersTab() {
         />
       </div>
 
-      {/* List */}
+      {/* Table */}
       {loading ? (
         <div className='py-16 flex justify-center'>
           <Loader2 className='h-8 w-8 animate-spin text-primary' />
         </div>
       ) : filtered.length === 0 ? (
-        <Card className='bg-white shadow-sm'>
-          <CardContent className='py-16 text-center'>
-            <Users className='h-10 w-10 text-muted-foreground mx-auto mb-3' />
-            <p className='text-sm text-muted-foreground'>No users found</p>
-          </CardContent>
-        </Card>
+        <div className='rounded-lg border border-gray-200 bg-white py-16 text-center shadow-sm'>
+          <Users className='h-10 w-10 text-muted-foreground mx-auto mb-3' />
+          <p className='text-sm text-muted-foreground'>No users found</p>
+        </div>
       ) : (
-        <div className='space-y-2'>
-          {filtered.map((user) => {
-            const initials = (user.full_name ?? user.email)
-              .split(" ")
-              .map((w) => w[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase()
-            const isBanned = user.is_banned === 1
-            const isAdmin = user.role === "admin"
+        <div className='rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm'>
+          {/* Header */}
+          <div className='grid grid-cols-[auto_2fr_1.5fr_1fr_1fr_auto] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200'>
+            <span className='w-9' />
+            <span className='text-xs font-semibold text-gray-500 uppercase tracking-wider'>User</span>
+            <span className='text-xs font-semibold text-gray-500 uppercase tracking-wider'>Email</span>
+            <span className='text-xs font-semibold text-gray-500 uppercase tracking-wider'>Role</span>
+            <span className='text-xs font-semibold text-gray-500 uppercase tracking-wider'>Points</span>
+            <span className='text-xs font-semibold text-gray-500 uppercase tracking-wider'>Actions</span>
+          </div>
 
-            return (
-              <Card
-                key={user.user_id}
-                className={`bg-white shadow-sm border transition-colors ${isBanned ? "border-red-200 bg-red-50/30" : "border-border"}`}
-              >
-                <CardContent className='p-4 flex items-center gap-4'>
+          <div className='divide-y divide-gray-100'>
+            {filtered.map((user) => {
+              const initials = (user.full_name ?? user.email)
+                .split(" ")
+                .map((w) => w[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()
+              const isBanned = user.is_banned === 1
+              const isAdmin = user.role === "admin"
+
+              return (
+                <div
+                  key={user.user_id}
+                  className={`grid grid-cols-[auto_2fr_1.5fr_1fr_1fr_auto] gap-4 px-5 py-3.5 items-center hover:bg-gray-50 transition-colors ${isBanned ? "bg-red-50/40" : ""}`}
+                >
                   {/* Avatar */}
                   <div
-                    className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 font-bold text-sm ${
+                    className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 font-bold text-sm ${
                       isBanned
                         ? "bg-red-100 text-red-600 border border-red-200"
                         : "bg-primary/10 text-primary border border-primary/20"
@@ -264,96 +271,84 @@ export function UsersTab() {
                     {initials}
                   </div>
 
-                  {/* Info */}
-                  <div className='flex-1 min-w-0'>
-                    <div className='flex items-center gap-2 flex-wrap'>
-                      <p className='font-semibold text-sm text-foreground truncate'>
-                        {user.full_name ?? "—"}
-                      </p>
-                      <Badge
-                        variant='outline'
-                        className={`text-xs capitalize ${ROLE_COLORS[user.role ?? "regular-user"]}`}
-                      >
-                        {user.role === "seller" && (
-                          <Store className='h-3 w-3 mr-1' />
-                        )}
-                        {ROLE_LABELS[user.role ?? "regular-user"]}
-                      </Badge>
+                  {/* Name + joined */}
+                  <div className='min-w-0'>
+                    <div className='flex items-center gap-1.5 flex-wrap'>
+                      <p className='text-sm font-semibold text-gray-900 truncate'>{user.full_name ?? "—"}</p>
                       {isBanned && (
-                        <Badge
-                          variant='outline'
-                          className='text-xs bg-red-50 text-red-700 border-red-200'
-                        >
-                          Banned
-                        </Badge>
+                        <Badge variant='outline' className='text-[10px] bg-red-50 text-red-700 border-red-200'>Banned</Badge>
                       )}
                     </div>
-                    <p className='text-xs text-muted-foreground truncate'>
-                      {user.email}
-                    </p>
                     {user.business_name && (
-                      <p className='text-xs text-muted-foreground truncate'>
-                        Business: {user.business_name}
-                      </p>
+                      <p className='text-xs text-gray-400 truncate'>{user.business_name}</p>
                     )}
-                    {isBanned && user.ban_reason && (
-                      <p className='text-xs text-red-600 mt-0.5'>
-                        Reason: {user.ban_reason}
-                      </p>
-                    )}
-                    <p className='text-[11px] text-muted-foreground/60 mt-0.5'>
+                    <p className='text-[11px] text-gray-400'>
                       Joined {new Date(user.created_at).toLocaleDateString()}
                     </p>
-                    
-                    {/* Points display */}
-                    <div className='flex items-center gap-1.5 mt-2 pt-2 border-t border-border/50'>
-                      <Star className='h-3.5 w-3.5 text-amber-500 fill-amber-500' />
-                      <span className='text-sm font-medium text-amber-700'>
-                        {userPoints[user.user_id] ?? 0} pts
-                      </span>
-                    </div>
+                    {isBanned && user.ban_reason && (
+                      <p className='text-xs text-red-500 truncate'>Reason: {user.ban_reason}</p>
+                    )}
                   </div>
 
-                  {/* Action */}
-                  <div className='flex flex-col gap-2'>
+                  {/* Email */}
+                  <p className='text-sm text-gray-600 truncate'>{user.email}</p>
+
+                  {/* Role badge */}
+                  <Badge
+                    variant='outline'
+                    className={`text-xs w-fit capitalize ${ROLE_COLORS[user.role ?? "regular-user"]}`}
+                  >
+                    {user.role === "seller" && <Store className='h-3 w-3 mr-1' />}
+                    {ROLE_LABELS[user.role ?? "regular-user"]}
+                  </Badge>
+
+                  {/* Points */}
+                  <div className='flex items-center gap-1'>
+                    <Star className='h-3.5 w-3.5 text-amber-500 fill-amber-500' />
+                    <span className='text-sm font-medium text-amber-700'>{userPoints[user.user_id] ?? 0}</span>
+                  </div>
+
+                  {/* Actions */}
+                  <div className='flex items-center gap-1.5 shrink-0'>
                     {!isAdmin && (
                       <Button
                         size='sm'
                         variant='outline'
-                        className='shrink-0 border-amber-200 text-amber-700 hover:bg-amber-50 gap-1.5'
+                        className='h-8 text-xs border-amber-200 text-amber-700 hover:bg-amber-50 gap-1'
                         onClick={() => openPointsDialog(user)}
                       >
-                        <Star className='h-3.5 w-3.5' />
-                        Adjust Points
+                        <Star className='h-3 w-3' />
+                        Points
                       </Button>
                     )}
-                    {!isAdmin &&
-                      (isBanned ? (
+                    {!isAdmin && (
+                      isBanned ? (
                         <Button
                           size='sm'
                           variant='outline'
-                          className='shrink-0 border-green-200 text-green-700 hover:bg-green-50 gap-1.5'
+                          className='h-8 text-xs border-green-200 text-green-700 hover:bg-green-50 gap-1'
                           onClick={() => handleUnban(user)}
                         >
-                          <ShieldCheck className='h-3.5 w-3.5' />
+                          <ShieldCheck className='h-3 w-3' />
                           Unban
                         </Button>
                       ) : (
                         <Button
                           size='sm'
                           variant='outline'
-                          className='shrink-0 border-red-200 text-red-600 hover:bg-red-50 gap-1.5'
+                          className='h-8 text-xs border-red-200 text-red-600 hover:bg-red-50 gap-1'
                           onClick={() => openBanDialog(user)}
                         >
-                          <ShieldOff className='h-3.5 w-3.5' />
+                          <ShieldOff className='h-3 w-3' />
                           Ban
                         </Button>
-                      ))}
+                      )
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            )
-          })}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 
