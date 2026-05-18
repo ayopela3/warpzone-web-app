@@ -43,10 +43,10 @@ export default function HowPreOrdersWorkPage() {
       </div>
 
       {/* Content */}
-      <div className="mx-auto max-w-3xl px-4 lg:px-8 py-6 md:py-8">
+      <div className="mx-auto max-w-3xl px-4 lg:px-8 py-2 md:py-3">
         <div className="space-y-3">
           {/* Down Payment Section */}
-          <Card className="border-border overflow-hidden">
+          <Card className="border-border overflow-hidden p-0 gap-0">
             <button
               onClick={() => toggleSection("down-payment")}
               className="w-full p-4 flex items-center gap-3 bg-muted/30 hover:bg-muted/50 transition-colors"
@@ -117,7 +117,7 @@ export default function HowPreOrdersWorkPage() {
           </Card>
 
           {/* Allocation Policy Section */}
-          <Card className="border-border overflow-hidden">
+          <Card className="border-border overflow-hidden p-0 gap-0">
             <button
               onClick={() => toggleSection("allocation")}
               className="w-full p-4 flex items-center gap-3 bg-muted/30 hover:bg-muted/50 transition-colors"
@@ -207,7 +207,7 @@ export default function HowPreOrdersWorkPage() {
           </Card>
 
           {/* No Cancellations Section */}
-          <Card className="border-border overflow-hidden">
+          <Card className="border-border overflow-hidden p-0 gap-0">
             <button
               onClick={() => toggleSection("cancellations")}
               className="w-full p-4 flex items-center gap-3 bg-muted/30 hover:bg-muted/50 transition-colors"
