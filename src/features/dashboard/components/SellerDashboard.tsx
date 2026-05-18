@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Package, Gavel, ShoppingBag, DollarSign,
-  Plus, CheckCircle2, XCircle, Hourglass, Loader2, Edit2, X, LayoutGrid, List, Info,
+  Plus, CheckCircle2, XCircle, Hourglass, Loader2, Edit2, X, Info,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -69,8 +69,6 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
     starting_price: "", min_bid_increment: "1", start_time: "", end_time: "",
   })
   const [savingAuction, setSavingAuction] = useState(false)
-  const [productViewMode, setProductViewMode] = useState<"list" | "grid">("list")
-  const [auctionViewMode, setAuctionViewMode] = useState<"list" | "grid">("list")
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ name: "", category: "", rarity: "", description: "", price: "", quantity: "" })
   const [saving, setSaving] = useState(false)
@@ -332,111 +330,70 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
             <TabsContent value="products" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">Your Products</h2>
-                <div className="flex items-center gap-1 border rounded-lg p-0.5 bg-white">
-                  <Button
-                    size="sm" variant={productViewMode === "list" ? "default" : "ghost"}
-                    className={`h-7 w-7 p-0 ${productViewMode === "list" ? "bg-primary text-white" : ""}`}
-                    onClick={() => setProductViewMode("list")}
-                  ><List className="h-4 w-4" /></Button>
-                  <Button
-                    size="sm" variant={productViewMode === "grid" ? "default" : "ghost"}
-                    className={`h-7 w-7 p-0 ${productViewMode === "grid" ? "bg-primary text-white" : ""}`}
-                    onClick={() => setProductViewMode("grid")}
-                  ><LayoutGrid className="h-4 w-4" /></Button>
-                </div>
               </div>
               {loading ? (
-                <Card className="bg-white shadow-md">
-                  <CardContent className="p-12 text-center">
-                    <Loader2 className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
-                    <p className="text-gray-600">Loading products...</p>
-                  </CardContent>
-                </Card>
+                <div className="rounded-lg border border-gray-200 bg-white shadow-sm p-12 text-center">
+                  <Loader2 className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
+                  <p className="text-gray-600">Loading products...</p>
+                </div>
               ) : products.length === 0 ? (
-                <Card className="bg-white shadow-md">
-                  <CardContent className="p-12 text-center">
-                    <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
-                      <Package className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <h3 className="mt-6 text-xl font-semibold text-gray-900">No listings yet</h3>
-                    <p className="mt-2 text-gray-600">Add your first listing to start selling on Warpzone</p>
-                    <Button
-                      className="mt-6 bg-primary hover:bg-primary/90 text-white"
-                      onClick={() => {
-                        if (!sellerProfile?.payment_qr_url) {
-                          toast.error("Please set up your payment QR code in Profile Settings before creating listings.")
-                          return
-                        }
-                        window.location.href = "/seller/listings/new"
-                      }}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />New Listing
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : productViewMode === "list" ? (
-                <div className="space-y-3">
-                  {products.map((product) => (
-                    <Card key={product.id} className={`bg-white shadow-sm hover:shadow-md transition-shadow ${product.approval_status === "pending" ? "opacity-60" : ""}`}>
-                      <CardContent className="p-4">
-                        <div className="flex gap-4 items-center">
-                          <div className="relative w-20 h-20 shrink-0 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
-                            {product.image_url
-                              ? <Image src={product.image_url} alt={product.name} fill className="object-contain" />
-                              : <Package className="h-8 w-8 text-gray-400" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <p className="font-bold text-gray-900">{product.name}</p>
-                                <p className="text-sm text-gray-500">SKU: {product.sku}</p>
-                                <p className="text-sm text-gray-500 capitalize">{product.category}{product.rarity ? ` · ${product.rarity}` : ""}</p>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                {product.approval_status === "pending" && <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1"><Hourglass className="h-3 w-3" />Pending</Badge>}
-                                {product.approval_status === "approved" && <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Approved</Badge>}
-                                {product.approval_status === "rejected" && <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 flex items-center gap-1"><XCircle className="h-3 w-3" />Rejected</Badge>}
-                                <Button size="sm" variant="outline" onClick={() => openEdit(product)}><Edit2 className="h-3 w-3" /></Button>
-                              </div>
-                            </div>
-                            {product.approval_status === "pending" && (
-                              <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md mt-2">Pending admin approval.</p>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="rounded-lg border border-gray-200 bg-white shadow-sm p-12 text-center">
+                  <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
+                    <Package className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="mt-6 text-xl font-semibold text-gray-900">No listings yet</h3>
+                  <p className="mt-2 text-gray-600">Add your first listing to start selling on Warpzone</p>
+                  <Button
+                    className="mt-6 bg-primary hover:bg-primary/90 text-white"
+                    onClick={() => {
+                      if (!sellerProfile?.payment_qr_url) {
+                        toast.error("Please set up your payment QR code in Profile Settings before creating listings.")
+                        return
+                      }
+                      window.location.href = "/seller/listings/new"
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />New Listing
+                  </Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products.map((product) => (
-                    <Card key={product.id} className={`bg-white shadow-md hover:shadow-lg transition-shadow ${product.approval_status === "pending" ? "opacity-60" : ""}`}>
-                      <div className="relative w-full h-48 bg-gray-50 rounded-t-lg overflow-hidden flex items-center justify-center">
-                        {product.image_url
-                          ? <Image src={product.image_url} alt={product.name} fill className="object-contain" />
-                          : <Package className="h-12 w-12 text-gray-300" />}
-                      </div>
-                      <CardContent className="p-4 space-y-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="font-bold text-gray-900">{product.name}</p>
-                            <p className="text-xs text-gray-500">SKU: {product.sku}</p>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            {product.approval_status === "pending" && <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs flex items-center gap-1"><Hourglass className="h-3 w-3" />Pending</Badge>}
-                            {product.approval_status === "approved" && <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Approved</Badge>}
-                            {product.approval_status === "rejected" && <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs flex items-center gap-1"><XCircle className="h-3 w-3" />Rejected</Badge>}
-                            <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => openEdit(product)}><Edit2 className="h-3 w-3" /></Button>
-                          </div>
+                <div className="rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm">
+                  <div className="grid grid-cols-[auto_2fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider w-10" />
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Product</span>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</span>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Price</span>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</span>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Edit</span>
+                  </div>
+                  <div className="divide-y divide-gray-100">
+                    {products.map((product) => (
+                      <div
+                        key={product.id}
+                        className={`grid grid-cols-[auto_2fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3.5 items-center hover:bg-gray-50 transition-colors ${product.approval_status === "pending" ? "opacity-70" : ""}`}
+                      >
+                        <div className="relative w-10 h-10 shrink-0 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
+                          {product.image_url
+                            ? <Image src={product.image_url} alt={product.name} fill className="object-contain" />
+                            : <Package className="h-5 w-5 text-gray-400" />}
                         </div>
-                        <p className="text-sm text-gray-500 capitalize">{product.category}{product.rarity ? ` · ${product.rarity}` : ""}</p>
-                        {product.approval_status === "pending" && (
-                          <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md">Pending admin approval.</p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{product.name}</p>
+                          <p className="text-xs text-gray-400">SKU: {product.sku}</p>
+                        </div>
+                        <span className="text-sm text-gray-600 capitalize">{product.category}{product.rarity ? ` · ${product.rarity}` : ""}</span>
+                        <span className="text-sm font-semibold text-gray-900">{fiatSymbol}{product.price.toLocaleString()}</span>
+                        <div>
+                          {product.approval_status === "pending" && <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs flex items-center gap-1"><Hourglass className="h-3 w-3" />Pending</Badge>}
+                          {product.approval_status === "approved" && <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Approved</Badge>}
+                          {product.approval_status === "rejected" && <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs flex items-center gap-1"><XCircle className="h-3 w-3" />Rejected</Badge>}
+                        </div>
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => openEdit(product)}>
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </TabsContent>
@@ -450,128 +407,69 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
               </div>
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">Your Auctions</h2>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 border rounded-lg p-0.5 bg-white">
-                    <Button
-                      size="sm" variant={auctionViewMode === "list" ? "default" : "ghost"}
-                      className={`h-7 w-7 p-0 ${auctionViewMode === "list" ? "bg-primary text-white" : ""}`}
-                      onClick={() => setAuctionViewMode("list")}
-                    ><List className="h-4 w-4" /></Button>
-                    <Button
-                      size="sm" variant={auctionViewMode === "grid" ? "default" : "ghost"}
-                      className={`h-7 w-7 p-0 ${auctionViewMode === "grid" ? "bg-primary text-white" : ""}`}
-                      onClick={() => setAuctionViewMode("grid")}
-                    ><LayoutGrid className="h-4 w-4" /></Button>
-                  </div>
-                  <Button asChild className="bg-primary hover:bg-primary/90 text-white">
-                    <Link href="/seller/auctions/new"><Plus className="mr-2 h-4 w-4" />Create Auction</Link>
-                  </Button>
-                </div>
+                <Button asChild className="bg-primary hover:bg-primary/90 text-white">
+                  <Link href="/seller/auctions/new"><Plus className="mr-2 h-4 w-4" />Create Auction</Link>
+                </Button>
               </div>
               {auctionsLoading ? (
-                <Card className="bg-white shadow-md">
-                  <CardContent className="p-12 text-center">
-                    <Loader2 className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
-                    <p className="text-gray-600">Loading auctions...</p>
-                  </CardContent>
-                </Card>
+                <div className="rounded-lg border border-gray-200 bg-white shadow-sm p-12 text-center">
+                  <Loader2 className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
+                  <p className="text-gray-600">Loading auctions...</p>
+                </div>
               ) : auctions.length === 0 ? (
-                <Card className="bg-white shadow-md">
-                  <CardContent className="p-12 text-center">
-                    <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
-                      <Gavel className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <h3 className="mt-6 text-xl font-semibold text-gray-900">No auctions yet</h3>
-                    <p className="mt-2 text-gray-600">Create your first auction to start bidding wars on your products</p>
-                    <Button asChild className="mt-6 bg-primary hover:bg-primary/90 text-white">
-                      <Link href="/seller/auctions/new"><Plus className="mr-2 h-4 w-4" />Create Your First Auction</Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : auctionViewMode === "list" ? (
-                <div className="space-y-3">
-                  {auctions.map((auction) => (
-                    <Card key={auction.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex gap-4 items-center">
-                          <Link href={`/auctions/${auction.id}`} className="relative w-20 h-20 shrink-0 rounded-md overflow-hidden bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center">
-                            {auction.image_url
-                              ? <Image src={auction.image_url} alt={auction.title} fill className="object-contain" />
-                              : <Gavel className="h-8 w-8 text-amber-400" />}
-                          </Link>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <Link href={`/auctions/${auction.id}`} className="font-bold text-gray-900 hover:text-primary transition-colors">{auction.title}</Link>
-                                <p className="text-sm text-gray-500 capitalize">{auction.category} · {auction.condition}</p>
-                                <p className="text-sm font-semibold text-primary">{fiatSymbol}{(auction.current_bid ?? auction.starting_price ?? 0).toLocaleString()}</p>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <Badge variant={auction.status === "active" ? "default" : "secondary"} className="text-xs">
-                                  {auction.status === "active" ? "Live" : auction.status === "upcoming" ? "Upcoming" : "Ended"}
-                                </Badge>
-                                {auction.status === "upcoming" && (
-                                  <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => openAuctionEdit(auction)}>
-                                    <Edit2 className="h-3 w-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                            <p className="text-xs text-gray-400 mt-1">Ends: {new Date(auction.end_time).toLocaleString()}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="rounded-lg border border-gray-200 bg-white shadow-sm p-12 text-center">
+                  <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
+                    <Gavel className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="mt-6 text-xl font-semibold text-gray-900">No auctions yet</h3>
+                  <p className="mt-2 text-gray-600">Create your first auction to start bidding wars on your products</p>
+                  <Button asChild className="mt-6 bg-primary hover:bg-primary/90 text-white">
+                    <Link href="/seller/auctions/new"><Plus className="mr-2 h-4 w-4" />Create Your First Auction</Link>
+                  </Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {auctions.map((auction) => (
-                    <Link key={auction.id} href={`/auctions/${auction.id}`}>
-                    <Card className="bg-white shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-                      <div className="relative h-36 bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center overflow-hidden rounded-t-lg">
-                        {auction.image_url
-                          ? <Image src={auction.image_url} alt={auction.title} fill className="object-contain" />
-                          : <Gavel className="h-12 w-12 text-amber-400" />}
+                <div className="rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm">
+                  <div className="grid grid-cols-[auto_2fr_1fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider w-10" />
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Auction</span>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</span>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Starting Bid</span>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Current Bid</span>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Ends</span>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</span>
+                  </div>
+                  <div className="divide-y divide-gray-100">
+                    {auctions.map((auction) => (
+                      <div
+                        key={auction.id}
+                        className="grid grid-cols-[auto_2fr_1fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3.5 items-center hover:bg-gray-50 transition-colors"
+                      >
+                        <Link href={`/auctions/${auction.id}`} className="relative w-10 h-10 shrink-0 rounded-md overflow-hidden bg-amber-50 flex items-center justify-center">
+                          {auction.image_url
+                            ? <Image src={auction.image_url} alt={auction.title} fill className="object-contain" />
+                            : <Gavel className="h-5 w-5 text-amber-400" />}
+                        </Link>
+                        <div className="min-w-0">
+                          <Link href={`/auctions/${auction.id}`} className="text-sm font-semibold text-gray-900 hover:text-primary transition-colors truncate block">{auction.title}</Link>
+                          <span className="text-xs text-gray-400 capitalize">{auction.condition}</span>
+                        </div>
+                        <span className="text-sm text-gray-600 capitalize">{auction.category}</span>
+                        <span className="text-sm font-semibold text-gray-700">{fiatSymbol}{(auction.starting_price ?? 0).toLocaleString()}</span>
+                        <span className="text-sm font-bold text-primary">{fiatSymbol}{(auction.current_bid ?? auction.starting_price ?? 0).toLocaleString()}</span>
+                        <span className="text-sm text-gray-600">{new Date(auction.end_time).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant={auction.status === "active" ? "default" : "secondary"} className="text-xs">
+                            {auction.status === "active" ? "Live" : auction.status === "upcoming" ? "Upcoming" : "Ended"}
+                          </Badge>
+                          {auction.status === "upcoming" && (
+                            <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => openAuctionEdit(auction)}>
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      <CardContent className="p-4 space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="font-bold text-gray-900 leading-tight">{auction.title}</p>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Badge
-                              variant={auction.status === "active" ? "default" : "secondary"}
-                              className="text-xs"
-                            >
-                              {auction.status === "active" ? "Live" : auction.status === "upcoming" ? "Upcoming" : "Ended"}
-                            </Badge>
-                            {auction.status === "upcoming" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 w-6 p-0"
-                                onClick={() => openAuctionEdit(auction)}
-                              >
-                                <Edit2 className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                        <p className="text-xs text-gray-500 capitalize">{auction.category} · {auction.condition}</p>
-                        <div className="flex items-center justify-between pt-1">
-                          <span className="text-sm text-gray-600">Starting bid</span>
-                          <span className="font-bold text-primary">{fiatSymbol}{(auction.starting_price ?? 0).toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">Current bid</span>
-                          <span className="font-semibold text-gray-900">{fiatSymbol}{(auction.current_bid ?? auction.starting_price ?? 0).toLocaleString()}</span>
-                        </div>
-                        <p className="text-xs text-gray-400">
-                          Ends: {new Date(auction.end_time).toLocaleString()}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    </Link>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </TabsContent>

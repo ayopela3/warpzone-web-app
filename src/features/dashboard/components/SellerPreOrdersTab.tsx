@@ -472,20 +472,29 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
           </Card>
         )}
 
-        {/* Pre-order list */}
+        {/* Pre-order table */}
         {loading ? (
           <div className='py-10 flex justify-center'>
             <Loader2 className='h-8 w-8 animate-spin text-primary' />
           </div>
         ) : preOrders.length === 0 ? (
-          <div className='bg-white rounded-2xl border border-border py-10 text-center'>
+          <div className='bg-white rounded-lg border border-border py-10 text-center'>
             <Package className='h-10 w-10 text-muted-foreground mx-auto mb-3' />
-            <p className='text-sm text-muted-foreground'>
-              No pre-orders submitted yet.
-            </p>
+            <p className='text-sm text-muted-foreground'>No pre-orders submitted yet.</p>
           </div>
         ) : (
-          <div className='space-y-3'>
+          <div className="rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm">
+            {/* Table header */}
+            <div className="grid grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pre-Order</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Price</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Release</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Reservations</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Details</span>
+            </div>
+
+            <div className="divide-y divide-gray-100">
             {preOrders.map((po) => {
               const isOpen = expandedId === po.id
               const isLoadingRow = loadingDetailId === po.id
@@ -494,80 +503,57 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
               const paidCount = rows.filter((r) => r.paid === 1).length
 
               return (
-                <div
-                  key={po.id}
-                  className={`bg-white rounded-2xl border transition-all ${
-                    isOpen
-                      ? "border-primary/40 shadow-md"
-                      : "border-border shadow-sm"
-                  }`}
-                >
-                  {/* ── Row header — click to expand ── */}
-                  <div className='p-5 flex items-center gap-4'>
-                    {/* Thumbnail */}
-                    <div className='relative h-16 w-16 shrink-0 rounded-xl bg-muted overflow-hidden flex items-center justify-center'>
-                      {po.image_url ? (
-                        <Image
-                          src={po.image_url}
-                          alt={po.title}
-                          fill
-                          className='object-contain'
-                        />
-                      ) : (
-                        <Package className='h-7 w-7 text-muted-foreground' />
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className='flex-1 min-w-0'>
-                      <p className='font-bold text-base text-foreground truncate'>
-                        {po.title}
-                      </p>
-                      <p className='text-sm text-muted-foreground mt-0.5'>
-                        {fiatSymbol}
-                        {po.price.toLocaleString()}
-                        {" · "}
-                        <span className='inline-flex items-center gap-1'>
-                          <Calendar className='h-3 w-3' />
-                          {new Date(po.release_date).toLocaleDateString()}
-                        </span>
-                        {" · "}
-                        <span className='inline-flex items-center gap-1'>
-                          <Users className='h-3 w-3' />
-                          {po.reservation_count ?? 0} reserved
-                          {po.max_slots ? ` / ${po.max_slots}` : ""}
-                        </span>
-                      </p>
-                      <div className='flex items-center gap-2 mt-1.5 flex-wrap'>
-                        <Badge variant='outline' className='text-xs'>
-                          {po.game}
-                        </Badge>
-                        <Badge
-                          variant='outline'
-                          className={`text-xs capitalize ${approvalColor(po.approval_status)}`}
-                        >
-                          {po.approval_status}
-                        </Badge>
-                        {po.status === "closed" && (
-                          <Badge variant='secondary' className='text-xs'>
-                            Closed
+                <div key={po.id} className="bg-white">
+                  {/* Table row */}
+                  <div className={`grid grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] gap-4 px-5 py-4 items-center hover:bg-gray-50 transition-colors ${isOpen ? "bg-gray-50" : ""}`}>
+                    {/* Title + approval */}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative h-10 w-10 shrink-0 rounded-md bg-gray-100 overflow-hidden flex items-center justify-center">
+                        {po.image_url
+                          ? <Image src={po.image_url} alt={po.title} fill className="object-contain" />
+                          : <Package className="h-5 w-5 text-gray-400" />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{po.title}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <Badge variant="outline" className={`text-[10px] capitalize ${approvalColor(po.approval_status)}`}>
+                            {po.approval_status}
                           </Badge>
-                        )}
+                          {po.status === "closed" && (
+                            <Badge variant="secondary" className="text-[10px]">Closed</Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Expand chevron button */}
+                    {/* Category */}
+                    <span className="text-sm text-gray-600 truncate">{po.game}</span>
+
+                    {/* Price */}
+                    <span className="text-sm font-semibold text-gray-900">
+                      {fiatSymbol}{po.price.toLocaleString()}
+                    </span>
+
+                    {/* Release date */}
+                    <span className="text-sm text-gray-600">
+                      {new Date(po.release_date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+
+                    {/* Reservations */}
+                    <span className="text-sm text-gray-700 flex items-center gap-1">
+                      <Users className="h-3.5 w-3.5 text-gray-400" />
+                      {po.reservation_count ?? 0}
+                      {po.max_slots ? <span className="text-gray-400">/{po.max_slots}</span> : ""}
+                    </span>
+
+                    {/* Details toggle */}
                     <button
-                      type='button'
+                      type="button"
                       onClick={() => toggleExpand(po)}
-                      className='shrink-0 h-8 w-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors'
-                      aria-label='Toggle reservations'
+                      className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors"
+                      aria-label="Toggle reservations"
                     >
-                      {isOpen ? (
-                        <ChevronUp className='h-4 w-4' />
-                      ) : (
-                        <ChevronDown className='h-4 w-4' />
-                      )}
+                      Details {isOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                     </button>
                   </div>
 
@@ -804,6 +790,7 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
                 </div>
               )
             })}
+            </div>
           </div>
         )}
       </div>
