@@ -101,3 +101,20 @@ export async function requireAdmin(
   }
   return user
 }
+
+/**
+ * Require seller or admin role - throws if not authenticated or not seller/admin.
+ */
+export async function requireSeller(
+  request: NextRequest,
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>
+): Promise<SessionResult> {
+  const user = await resolveUser(request, db)
+  if (!user) {
+    throw new Error("Not authenticated")
+  }
+  if (user.role !== "seller" && user.role !== "admin") {
+    throw new Error("Forbidden")
+  }
+  return user
+}

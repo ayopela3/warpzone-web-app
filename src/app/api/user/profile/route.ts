@@ -1,25 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { getDb } from "@/lib/db"
+import { resolveSession } from "@/lib/auth"
 
 export const runtime = "edge"
-
-/** Resolve session → user_id from cookie or Authorization header */
-async function resolveSession(request: NextRequest, db: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
-  const sessionId =
-    request.cookies.get("wz_session")?.value ??
-    request.headers.get("Authorization")?.replace("Bearer ", "")
-
-  if (!sessionId) return null
-
-  const session = await db
-    .prepare("SELECT user_id, expires_at FROM sessions WHERE id = ?")
-    .bind(sessionId)
-    .first<{ user_id: string; expires_at: string }>()
-
-  if (!session || new Date(session.expires_at) < new Date()) return null
-  return session.user_id
-}
 
 /**
  * GET /api/user/profile
@@ -30,18 +14,18 @@ export async function GET(request: NextRequest) {
     const db = await getDb()
     if (!db) return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
 
-    const userId = await resolveSession(request, db)
-    if (!userId) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
+    const session = await resolveSession(request, db)
+    if (!session) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
 
     const [user, profile] = await Promise.all([
-      db.prepare("SELECT email FROM users WHERE id = ?").bind(userId).first<{ email: string }>(),
+      db.prepare("SELECT email FROM users WHERE id = ?").bind(session.userId).first<{ email: string }>(),
       db
         .prepare(
           `SELECT id, full_name, phone_number, street, city, province, country, zip_code,
                   business_name, profile_picture, role
            FROM profiles WHERE user_id = ?`
         )
-        .bind(userId)
+        .bind(session.userId)
         .first<{
           id: string
           full_name: string
@@ -93,8 +77,8 @@ export async function PUT(request: NextRequest) {
     const db = await getDb()
     if (!db) return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
 
-    const userId = await resolveSession(request, db)
-    if (!userId) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
+    const session = await resolveSession(request, db)
+    if (!session) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
 
     const body = await request.json()
     const {
@@ -117,7 +101,7 @@ export async function PUT(request: NextRequest) {
 
       const user = await db
         .prepare("SELECT password_hash FROM users WHERE id = ?")
-        .bind(userId)
+        .bind(session.userId)
         .first<{ password_hash: string }>()
 
       if (!user) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
@@ -128,7 +112,7 @@ export async function PUT(request: NextRequest) {
       }
 
       const newHash = bcrypt.hashSync(new_password, 10)
-      await db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").bind(newHash, userId).run()
+      await db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").bind(newHash, session.userId).run()
     }
 
     // Update profile
@@ -148,7 +132,7 @@ export async function PUT(request: NextRequest) {
         country ?? "",
         zip_code ?? "",
         business_name ?? null,
-        userId
+        session.userId
       )
       .run()
 

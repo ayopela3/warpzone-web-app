@@ -3,6 +3,65 @@ import type { CloudflareEnv } from "@/types/cloudflare"
 
 export const runtime = "edge"
 
+// Allowed MIME types
+const ALLOWED_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif"
+]
+
+// File signature (magic bytes) validation
+const FILE_SIGNATURES: Record<string, number[]> = {
+  "image/jpeg": [0xFF, 0xD8, 0xFF],
+  "image/png": [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
+  "image/webp": [0x52, 0x49, 0x46, 0x46], // RIFF header for WebP
+  "image/gif": [0x47, 0x49, 0x46, 0x38], // GIF87a or GIF89a
+}
+
+/**
+ * Sanitize filename to prevent path traversal and ensure safe names
+ */
+function sanitizeFileName(name: string): string {
+  // Remove path traversal attempts
+  let sanitized = name.replace(/[\.]{2,}/g, "")
+  sanitized = sanitized.replace(/[\\/]/g, "")
+  
+  // Remove control characters
+  sanitized = sanitized.replace(/[\x00-\x1f\x7f]/g, "")
+  
+  // Limit length
+  if (sanitized.length > 100) {
+    const ext = sanitized.split(".").pop() ?? ""
+    sanitized = sanitized.slice(0, 95) + (ext ? `.${ext}` : "")
+  }
+  
+  // Ensure filename has content
+  if (!sanitized || sanitized === ".") {
+    sanitized = "upload"
+  }
+  
+  return sanitized
+}
+
+/**
+ * Validate file content using magic bytes
+ */
+async function validateFileContent(file: File, expectedType: string): Promise<boolean> {
+  const signature = FILE_SIGNATURES[expectedType]
+  if (!signature) return true // Skip validation for unknown types
+  
+  const buffer = await file.slice(0, signature.length).arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  
+  for (let i = 0; i < signature.length; i++) {
+    if (bytes[i] !== signature[i]) return false
+  }
+  
+  return true
+}
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
@@ -12,15 +71,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 })
     }
 
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ success: false, error: "Only image files are allowed" }, { status: 400 })
+    // Validate MIME type is in allowlist
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      return NextResponse.json(
+        { success: false, error: `File type not allowed. Allowed: ${ALLOWED_MIME_TYPES.join(", ")}` },
+        { status: 415 }
+      )
     }
 
     // Validate file size (10MB max)
     const maxSize = 10 * 1024 * 1024 // 10MB
     if (file.size > maxSize) {
-      return NextResponse.json({ success: false, error: "File size exceeds 10MB limit" }, { status: 400 })
+      return NextResponse.json({ success: false, error: "File size exceeds 10MB limit" }, { status: 413 })
+    }
+
+    // Validate file content using magic bytes
+    const isValidContent = await validateFileContent(file, file.type)
+    if (!isValidContent) {
+      return NextResponse.json(
+        { success: false, error: "File content does not match declared type (possible spoofing)" },
+        { status: 400 }
+      )
     }
 
     // Get R2 bucket binding from Cloudflare context
@@ -40,9 +111,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "R2 bucket not available" }, { status: 500 })
     }
 
-    // Generate unique filename
-    const fileExtension = file.name.split(".").pop()
-    const uniqueFileName = `${crypto.randomUUID()}.${fileExtension}`
+    // Generate unique filename with sanitization
+    const originalName = sanitizeFileName(file.name)
+    const fileExtension = originalName.split(".").pop()?.toLowerCase()
+    
+    // Validate extension matches MIME type
+    const expectedExtensions: Record<string, string[]> = {
+      "image/jpeg": ["jpg", "jpeg"],
+      "image/png": ["png"],
+      "image/webp": ["webp"],
+      "image/gif": ["gif"],
+      "image/avif": ["avif"]
+    }
+    
+    const allowedExts = expectedExtensions[file.type]
+    if (fileExtension && allowedExts && !allowedExts.includes(fileExtension)) {
+      return NextResponse.json(
+        { success: false, error: `Extension .${fileExtension} does not match MIME type ${file.type}` },
+        { status: 400 }
+      )
+    }
+    
+    const uniqueFileName = `${crypto.randomUUID()}.${fileExtension || "bin"}`
 
     // Upload to R2
     const arrayBuffer = await file.arrayBuffer()

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import { resolveSession } from "@/lib/auth"
 
 export const runtime = "edge"
 
@@ -12,22 +13,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
     }
 
-    // Get user from session cookie or Authorization header
-    const sessionId =
-      request.cookies.get("wz_session")?.value ??
-      request.headers.get("Authorization")?.replace("Bearer ", "")
-
-    if (!sessionId) {
+    const session = await resolveSession(request, db)
+    if (!session) {
       return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
-    }
-
-    const sessionResult = await db
-      .prepare("SELECT user_id, expires_at FROM sessions WHERE id = ?")
-      .bind(sessionId)
-      .first<{ user_id: string; expires_at: string }>()
-
-    if (!sessionResult || new Date(sessionResult.expires_at) < new Date()) {
-      return NextResponse.json({ success: false, error: "Invalid or expired session" }, { status: 401 })
     }
 
     // Check if auction exists and hasn't ended (using real-time computed status)
@@ -55,7 +43,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Check if user is already a participant
     const existingParticipant = await db
       .prepare("SELECT id FROM auction_participants WHERE auction_id = ? AND user_id = ?")
-      .bind(auctionId, sessionResult.user_id)
+      .bind(auctionId, session.userId)
       .first<{ id: string }>()
 
     if (existingParticipant) {
@@ -68,7 +56,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Add user to auction participants
     await db
       .prepare("INSERT INTO auction_participants (id, auction_id, user_id) VALUES (?, ?, ?)")
-      .bind(participantId, auctionId, sessionResult.user_id)
+      .bind(participantId, auctionId, session.userId)
       .run()
 
     return NextResponse.json({ success: true, participantId })

@@ -132,22 +132,20 @@ export default function PreOrderPage() {
       <div className="mx-auto max-w-7xl px-4 py-2 lg:px-8">
         {/* Info button */}
         <Link href="/pre-orders/how-it-works">
-          <Card className="mb-4 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer">
-            <CardContent className="p-3 flex items-center gap-3">
-              <div className="p-1.5 bg-white rounded-lg shadow-sm shrink-0">
-                <Info className="h-4 w-4 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-foreground text-sm">How Pre-Orders Work</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  Down payments, allocation, cancellations, and more.
-                </p>
-              </div>
-              <div className="text-primary font-semibold text-xs whitespace-nowrap hidden sm:block">
-                Learn more →
-              </div>
-            </CardContent>
-          </Card>
+          <div className="mb-4 border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer rounded-xl p-3 flex items-center gap-3">
+            <div className="p-1.5 bg-white rounded-lg shadow-sm shrink-0">
+              <Info className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-foreground text-sm">How Pre-Orders Work</p>
+              <p className="text-xs text-muted-foreground truncate">
+                Down payments, allocation, cancellations, and more.
+              </p>
+            </div>
+            <div className="text-primary font-semibold text-xs whitespace-nowrap hidden sm:block">
+              Learn more →
+            </div>
+          </div>
         </Link>
 
         {/* Filters */}

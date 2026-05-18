@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import { resolveSession } from "@/lib/auth"
 
 export const runtime = "edge"
 
@@ -18,24 +19,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
     }
 
-    const sessionId =
-      request.cookies.get("wz_session")?.value ??
-      request.headers.get("Authorization")?.replace("Bearer ", "")
-
-    if (!sessionId) {
+    const session = await resolveSession(request, db)
+    if (!session) {
       return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
     }
 
-    const session = await db
-      .prepare("SELECT user_id, expires_at FROM sessions WHERE id = ?")
-      .bind(sessionId)
-      .first<{ user_id: string; expires_at: string }>()
-
-    if (!session || new Date(session.expires_at) < new Date()) {
-      return NextResponse.json({ success: false, error: "Invalid or expired session" }, { status: 401 })
-    }
-
-    const userId = session.user_id
+    const userId = session.userId
 
     const [ordersRow, bidsRow, tournamentsRow, spentRow] = await Promise.all([
       db.prepare("SELECT COUNT(*) AS count FROM orders WHERE user_id = ?").bind(userId).first<{ count: number }>(),
