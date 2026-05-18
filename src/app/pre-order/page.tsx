@@ -236,31 +236,33 @@ export default function PreOrderPage() {
                   key={po.id}
                   className={`bg-white shadow-sm hover:shadow-md transition-shadow flex flex-col ${isClosed ? "opacity-70" : ""}`}
                 >
-                  {/* Image */}
-                  <div className="relative h-48 bg-gradient-to-br from-amber-50 to-white rounded-t-lg overflow-hidden flex items-center justify-center">
-                    {po.image_url ? (
-                      <Image src={po.image_url} alt={po.title} fill className="object-contain" />
-                    ) : (
-                      <Package className="h-16 w-16 text-primary/30" />
-                    )}
-                    {/* Status badge overlay */}
-                    <div className="absolute top-2 right-2">
-                      {isClosed ? (
-                        <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                          <LockKeyhole className="h-3 w-3" />Closed
-                        </Badge>
+                  {/* Image — links to detail page */}
+                  <Link href={`/pre-order/${po.id}`} className="block">
+                    <div className="relative h-48 bg-gradient-to-br from-amber-50 to-white rounded-t-lg overflow-hidden flex items-center justify-center">
+                      {po.image_url ? (
+                        <Image src={po.image_url} alt={po.title} fill className="object-contain" />
                       ) : (
-                        <Badge className="bg-green-500 text-white text-xs">Active</Badge>
+                        <Package className="h-16 w-16 text-primary/30" />
+                      )}
+                      {/* Status badge overlay */}
+                      <div className="absolute top-2 right-2">
+                        {isClosed ? (
+                          <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                            <LockKeyhole className="h-3 w-3" />Closed
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-green-500 text-white text-xs">Active</Badge>
+                        )}
+                      </div>
+                      {isReserved && (
+                        <div className="absolute top-2 left-2">
+                          <Badge className="bg-primary text-white text-xs flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" />Reserved
+                          </Badge>
+                        </div>
                       )}
                     </div>
-                    {isReserved && (
-                      <div className="absolute top-2 left-2">
-                        <Badge className="bg-primary text-white text-xs flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3" />Reserved
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
+                  </Link>
 
                   <CardContent className="p-4 flex flex-col flex-1 gap-3">
                     {/* Game tag */}
@@ -275,7 +277,9 @@ export default function PreOrderPage() {
 
                     {/* Title + price */}
                     <div>
-                      <h3 className="font-black text-gray-900 leading-tight">{po.title}</h3>
+                      <Link href={`/pre-order/${po.id}`} className="hover:underline">
+                        <h3 className="font-black text-gray-900 leading-tight">{po.title}</h3>
+                      </Link>
                       {po.description && (
                         <p className="text-sm text-gray-500 mt-1 line-clamp-2">{po.description}</p>
                       )}
