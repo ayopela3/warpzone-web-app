@@ -323,3 +323,15 @@ CREATE TABLE IF NOT EXISTS categories (
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Rate limiting table
+CREATE TABLE IF NOT EXISTS rate_limits (
+  id          TEXT PRIMARY KEY,
+  identifier  TEXT NOT NULL,          -- IP address or user identifier
+  timestamp   INTEGER NOT NULL,      -- Unix timestamp in milliseconds
+  path        TEXT,                  -- API path being rate limited
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limits_identifier ON rate_limits(identifier);
+CREATE INDEX IF NOT EXISTS idx_rate_limits_timestamp ON rate_limits(timestamp);

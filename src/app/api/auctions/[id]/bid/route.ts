@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import { rateLimit, createRateLimitResponse } from "@/lib/rate-limit"
 
 export const runtime = "edge"
 
@@ -36,6 +37,16 @@ export async function POST(
 
     if (!session || new Date(session.expires_at) < new Date()) {
       return NextResponse.json({ success: false, error: "Invalid or expired session" }, { status: 401 })
+    }
+
+    // Rate limiting: 10 bids per minute per user per auction
+    const rateLimitResult = await rateLimit(request, `bid:${auctionId}:${session.user_id}`, {
+      windowMs: 60 * 1000, // 1 minute
+      maxRequests: 10,
+    })
+
+    if (!rateLimitResult.success) {
+      return createRateLimitResponse(rateLimitResult)
     }
 
     const body = await request.json()

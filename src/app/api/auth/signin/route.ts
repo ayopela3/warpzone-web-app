@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { getDb } from "@/lib/db"
+import { rateLimit, getClientIP, createRateLimitResponse } from "@/lib/rate-limit"
 
 export const runtime = "edge"
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting: 5 attempts per minute per IP
+    const clientIP = getClientIP(request)
+    const rateLimitResult = await rateLimit(request, `signin:${clientIP}`, {
+      windowMs: 60 * 1000, // 1 minute
+      maxRequests: 5,
+    })
+
+    if (!rateLimitResult.success) {
+      return createRateLimitResponse(rateLimitResult)
+    }
+
     const body = await request.json()
     const { email, password } = body
 
