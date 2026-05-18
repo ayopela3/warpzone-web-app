@@ -23,6 +23,7 @@ import { SellerProductEditDialog } from "./SellerProductEditDialog"
 import { SellerOrdersTab } from "./SellerOrdersTab"
 import { SellerPreOrdersTab } from "./SellerPreOrdersTab"
 import { SellerRefundsTab } from "./SellerRefundsTab"
+import { SellerFeesTab } from "./SellerFeesTab"
 import type { EditForm } from "./SellerProductEditDialog"
 import type { Product, Auction } from "@/types"
 
@@ -319,12 +320,13 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
           </div>
 
           <Tabs defaultValue="products" className="space-y-6">
-            <TabsList className="grid w-full max-w-3xl grid-cols-5 bg-white p-1">
+            <TabsList className="grid w-full max-w-4xl grid-cols-6 bg-white p-1">
               <TabsTrigger value="products" className="data-[state=active]:bg-primary data-[state=active]:text-white">Products</TabsTrigger>
               <TabsTrigger value="auctions" className="data-[state=active]:bg-primary data-[state=active]:text-white">Auctions</TabsTrigger>
               <TabsTrigger value="pre-orders" className="data-[state=active]:bg-primary data-[state=active]:text-white">Pre-Orders</TabsTrigger>
               <TabsTrigger value="orders" className="data-[state=active]:bg-primary data-[state=active]:text-white">Orders</TabsTrigger>
               <TabsTrigger value="refunds" className="data-[state=active]:bg-primary data-[state=active]:text-white">Refunds</TabsTrigger>
+              <TabsTrigger value="fees" className="data-[state=active]:bg-primary data-[state=active]:text-white">Fees</TabsTrigger>
             </TabsList>
 
             <TabsContent value="products" className="space-y-4">
@@ -591,6 +593,13 @@ export function SellerDashboard({ userId, fiatSymbol }: Props) {
 
             <TabsContent value="refunds" className="space-y-4">
               <SellerRefundsTab fiatSymbol={fiatSymbol} />
+            </TabsContent>
+
+            <TabsContent value="fees" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">Platform Fees</h2>
+              </div>
+              <SellerFeesTab fiatSymbol={fiatSymbol} />
             </TabsContent>
           </Tabs>
         </div>
