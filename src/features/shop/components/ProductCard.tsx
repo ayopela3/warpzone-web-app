@@ -75,7 +75,7 @@ export function ProductCard({ product, fiatSymbol, onAddToCart }: Props) {
             />
           </div>
           <div className="flex justify-between px-3 pt-1.5 pb-0 text-[10px] font-semibold text-neutral-400">
-            <span>{soldCount} sold</span>
+            <span> </span>
             <span className={outOfStock ? "text-red-500 font-bold" : ""}>{product.quantity} left</span>
           </div>
         </div>
