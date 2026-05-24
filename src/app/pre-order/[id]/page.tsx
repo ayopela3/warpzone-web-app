@@ -246,7 +246,7 @@ export default async function PreOrderDetailPage({
               </div>
 
               {/* Reservations card */}
-              <div className="rounded-2xl border border-border bg-white p-6">
+              {/* <div className="rounded-2xl border border-border bg-white p-6">
                 <Users className="h-6 w-6 text-primary mb-4" />
                 <h2 className="font-display font-extrabold text-lg text-foreground leading-snug">
                   Reservations
@@ -255,7 +255,7 @@ export default async function PreOrderDetailPage({
                   {row.reservation_count} reserved
                   {row.max_slots !== null && ` of ${row.max_slots} slots`}
                 </p>
-              </div>
+              </div> */}
 
               {/* Cutoff date card — only if set */}
               {cutoffFormatted && (

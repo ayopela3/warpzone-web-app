@@ -14,11 +14,12 @@ import {
 } from "@/components/ui/select"
 import {
   Package, Plus, Loader2, CheckCircle2, XCircle, LockKeyhole,
-  Unlock, ChevronDown, ChevronUp, Upload, Users, Calendar, Pencil, Trash2,
+  Unlock, ChevronDown, ChevronUp, Upload, Users, Calendar, Pencil, Trash2, Download,
 } from "lucide-react"
 import { toast } from "sonner"
 import { preOrdersApi } from "@/lib/api-client"
 import type { PreOrder } from "@/types"
+import { ImportPreOrdersDialog } from "./ImportPreOrdersDialog"
 
 const INITIAL_FORM = {
   title: "",
@@ -42,6 +43,8 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
   const [actionId, setActionId]     = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [uploading, setUploading]   = useState(false)
+
+  const [showImport, setShowImport] = useState(false)
 
   /** Inline edit state */
   const [editingId, setEditingId]       = useState<string | null>(null)
@@ -251,14 +254,30 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-900">Pre-Orders</h2>
-        <Button
-          onClick={() => setShowCreate(!showCreate)}
-          className="bg-primary hover:bg-primary/90 text-white"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          {showCreate ? "Cancel" : "Create Pre-Order"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowImport(true)}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Import from Distributor
+          </Button>
+          <Button
+            onClick={() => setShowCreate(!showCreate)}
+            className="bg-primary hover:bg-primary/90 text-white"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {showCreate ? "Cancel" : "Create Pre-Order"}
+          </Button>
+        </div>
       </div>
+
+      <ImportPreOrdersDialog
+        open={showImport}
+        onClose={() => setShowImport(false)}
+        fiatSymbol={fiatSymbol}
+        onImported={fetchAll}
+      />
 
       {/* Create form */}
       {showCreate && (

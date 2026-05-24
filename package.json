@@ -13,7 +13,9 @@
     "db:backup": "node ./scripts/backup-db.mjs remote",
     "db:backup:local": "node ./scripts/backup-db.mjs local",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "scrape:preorders": "node scripts/scrape-preorders.mjs",
+    "scrape:ludus": "node scripts/scrape-ludus.mjs"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",

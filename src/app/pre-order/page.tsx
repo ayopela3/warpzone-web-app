@@ -294,10 +294,10 @@ export default function PreOrderPage() {
                         <Calendar className="h-3 w-3" />
                         Releases {new Date(po.release_date).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
                       </span>
-                      <span className="flex items-center gap-1">
+                      {/* <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
                         {po.reservation_count ?? 0} reserved
-                      </span>
+                      </span> */}
                     </div>
 
                     {/* Slots */}
