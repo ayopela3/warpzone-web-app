@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     if (!db) return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
 
     const sessionId =
+      request.cookies.get("__Secure-wz_session")?.value ??
       request.cookies.get("wz_session")?.value ??
       request.headers.get("Authorization")?.replace("Bearer ", "")
     if (!sessionId) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })

@@ -8,7 +8,8 @@ async function resolveProfile(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>
 ) {
   const sessionId =
-    request.cookies.get("wz_session")?.value ??
+    request.cookies.get("__Secure-wz_session")?.value ??
+      request.cookies.get("wz_session")?.value ??
     request.headers.get("Authorization")?.replace("Bearer ", "")
   if (!sessionId) return null
   const session = await db
@@ -125,14 +126,23 @@ export async function PATCH(
     const isOwner = preOrder.seller_id === profile.id
     if (!isAdmin && !isOwner) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
+    const VALID_ALLOCATION_STATUSES = ["pending", "allocated", "shortlisted", "refunded"] as const
+    type AllocationStatus = typeof VALID_ALLOCATION_STATUSES[number]
+
     const body = await request.json() as { 
       reservationId: string; 
       paid?: boolean;
       downpayment_paid?: boolean;
-      allocation_status?: 'pending' | 'allocated' | 'shortlisted' | 'refunded';
+      allocation_status?: AllocationStatus;
     }
     if (!body.reservationId) {
       return NextResponse.json({ success: false, error: "reservationId is required" }, { status: 400 })
+    }
+
+    // Runtime-validate allocation_status against the allowlist
+    if (body.allocation_status !== undefined &&
+        !(VALID_ALLOCATION_STATUSES as readonly string[]).includes(body.allocation_status)) {
+      return NextResponse.json({ success: false, error: "Invalid allocation_status value" }, { status: 400 })
     }
 
     // Build update based on what was provided

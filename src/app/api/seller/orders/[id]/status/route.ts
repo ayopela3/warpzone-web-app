@@ -18,7 +18,8 @@ async function resolveSellerProfile(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>
 ) {
   const sessionId =
-    request.cookies.get("wz_session")?.value ??
+    request.cookies.get("__Secure-wz_session")?.value ??
+      request.cookies.get("wz_session")?.value ??
     request.headers.get("Authorization")?.replace("Bearer ", "")
   if (!sessionId) return null
 
@@ -35,6 +36,14 @@ async function resolveSellerProfile(
 
   if (!profile || (profile.role !== "seller" && profile.role !== "admin")) return null
   return profile
+}
+
+async function isAdminSeller(sellerId: string, db: NonNullable<Awaited<ReturnType<typeof getDb>>>): Promise<boolean> {
+  const profile = await db
+    .prepare("SELECT role FROM profiles WHERE id = ?")
+    .bind(sellerId)
+    .first<{ role: string }>()
+  return profile?.role === "admin"
 }
 
 // ---------------------------------------------------------------------------
@@ -133,22 +142,27 @@ export async function PUT(
         for (const item of preOrderItems.results) {
           // Mark reservation as paid if found and not yet recorded
           if (item.reservation_id && !item.fee_recorded) {
-            const gross = item.price * item.quantity
-            const fee   = Math.round(gross * preOrderFeeRate * 100) / 100
+            // Check if seller is admin - if so, waive the fee
+            const isAdmin = await isAdminSeller(fullOrder!.seller_id, db)
+            
+            if (!isAdmin) {
+              const gross = item.price * item.quantity
+              const fee   = Math.round(gross * preOrderFeeRate * 100) / 100
 
-            await db.prepare(`
-              INSERT OR IGNORE INTO service_fees
-                (id, seller_id, source_type, source_id, description, gross_amount, fee_rate, fee_amount, status, created_at, updated_at)
-              VALUES (?, ?, 'pre_order', ?, ?, ?, ?, ?, 'unpaid', datetime('now'), datetime('now'))
-            `).bind(
-              crypto.randomUUID(),
-              fullOrder!.seller_id,
-              item.pre_order_id,
-              `Pre-order payment — order #${id.slice(0, 8).toUpperCase()} qty ${item.quantity}`,
-              gross,
-              preOrderFeeRate,
-              fee,
-            ).run()
+              await db.prepare(`
+                INSERT OR IGNORE INTO service_fees
+                  (id, seller_id, source_type, source_id, description, gross_amount, fee_rate, fee_amount, status, created_at, updated_at)
+                VALUES (?, ?, 'pre_order', ?, ?, ?, ?, ?, 'unpaid', datetime('now'), datetime('now'))
+              `).bind(
+                crypto.randomUUID(),
+                fullOrder!.seller_id,
+                item.pre_order_id,
+                `Pre-order payment — order #${id.slice(0, 8).toUpperCase()} qty ${item.quantity}`,
+                gross,
+                preOrderFeeRate,
+                fee,
+              ).run()
+            }
 
             await db.prepare(`
               UPDATE pre_order_reservations
@@ -166,21 +180,26 @@ export async function PUT(
           .first()
 
         if (!existingFee && fullOrder) {
-          const feeRate   = 0.05
-          const feeAmount = Math.round(fullOrder.total * feeRate * 100) / 100
+          // Check if seller is admin - if so, waive the fee
+          const isAdmin = await isAdminSeller(fullOrder.seller_id, db)
+          
+          if (!isAdmin) {
+            const feeRate   = 0.05
+            const feeAmount = Math.round(fullOrder.total * feeRate * 100) / 100
 
-          await db.prepare(`
-            INSERT INTO service_fees (id, seller_id, source_type, source_id, description, gross_amount, fee_rate, fee_amount, status, created_at, updated_at)
-            VALUES (?, ?, 'order', ?, ?, ?, ?, ?, 'unpaid', datetime('now'), datetime('now'))
-          `).bind(
-            crypto.randomUUID(),
-            fullOrder.seller_id,
-            id,
-            `Order #${id.slice(0, 8).toUpperCase()} - Product sale`,
-            fullOrder.total,
-            feeRate,
-            feeAmount,
-          ).run()
+            await db.prepare(`
+              INSERT INTO service_fees (id, seller_id, source_type, source_id, description, gross_amount, fee_rate, fee_amount, status, created_at, updated_at)
+              VALUES (?, ?, 'order', ?, ?, ?, ?, ?, 'unpaid', datetime('now'), datetime('now'))
+            `).bind(
+              crypto.randomUUID(),
+              fullOrder.seller_id,
+              id,
+              `Order #${id.slice(0, 8).toUpperCase()} - Product sale`,
+              fullOrder.total,
+              feeRate,
+              feeAmount,
+            ).run()
+          }
         }
       }
     }

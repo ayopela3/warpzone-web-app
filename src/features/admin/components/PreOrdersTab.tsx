@@ -15,11 +15,19 @@ import {
 import {
   Package, Plus, Loader2, CheckCircle2, XCircle, LockKeyhole,
   Unlock, ChevronDown, ChevronUp, Upload, Users, Calendar, Pencil, Trash2, Download,
+  CheckCheck, Clock, Eye,
 } from "lucide-react"
 import { toast } from "sonner"
 import { preOrdersApi } from "@/lib/api-client"
 import type { PreOrder } from "@/types"
 import { ImportPreOrdersDialog } from "./ImportPreOrdersDialog"
+
+const ALLOCATION_LABELS: Record<string, { label: string; color: string }> = {
+  pending:    { label: "Pending",   color: "bg-amber-50 text-amber-700 border-amber-200" },
+  allocated:  { label: "Allocated", color: "bg-green-50 text-green-700 border-green-200" },
+  shortlisted:{ label: "Cut",       color: "bg-red-50 text-red-700 border-red-200" },
+  refunded:   { label: "Refunded",  color: "bg-gray-50 text-gray-500 border-gray-200" },
+}
 
 const INITIAL_FORM = {
   title: "",
@@ -43,6 +51,26 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
   const [actionId, setActionId]     = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [uploading, setUploading]   = useState(false)
+  
+  /** Reservation details cache: pre_order_id -> reservations */
+  const [reservationMap, setReservationMap] = useState<Record<string, {
+    id: string
+    user_id: string
+    quantity: number
+    reserved_at: string
+    paid: number
+    is_paid: number
+    total_paid: number
+    unit_price: number
+    unit_full_price: number
+    downpayment_paid: number
+    downpayment_amount: number
+    remaining_balance: number
+    allocation_status: string
+    buyer_name: string
+    buyer_email: string
+  }[]>>({})
+  const [loadingDetailId, setLoadingDetailId] = useState<string | null>(null)
 
   const [showImport, setShowImport] = useState(false)
 
@@ -63,6 +91,56 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
       setLoading(false)
     }
   }, [])
+
+  const fetchReservationDetails = async (preOrderId: string) => {
+    setLoadingDetailId(preOrderId)
+    try {
+      const response = await fetch(`/api/pre-orders/${preOrderId}/reservations`)
+      const data = await response.json()
+      if (data.success) {
+        setReservationMap(prev => ({ ...prev, [preOrderId]: data.reservations }))
+      } else {
+        toast.error("Failed to load reservation details")
+      }
+    } catch {
+      toast.error("Failed to load reservation details")
+    } finally {
+      setLoadingDetailId(null)
+    }
+  }
+
+  const toggleExpand = async (po: PreOrder) => {
+    if (expandedId === po.id) {
+      setExpandedId(null)
+      return
+    }
+    setExpandedId(po.id)
+    if (!reservationMap[po.id]) {
+      await fetchReservationDetails(po.id)
+    }
+  }
+
+  const handleApprovePayment = async (reservationId: string, preOrderId: string) => {
+    try {
+      const response = await fetch(`/api/admin/reservations/${reservationId}/approve-payment`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem("warpzone-session-id") ?? ""}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      const data = await response.json()
+      if (data.success) {
+        toast.success("Payment approved successfully")
+        // Refresh reservation details
+        await fetchReservationDetails(preOrderId)
+      } else {
+        toast.error(data.error || "Failed to approve payment")
+      }
+    } catch {
+      toast.error("Failed to approve payment")
+    }
+  }
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
@@ -467,7 +545,7 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
                       </Button>
                       <button
                         type="button"
-                        onClick={() => setExpandedId(isExpanded ? null : po.id)}
+                        onClick={() => toggleExpand(po)}
                         className="p-1 rounded hover:bg-gray-100 text-gray-400"
                       >
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -581,9 +659,189 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
                     </div>
                   )}
 
-                  {isExpanded && po.description && editingId !== po.id && (
-                    <div className="mt-3 pt-3 border-t text-sm text-gray-600 px-4 pb-3">
-                      {po.description}
+                  {isExpanded && editingId !== po.id && (
+                    <div className='border-t border-border rounded-b-2xl overflow-hidden'>
+                      {/* Description */}
+                      {po.description && (
+                        <div className="px-4 py-3 text-sm text-gray-600">
+                          {po.description}
+                        </div>
+                      )}
+                      
+                      {/* Colored stat cards */}
+                      <div className='grid grid-cols-3 gap-3 p-4 bg-muted/30'>
+                        <div className='bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 flex items-center gap-3'>
+                          <div className='p-2 bg-primary/20 rounded-lg shrink-0'>
+                            <Users className='h-4 w-4 text-primary' />
+                          </div>
+                          <div>
+                            <p className='text-[10px] font-semibold text-primary/70 uppercase tracking-wide'>
+                              Total Qty
+                            </p>
+                            <p className='text-xl font-black text-primary leading-none mt-0.5'>
+                              {reservationMap[po.id]?.reduce((s, r) => s + r.quantity, 0) || 0}
+                            </p>
+                          </div>
+                        </div>
+                        <div className='bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center gap-3'>
+                          <div className='p-2 bg-blue-100 rounded-lg shrink-0'>
+                            <CheckCheck className='h-4 w-4 text-blue-600' />
+                          </div>
+                          <div>
+                            <p className='text-[10px] font-semibold text-blue-500 uppercase tracking-wide'>
+                              Paid
+                            </p>
+                            <p className='text-xl font-black text-blue-700 leading-none mt-0.5'>
+                              {reservationMap[po.id]?.filter((r) => r.paid === 1).length || 0}
+                              <span className='text-sm font-medium text-blue-400'>
+                                {' '}
+                                / {reservationMap[po.id]?.length || 0}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className='bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center gap-3'>
+                          <div className='p-2 bg-green-100 rounded-lg shrink-0'>
+                            <Clock className='h-4 w-4 text-green-600' />
+                          </div>
+                          <div>
+                            <p className='text-[10px] font-semibold text-green-600 uppercase tracking-wide'>
+                              Collected
+                            </p>
+                            <p className='text-lg font-black text-green-700 leading-none mt-0.5 truncate'>
+                              {fiatSymbol}
+                              {reservationMap[po.id]
+                                ?.filter((r) => r.paid === 1)
+                                .reduce((s, r) => s + r.total_paid, 0)
+                                .toLocaleString() || 0}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Reservation list header */}
+                      <div className='px-5 py-3 bg-white border-t border-border flex items-center justify-between'>
+                        <p className='text-xs font-bold text-foreground uppercase tracking-wider'>
+                          Reservations
+                        </p>
+                        <span className='text-xs text-muted-foreground'>
+                          {reservationMap[po.id]?.length || 0} total
+                        </span>
+                      </div>
+
+                      {/* Reservation rows */}
+                      {loadingDetailId === po.id ? (
+                        <div className='py-10 flex justify-center bg-white'>
+                          <Loader2 className='h-5 w-5 animate-spin text-primary' />
+                        </div>
+                      ) : !reservationMap[po.id] || reservationMap[po.id].length === 0 ? (
+                        <div className='py-10 text-center bg-white'>
+                          <div className='h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3'>
+                            <Users className='h-6 w-6 text-muted-foreground' />
+                          </div>
+                          <p className='text-sm font-medium text-muted-foreground'>
+                            No reservations yet
+                          </p>
+                          <p className='text-xs text-muted-foreground/60 mt-1'>
+                            Customers who reserve this pre-order will appear here
+                          </p>
+                        </div>
+                      ) : (
+                        <div className='divide-y divide-border bg-white'>
+                          {reservationMap[po.id].map((r, idx) => {
+                            const displayName =
+                              r.buyer_name ??
+                              r.buyer_email ??
+                              "Anonymous"
+                            const displayEmail =
+                              r.buyer_email ?? ""
+                            const initials = displayName
+                              .split(" ")
+                              .map((w: string) => w[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase()
+                            return (
+                              <div
+                                key={r.id}
+                                className='flex items-center gap-4 px-5 py-3.5'
+                              >
+                                {/* Avatar */}
+                                <div className='h-9 w-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0'>
+                                  <span className='text-xs font-bold text-primary'>
+                                    {initials}
+                                  </span>
+                                </div>
+                                {/* Buyer info */}
+                                <div className='flex-1 min-w-0'>
+                                  <div className='flex items-center gap-2'>
+                                    <p className='text-sm font-semibold text-foreground truncate'>
+                                      {displayName}
+                                    </p>
+                                    <span className='text-xs text-muted-foreground shrink-0'>
+                                      #{idx + 1}
+                                    </span>
+                                  </div>
+                                  {displayEmail &&
+                                    displayEmail !== displayName && (
+                                      <p className='text-xs text-muted-foreground truncate'>
+                                        {displayEmail}
+                                      </p>
+                                    )}
+                                  <p className='text-xs text-muted-foreground mt-0.5'>
+                                    <span className='font-semibold text-foreground'>
+                                      {r.quantity}×
+                                    </span>{" "}
+                                    <span className='text-primary font-medium'>
+                                      {fiatSymbol}
+                                      {(r.quantity * (r.unit_price || po.price)).toLocaleString()}
+                                    </span>
+                                    {" · "}
+                                    {new Date(
+                                      r.reserved_at,
+                                    ).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                {/* Status + action */}
+                                <div className='flex items-center gap-2 shrink-0 flex-wrap justify-end'>
+                                  {/* Payment badge */}
+                                  <span
+                                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold border ${
+                                      r.paid === 1
+                                        ? 'bg-green-50 text-green-700 border-green-200'
+                                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                                    }`}
+                                  >
+                                    {r.paid === 1 ? (
+                                      <>
+                                        <CheckCircle2 className='h-3 w-3' />
+                                        Paid
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Clock className='h-3 w-3' />
+                                        Pending
+                                      </>
+                                    )}
+                                  </span>
+                                  {/* Allocation status */}
+                                  {r.allocation_status && (
+                                    <span
+                                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold border ${
+                                        ALLOCATION_LABELS[r.allocation_status]?.color ||
+                                        'bg-gray-50 text-gray-700 border-gray-200'
+                                      }`}
+                                    >
+                                      {ALLOCATION_LABELS[r.allocation_status]?.label ||
+                                        r.allocation_status}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>

@@ -27,6 +27,7 @@ export async function PUT(
     }
 
     const sessionId =
+      request.cookies.get("__Secure-wz_session")?.value ??
       request.cookies.get("wz_session")?.value ??
       request.headers.get("Authorization")?.replace("Bearer ", "")
 

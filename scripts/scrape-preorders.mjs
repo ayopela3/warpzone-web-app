@@ -77,7 +77,7 @@ const DOWNPAYMENT_PCT = env.SCRAPE_DOWNPAYMENT_PCT
  */
 const SUPPORTED_GAMES = [
   {
-    game: "Pokemon",
+    game: "Pokémon",
     keywords: ["pokemon", "pok\u00e9mon", "scarlet", "violet", "stellar", "twilight"],
   },
   {

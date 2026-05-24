@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import type { CloudflareEnv } from "@/types/cloudflare"
+import { getDb } from "@/lib/db"
+import { rateLimit, getClientIP, createRateLimitResponse } from "@/lib/rate-limit"
 
 export const runtime = "edge"
 
@@ -64,6 +66,32 @@ async function validateFileContent(file: File, expectedType: string): Promise<bo
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting: 20 uploads per minute per IP
+    const rateLimitResult = await rateLimit(request, `upload:${getClientIP(request)}`, {
+      windowMs: 60 * 1000,
+      maxRequests: 20,
+    })
+    if (!rateLimitResult.success) return createRateLimitResponse(rateLimitResult)
+
+    // Authentication — only signed-in users may upload
+    const sessionId =
+      request.cookies.get("__Secure-wz_session")?.value ??
+      request.cookies.get("wz_session")?.value ??
+      request.headers.get("Authorization")?.replace("Bearer ", "")
+    if (!sessionId) {
+      return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
+    }
+    const db = await getDb()
+    if (db) {
+      const session = await db
+        .prepare("SELECT user_id, expires_at FROM sessions WHERE id = ?")
+        .bind(sessionId)
+        .first<{ user_id: string; expires_at: string }>()
+      if (!session || new Date(session.expires_at) < new Date()) {
+        return NextResponse.json({ success: false, error: "Invalid or expired session" }, { status: 401 })
+      }
+    }
+
     const formData = await request.formData()
     const file = formData.get("file") as File
 

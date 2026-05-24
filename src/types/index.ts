@@ -218,6 +218,18 @@ export type PreOrder = {
   user_downpayment_paid?: boolean
   user_total_paid?: number
   user_remaining_balance?: number
+  /** Joined — customer reservation details for admin/seller dashboards */
+  reservations?: string /** Packed: name|email|reservation_id|quantity|is_paid|total_paid|reserved_at */
+}
+
+export type PreOrderCustomerInfo = {
+  reservationId: string
+  customerName: string
+  customerEmail: string
+  quantity: number
+  isPaid: boolean
+  totalPaid: number
+  reservedAt: string
 }
 
 export type PreOrderReservation = {

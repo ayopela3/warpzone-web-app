@@ -25,6 +25,7 @@ export async function POST(
     if (!db) return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
 
     const sessionId =
+      request.cookies.get("__Secure-wz_session")?.value ??
       request.cookies.get("wz_session")?.value ??
       request.headers.get("Authorization")?.replace("Bearer ", "")
 
@@ -113,13 +114,7 @@ export async function POST(
 
     const bidId = crypto.randomUUID()
 
-    // Record the bid and update current_bid atomically
-    await db
-      .prepare("INSERT INTO auction_bids (id, auction_id, user_id, bid_amount) VALUES (?, ?, ?, ?)")
-      .bind(bidId, auctionId, session.user_id, bidAmount)
-      .run()
-
-    // Snipe protection: if bid lands within 60 min of end_time, extend by 30 min
+    // Snipe protection timing — computed before the atomic update
     const SNIPE_WINDOW_MS = 60 * 60 * 1000       // 60 minutes
     const SNIPE_EXTENSION_MIN = 30                // extend by 30 minutes
     const now = Date.now()
@@ -133,17 +128,35 @@ export async function POST(
       extended = true
     }
 
-    if (extended) {
-      await db
-        .prepare("UPDATE auctions SET current_bid = ?, end_time = ?, updated_at = datetime('now') WHERE id = ?")
-        .bind(bidAmount, newEndTime, auctionId)
-        .run()
-    } else {
-      await db
-        .prepare("UPDATE auctions SET current_bid = ?, updated_at = datetime('now') WHERE id = ?")
-        .bind(bidAmount, auctionId)
-        .run()
+    // Atomic update: only succeeds if current_bid has not changed since we read it.
+    // This prevents a race where two concurrent bids both pass the minRequired check
+    // but only the first UPDATE wins — the second sees 0 rows_written and is rejected.
+    const prevBid = auction.current_bid || auction.starting_price
+    const updateResult = await db
+      .prepare(
+        extended
+          ? "UPDATE auctions SET current_bid = ?, end_time = ?, updated_at = datetime('now') WHERE id = ? AND (current_bid = ? OR (current_bid IS NULL AND starting_price = ?))"
+          : "UPDATE auctions SET current_bid = ?, updated_at = datetime('now') WHERE id = ? AND (current_bid = ? OR (current_bid IS NULL AND starting_price = ?))"
+      )
+      .bind(
+        ...(extended
+          ? [bidAmount, newEndTime, auctionId, prevBid, prevBid]
+          : [bidAmount, auctionId, prevBid, prevBid])
+      )
+      .run()
+
+    if (!updateResult.meta.changes || updateResult.meta.changes === 0) {
+      return NextResponse.json({
+        success: false,
+        error: "A higher bid was placed while yours was processing. Please refresh and try again.",
+      }, { status: 409 })
     }
+
+    // Record the bid only after the auction row is secured
+    await db
+      .prepare("INSERT INTO auction_bids (id, auction_id, user_id, bid_amount) VALUES (?, ?, ?, ?)")
+      .bind(bidId, auctionId, session.user_id, bidAmount)
+      .run()
 
     // Auto-register as participant if not already
     const participantId = crypto.randomUUID()

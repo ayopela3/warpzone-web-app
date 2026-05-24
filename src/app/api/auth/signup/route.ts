@@ -21,6 +21,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email, password } = body
 
+    // Input validation
+    if (!email || typeof email !== "string" || email.length > 254) {
+      return NextResponse.json({ success: false, error: "A valid email is required" }, { status: 400 })
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email.trim())) {
+      return NextResponse.json({ success: false, error: "Invalid email format" }, { status: 400 })
+    }
+    if (!password || typeof password !== "string") {
+      return NextResponse.json({ success: false, error: "Password is required" }, { status: 400 })
+    }
+    if (password.length < 8) {
+      return NextResponse.json({ success: false, error: "Password must be at least 8 characters" }, { status: 400 })
+    }
+    if (password.length > 128) {
+      return NextResponse.json({ success: false, error: "Password must be 128 characters or fewer" }, { status: 400 })
+    }
+
     const db = await getDb()
     if (!db) {
       return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })

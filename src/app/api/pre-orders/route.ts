@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import { rateLimit, getClientIP, createRateLimitResponse } from "@/lib/rate-limit"
 
 export const runtime = "edge"
 
@@ -8,7 +9,8 @@ async function resolveSession(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>
 ) {
   const sessionId =
-    request.cookies.get("wz_session")?.value ??
+    request.cookies.get("__Secure-wz_session")?.value ??
+      request.cookies.get("wz_session")?.value ??
     request.headers.get("Authorization")?.replace("Bearer ", "")
   if (!sessionId) return null
   const session = await db
@@ -102,6 +104,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting: 10 pre-orders per minute per IP
+    const rateLimitResult = await rateLimit(request, `preorder-create:${getClientIP(request)}`, {
+      windowMs: 60 * 1000,
+      maxRequests: 10,
+    })
+    if (!rateLimitResult.success) return createRateLimitResponse(rateLimitResult)
+
     const db = await getDb()
     if (!db) return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
 

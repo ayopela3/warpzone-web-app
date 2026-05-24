@@ -68,6 +68,7 @@ export async function PUT(request: NextRequest) {
   try {
     // Verify admin session
     const sessionId =
+      request.cookies.get("__Secure-wz_session")?.value ??
       request.cookies.get("wz_session")?.value ??
       request.headers.get("Authorization")?.replace("Bearer ", "")
     if (!sessionId) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })

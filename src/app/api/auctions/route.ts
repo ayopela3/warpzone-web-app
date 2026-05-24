@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
 
     // Authenticate via cookie (set by signin) or Authorization header
     const sessionId =
+      request.cookies.get("__Secure-wz_session")?.value ??
       request.cookies.get("wz_session")?.value ??
       request.headers.get("Authorization")?.replace("Bearer ", "")
 

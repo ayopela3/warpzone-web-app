@@ -5,7 +5,8 @@ export const runtime = "edge"
 
 async function resolveSession(request: NextRequest, db: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
   const sessionId =
-    request.cookies.get("wz_session")?.value ??
+    request.cookies.get("__Secure-wz_session")?.value ??
+      request.cookies.get("wz_session")?.value ??
     request.headers.get("Authorization")?.replace("Bearer ", "")
   if (!sessionId) return null
   const session = await db

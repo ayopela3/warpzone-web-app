@@ -34,6 +34,13 @@ export function SettingsTab({ fiatSymbol, onSaved }: Props) {
   const [feeError, setFeeError]                   = useState("")
   const [feeSaved, setFeeSaved]                   = useState(false)
 
+  // Points earn rate state
+  const [pointsRateInput, setPointsRateInput]   = useState("")
+  const [pointsLoading, setPointsLoading]       = useState(true)
+  const [pointsSaving, setPointsSaving]         = useState(false)
+  const [pointsError, setPointsError]           = useState("")
+  const [pointsSaved, setPointsSaved]           = useState(false)
+
   useEffect(() => { setValue(fiatSymbol) }, [fiatSymbol])
 
   useEffect(() => {
@@ -56,6 +63,16 @@ export function SettingsTab({ fiatSymbol, onSaved }: Props) {
       })
       .catch(() => { setAuctionFeeInput("10"); setPreOrderFeeInput("5") })
       .finally(() => setFeeLoading(false))
+  }, [])
+
+  useEffect(() => {
+    fetch("/api/settings/points")
+      .then((r) => r.json())
+      .then((d: { success: boolean; pointsPerCurrencyUnit?: number }) => {
+        if (d.success) setPointsRateInput(String(d.pointsPerCurrencyUnit ?? 1))
+      })
+      .catch(() => setPointsRateInput("1"))
+      .finally(() => setPointsLoading(false))
   }, [])
 
   const handleSave = async () => {
@@ -136,6 +153,36 @@ export function SettingsTab({ fiatSymbol, onSaved }: Props) {
     }
   }
 
+  const handleSavePoints = async () => {
+    const rate = parseFloat(pointsRateInput)
+    if (isNaN(rate) || rate < 0) {
+      setPointsError("Points rate must be a non-negative number")
+      return
+    }
+
+    setPointsSaving(true)
+    setPointsError("")
+    setPointsSaved(false)
+    try {
+      const res = await fetch("/api/settings/points", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("warpzone-session-id") ?? ""}`,
+        },
+        body: JSON.stringify({ pointsPerCurrencyUnit: rate }),
+      })
+      const data = await res.json() as { success: boolean; error?: string }
+      if (!data.success) throw new Error(data.error ?? "Failed to save")
+      setPointsSaved(true)
+      setTimeout(() => setPointsSaved(false), 3000)
+    } catch (err) {
+      setPointsError(err instanceof Error ? err.message : "Failed to save points rate")
+    } finally {
+      setPointsSaving(false)
+    }
+  }
+
   const handleSaveFees = async () => {
     const auctionRate   = parseFloat(auctionFeeInput)
     const preOrderRate  = parseFloat(preOrderFeeInput)
@@ -204,6 +251,56 @@ export function SettingsTab({ fiatSymbol, onSaved }: Props) {
               <div className="flex items-center gap-2 text-green-700 text-sm">
                 <CheckCircle2 className="h-4 w-4" />Saved successfully
               </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Points Earn Rate */}
+      <Card className="bg-white shadow-lg w-80">
+        <CardHeader>
+          <CardTitle>Points Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="pointsRate">Points Earned per {fiatSymbol}1 Spent</Label>
+            <p className="text-sm text-gray-500">
+              How many reward points a buyer earns for every {fiatSymbol}1 they spend on a product purchase.
+            </p>
+            {pointsLoading ? (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Loader2 className="h-4 w-4 animate-spin" />Loading…
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="pointsRate"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={pointsRateInput}
+                    onChange={(e) => setPointsRateInput(e.target.value)}
+                    className="max-w-[120px]"
+                  />
+                  <span className="text-sm text-gray-500 font-semibold">pts / {fiatSymbol}1</span>
+                </div>
+                {pointsRateInput && !isNaN(parseFloat(pointsRateInput)) && (
+                  <p className="text-xs text-gray-400">
+                    e.g. {fiatSymbol}500 purchase → {(500 * parseFloat(pointsRateInput)).toFixed(0)} points earned
+                  </p>
+                )}
+                <Button onClick={handleSavePoints} disabled={pointsSaving} className="mt-2">
+                  {pointsSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Save Points Rate
+                </Button>
+                {pointsError && <p className="text-sm text-red-600">{pointsError}</p>}
+                {pointsSaved && (
+                  <div className="flex items-center gap-2 text-green-700 text-sm">
+                    <CheckCircle2 className="h-4 w-4" />Points rate saved
+                  </div>
+                )}
+              </>
             )}
           </div>
         </CardContent>

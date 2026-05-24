@@ -125,9 +125,8 @@ export function ImportPreOrdersDialog({ open, onClose, fiatSymbol, onImported }:
       const qs = new URLSearchParams({ source: "ludus" })
       if (collection && collection !== "all") qs.set("collection", collection)
 
-      const sessionId = localStorage.getItem("warpzone-session-id") ?? ""
       const res = await fetch(`/api/admin/scrape-preorders?${qs.toString()}`, {
-        headers: { Authorization: `Bearer ${sessionId}` },
+        credentials: "include",
       })
       const data = await res.json() as {
         success: boolean

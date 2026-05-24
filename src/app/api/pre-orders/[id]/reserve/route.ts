@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import { rateLimit, getClientIP, createRateLimitResponse } from "@/lib/rate-limit"
 
 export const runtime = "edge"
 
@@ -16,7 +17,15 @@ export async function POST(
     const db = await getDb()
     if (!db) return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
 
+    // Rate limiting: 5 reservations per minute per IP
+    const rateLimitResult = await rateLimit(request, `reserve:${getClientIP(request)}`, {
+      windowMs: 60 * 1000,
+      maxRequests: 5,
+    })
+    if (!rateLimitResult.success) return createRateLimitResponse(rateLimitResult)
+
     const sessionId =
+      request.cookies.get("__Secure-wz_session")?.value ??
       request.cookies.get("wz_session")?.value ??
       request.headers.get("Authorization")?.replace("Bearer ", "")
     if (!sessionId) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
@@ -62,17 +71,6 @@ export async function POST(
       return NextResponse.json({ success: false, error: "The reservation cutoff date has passed" }, { status: 400 })
     }
 
-    // Check max_slots if set
-    if (preOrder.max_slots !== null) {
-      const countRow = await db
-        .prepare("SELECT COUNT(*) as total FROM pre_order_reservations WHERE pre_order_id = ?")
-        .bind(id)
-        .first<{ total: number }>()
-      if ((countRow?.total ?? 0) >= preOrder.max_slots) {
-        return NextResponse.json({ success: false, error: "All slots are taken for this pre-order" }, { status: 409 })
-      }
-    }
-
     // Check if user already reserved — update quantity if so
     const existing = await db
       .prepare("SELECT id FROM pre_order_reservations WHERE pre_order_id = ? AND user_id = ?")
@@ -94,23 +92,40 @@ export async function POST(
     const remainingBalance = isDownpayment ? fullAmount - downpaymentAmount : 0
 
     const reservationId = crypto.randomUUID()
-    await db
-      .prepare(
-        `INSERT INTO pre_order_reservations 
-           (id, pre_order_id, user_id, quantity, unit_price, unit_full_price, downpayment_amount, remaining_balance, reserved_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
-      )
-      .bind(
-        reservationId, 
-        id, 
-        session.user_id, 
-        quantity,
-        preOrder.price,
-        preOrder.full_price,
-        downpaymentAmount,
-        remainingBalance
-      )
-      .run()
+
+    // Atomic INSERT guarded by max_slots sub-query.
+    // If max_slots is set, the SELECT … WHERE … < max_slots returns nothing when
+    // the limit is reached, so no row is inserted and meta.changes === 0.
+    // This eliminates the TOCTOU race between COUNT and INSERT.
+    const insertResult = preOrder.max_slots !== null
+      ? await db
+          .prepare(
+            `INSERT INTO pre_order_reservations
+               (id, pre_order_id, user_id, quantity, unit_price, unit_full_price, downpayment_amount, remaining_balance, reserved_at)
+             SELECT ?, ?, ?, ?, ?, ?, ?, ?, datetime('now')
+             WHERE (SELECT COUNT(*) FROM pre_order_reservations WHERE pre_order_id = ?) < ?`
+          )
+          .bind(
+            reservationId, id, session.user_id, quantity,
+            preOrder.price, preOrder.full_price, downpaymentAmount, remainingBalance,
+            id, preOrder.max_slots
+          )
+          .run()
+      : await db
+          .prepare(
+            `INSERT INTO pre_order_reservations
+               (id, pre_order_id, user_id, quantity, unit_price, unit_full_price, downpayment_amount, remaining_balance, reserved_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+          )
+          .bind(
+            reservationId, id, session.user_id, quantity,
+            preOrder.price, preOrder.full_price, downpaymentAmount, remainingBalance
+          )
+          .run()
+
+    if (preOrder.max_slots !== null && (!insertResult.meta.changes || insertResult.meta.changes === 0)) {
+      return NextResponse.json({ success: false, error: "All slots are taken for this pre-order" }, { status: 409 })
+    }
 
     return NextResponse.json({ 
       success: true, 

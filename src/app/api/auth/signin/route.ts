@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { getDb } from "@/lib/db"
 import { rateLimit, getClientIP, createRateLimitResponse } from "@/lib/rate-limit"
+import { signCookieValue } from "@/lib/cookie-sign"
 
 export const runtime = "edge"
 
@@ -112,10 +113,16 @@ export async function POST(request: NextRequest) {
       maxAge: 7 * 24 * 60 * 60, // 7 days
     }
 
-    // wz_role: role for middleware route-guarding
-    response.cookies.set("wz_role", userRole, cookieOptions)
-    // wz_session: session ID for API auth (replaces Authorization header pattern)
-    response.cookies.set("wz_session", sessionId, {
+    // wz_role: role for middleware route-guarding — HMAC-signed so it cannot be forged.
+    // Cannot use __Secure- prefix because httpOnly must be false for Edge middleware to read it.
+    const signedRole = await signCookieValue(userRole)
+    response.cookies.set("wz_role", signedRole, cookieOptions)
+
+    // wz_session: session ID for API auth.
+    // In production (HTTPS) use the __Secure- prefix which browsers enforce can only be
+    // set over HTTPS and cannot be overridden by non-HTTPS sub-domains.
+    const sessionCookieName = isSecure ? "__Secure-wz_session" : "wz_session"
+    response.cookies.set(sessionCookieName, sessionId, {
       ...cookieOptions,
       httpOnly: true,
     })

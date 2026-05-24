@@ -31,7 +31,8 @@ async function resolveProfile(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>
 ): Promise<ProfileRow | null> {
   const sessionId =
-    request.cookies.get("wz_session")?.value ??
+    request.cookies.get("__Secure-wz_session")?.value ??
+      request.cookies.get("wz_session")?.value ??
     request.headers.get("Authorization")?.replace("Bearer ", "")
   if (!sessionId) return null
 

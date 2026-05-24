@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { verifyCookieValue } from "@/lib/cookie-sign"
 
 /**
  * Role-based route protection middleware.
@@ -24,6 +25,8 @@ import { NextRequest, NextResponse } from "next/server"
 
 type Role = "admin" | "seller" | "regular-user"
 
+const VALID_ROLES: Role[] = ["admin", "seller", "regular-user"]
+
 const BUYER_ONLY_PATHS = ["/shop", "/auctions", "/tournaments", "/cart", "/pre-order"]
 const AUTH_REQUIRED_PATHS = ["/checkout", "/dashboard"]
 const SELLER_PATHS = ["/seller"]
@@ -37,9 +40,14 @@ function redirectTo(url: string, request: NextRequest): NextResponse {
   return NextResponse.redirect(new URL(url, request.url))
 }
 
-export function middleware(request: NextRequest): NextResponse {
+export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
-  const role = (request.cookies.get("wz_role")?.value ?? null) as Role | null
+
+  // Verify HMAC signature — an unsigned or tampered cookie is treated as guest
+  const rawRole = request.cookies.get("wz_role")?.value ?? null
+  const verifiedRole = rawRole ? await verifyCookieValue(rawRole) : null
+  const role = (VALID_ROLES.includes(verifiedRole as Role) ? verifiedRole : null) as Role | null
+
   const isGuest = role === null
   const isAdmin = role === "admin"
   const isSeller = role === "seller"

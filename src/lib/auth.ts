@@ -18,6 +18,7 @@ export async function resolveSession(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>
 ): Promise<{ userId: string } | null> {
   const sessionId =
+    request.cookies.get("__Secure-wz_session")?.value ??
     request.cookies.get("wz_session")?.value ??
     request.headers.get("Authorization")?.replace("Bearer ", "")
 
@@ -42,6 +43,7 @@ export async function resolveUser(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>
 ): Promise<SessionResult | null> {
   const sessionId =
+    request.cookies.get("__Secure-wz_session")?.value ??
     request.cookies.get("wz_session")?.value ??
     request.headers.get("Authorization")?.replace("Bearer ", "")
 

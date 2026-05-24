@@ -68,7 +68,7 @@ const BASE_URL = "https://www.ludusproducts.com"
  */
 const COLLECTIONS = [
   { slug: "magic-the-gathering", game: "Magic: The Gathering" },
-  { slug: "riftbound-tcg",       game: "Riftbound TCG" },
+  { slug: "riftbound-tcg",       game: "League of Legends: Rift Bound" },
 ]
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import { requireAdmin } from "@/lib/auth"
 
 export const runtime = "edge"
 
@@ -8,7 +9,7 @@ const LUDUS_BASE = "https://www.ludusproducts.com"
 /** Collections exposed as importable sources */
 const LUDUS_COLLECTIONS = [
   { slug: "magic-the-gathering", game: "Magic: The Gathering" },
-  { slug: "riftbound-tcg",       game: "Riftbound TCG" },
+  { slug: "riftbound-tcg",       game: "League of Legends: Rift Bound" },
 ]
 
 // ---------------------------------------------------------------------------
@@ -133,24 +134,13 @@ export async function GET(request: NextRequest) {
     const db = await getDb()
     if (!db) return NextResponse.json({ success: false, error: "DB unavailable" }, { status: 503 })
 
-    // Auth check — admin only
-    const sessionId =
-      request.cookies.get("wz_session")?.value ??
-      request.headers.get("Authorization")?.replace("Bearer ", "")
-    if (!sessionId) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 })
-
-    const session = await db
-      .prepare("SELECT user_id FROM sessions WHERE id = ? AND expires_at > datetime('now')")
-      .bind(sessionId)
-      .first<{ user_id: string }>()
-    if (!session) return NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 })
-
-    const profile = await db
-      .prepare("SELECT role FROM profiles WHERE user_id = ?")
-      .bind(session.user_id)
-      .first<{ role: string }>()
-    if (!profile || profile.role !== "admin") {
-      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+    // Admin-only — also checks is_banned via requireAdmin()
+    try {
+      await requireAdmin(request, db)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Forbidden"
+      const status = msg === "Not authenticated" ? 401 : 403
+      return NextResponse.json({ success: false, error: msg }, { status })
     }
 
     const { searchParams } = new URL(request.url)

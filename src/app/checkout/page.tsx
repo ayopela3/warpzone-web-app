@@ -95,15 +95,26 @@ export default function CheckoutPage() {
         : new Set(cartItems.map((i) => i.id))
     )
 
-  /** Resolve seller ID for a group — falls back to product API for legacy cart items */
+  /** Resolve seller ID for a group — handles admin pre-orders and falls back to product API for legacy cart items */
   const resolveGroupSellerId = async (group: SellerGroup): Promise<string | null> => {
     let sellerId = group.sellerId
     if (!sellerId || sellerId === "__unknown__") {
       const firstItem = group.items[0]
       if (firstItem) {
-        const res = await fetch(`/api/products/${firstItem.id}`)
-        const data = await res.json() as { success: boolean; product?: { created_by?: string } }
-        if (data.success && data.product?.created_by) sellerId = data.product.created_by
+        // For admin-created pre-orders, use the admin profile as seller
+        if (firstItem.itemType === "pre_order" && !firstItem.seller_id) {
+          // Use the admin profile as the seller for admin-created pre-orders
+          const res = await fetch(`/api/admin/profile`)
+          const data = await res.json() as { success: boolean; profile?: { id: string } }
+          if (data.success && data.profile?.id) {
+            sellerId = data.profile.id
+          }
+        } else {
+          // Try to get seller info from products API for regular products
+          const res = await fetch(`/api/products/${firstItem.id}`)
+          const data = await res.json() as { success: boolean; product?: { created_by?: string } }
+          if (data.success && data.product?.created_by) sellerId = data.product.created_by
+        }
       }
     }
     return sellerId && sellerId !== "__unknown__" ? sellerId : null
@@ -121,17 +132,39 @@ export default function CheckoutPage() {
         return
       }
       
-      // Fetch seller's public QR
-      const res = await fetch(`/api/seller/payment-qr-public?sellerId=${encodeURIComponent(sellerId)}`)
-      const data = await res.json() as { success: boolean; payment_qr_url?: string; seller_name?: string; seller_business?: string; error?: string }
+      let qrUrl: string | null = null
+      let sellerName: string = "Seller"
       
-      if (data.success && data.payment_qr_url) {
+      // Check if this is the admin seller - if so, use platform QR
+      if (sellerId === "a1b2c3d4-e5f6-7890-abcd-ef1234567890") {
+        // Fetch platform QR code for admin
+        const platformRes = await fetch("/api/settings/payment-qr")
+        const platformData = await platformRes.json() as { success: boolean; payment_qr_url?: string | null }
+        if (platformData.success && platformData.payment_qr_url) {
+          qrUrl = platformData.payment_qr_url
+          sellerName = "Warpzone"
+        }
+      } else {
+        // Fetch regular seller's public QR
+        const res = await fetch(`/api/seller/payment-qr-public?sellerId=${encodeURIComponent(sellerId)}`)
+        const data = await res.json() as { success: boolean; payment_qr_url?: string; seller_name?: string; seller_business?: string; error?: string }
+        
+        if (data.success && data.payment_qr_url) {
+          qrUrl = data.payment_qr_url
+          sellerName = data.seller_business || data.seller_name || "Seller"
+        } else {
+          toast.error(data.error || "Seller has not set up payment QR yet.")
+          return
+        }
+      }
+      
+      if (qrUrl) {
         setPlatformQr({
-          payment_qr_url: data.payment_qr_url,
-          seller_name: data.seller_business || data.seller_name || "Seller"
+          payment_qr_url: qrUrl,
+          seller_name: sellerName
         })
       } else {
-        toast.error(data.error || "Seller has not set up payment QR yet.")
+        toast.error("Payment QR code not available. Please contact support.")
       }
     } catch {
       toast.error("Could not load payment details. Please try again.")

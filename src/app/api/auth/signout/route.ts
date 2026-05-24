@@ -5,8 +5,10 @@ export const runtime = "edge"
 
 export async function POST(request: NextRequest) {
   try {
-    const sessionId = request.cookies.get("wz_session")?.value
-      ?? request.headers.get("Authorization")?.replace("Bearer ", "")
+    const sessionId =
+      request.cookies.get("__Secure-wz_session")?.value ??
+      request.cookies.get("wz_session")?.value ??
+      request.headers.get("Authorization")?.replace("Bearer ", "")
 
     if (sessionId) {
       const db = await getDb()
@@ -20,6 +22,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({ success: true })
     response.cookies.delete("wz_role")
+    response.cookies.delete("__Secure-wz_session")
     response.cookies.delete("wz_session")
     return response
   } catch (error) {
