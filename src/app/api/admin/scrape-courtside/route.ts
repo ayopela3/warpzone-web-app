@@ -202,7 +202,20 @@ function extractPrice(text: string): number {
   return 0
 }
 
-async function scrapePreOrdersPage(cookie: string, page: number): Promise<{ products: CourtsideProduct[]; hasNext: boolean }> {
+interface ScrapeDebug {
+  url: string
+  htmlLength: number
+  htmlPreview: string
+  hasProductsClass: boolean
+  hasUlProducts: boolean
+  hasProductLi: boolean
+  hasPostClass: boolean
+  productMatches?: number
+  firstProductPreview?: string
+  error?: string
+}
+
+async function scrapePreOrdersPage(cookie: string, page: number): Promise<{ products: CourtsideProduct[]; hasNext: boolean; debug: ScrapeDebug }> {
   const url = page === 1 
     ? `${COURTSIDE_BASE}/product-category/current-pre-orders/`
     : `${COURTSIDE_BASE}/product-category/current-pre-orders/page/${page}/`
@@ -224,15 +237,46 @@ async function scrapePreOrdersPage(cookie: string, page: number): Promise<{ prod
   const html = await res.text()
   const products: CourtsideProduct[] = []
 
-  // Debug: log if products found
-  console.log(`Courtside page ${page} HTML length: ${html.length}`)
+  // Check if we got redirected to login page
+  const isLoginPage = html.includes('My account') && html.includes('woocommerce-form-login')
+  if (isLoginPage) {
+    return { 
+      products: [], 
+      hasNext: false, 
+      debug: {
+        url,
+        htmlLength: html.length,
+        htmlPreview: html.substring(0, 200),
+        hasProductsClass: false,
+        hasUlProducts: false,
+        hasProductLi: false,
+        hasPostClass: false,
+        error: 'Session expired or invalid - redirected to login page. Try using username/password instead, or refresh cookies from browser.',
+      }
+    }
+  }
+
+  // Debug info to return
+  const debug: ScrapeDebug = {
+    url,
+    htmlLength: html.length,
+    htmlPreview: html.substring(0, 500),
+    hasProductsClass: html.includes('class="products'),
+    hasUlProducts: html.includes('<ul class="products'),
+    hasProductLi: html.includes('class="product'),
+    hasPostClass: html.includes('post-'),
+  }
 
   // Courtside uses post-XXXX class for product IDs in the <li> element
   // Example: <li class="product type-product post-9730 status-publish...">
   const productRegex = /<li[^>]*class=["'][^"']*product[^"']*post-(\d+)[^"']*["'][^>]*>[\s\S]*?<\/li>/gi
   const productMatches = [...html.matchAll(productRegex)]
 
-  console.log(`Found ${productMatches.length} products on page ${page}`)
+  debug.productMatches = productMatches.length
+  
+  if (productMatches.length > 0) {
+    debug.firstProductPreview = productMatches[0][0].substring(0, 200)
+  }
 
   for (const match of productMatches) {
     const productHtml = match[0]
@@ -278,9 +322,9 @@ async function scrapePreOrdersPage(cookie: string, page: number): Promise<{ prod
   }
 
   // Check for pagination next button
-  const hasNext = html.includes('rel="next"') || html.includes(`page/${page + 1}/`)
+  const hasNext = html.includes('rel="next"') || html.includes(`/page/${page + 1}/`)
 
-  return { products, hasNext }
+  return { products, hasNext, debug }
 }
 
 // ---------------------------------------------------------------------------
@@ -359,10 +403,14 @@ export async function POST(request: NextRequest) {
     const allProducts: CourtsideProduct[] = []
     let page = 1
     let hasNext = true
+    let firstPageDebug: ScrapeDebug | null = null
 
     while (hasNext && page <= 10) { // Limit to 10 pages to prevent infinite loops
       const result = await scrapePreOrdersPage(cookie, page)
       allProducts.push(...result.products)
+      if (page === 1) {
+        firstPageDebug = result.debug
+      }
       hasNext = result.hasNext
       page++
     }
@@ -377,6 +425,7 @@ export async function POST(request: NextRequest) {
       items: allProducts,
       total: allProducts.length,
       source: "courtside",
+      debug: firstPageDebug,
     })
   } catch (error) {
     console.error("Courtside scrape error:", error)

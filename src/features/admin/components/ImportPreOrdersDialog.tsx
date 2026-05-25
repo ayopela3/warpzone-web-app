@@ -419,14 +419,18 @@ export function ImportPreOrdersDialog({ open, onClose, fiatSymbol, onImported }:
                 />
                 <span className="text-xs text-muted-foreground">or</span>
               </div>
-              <div className="flex items-start gap-2">
-                <textarea
-                  placeholder="Paste session cookie here (from browser DevTools) - starts with wordpress_logged_in..."
-                  value={courtsideSessionCookie}
-                  onChange={(e) => setCourtsideSessionCookie(e.target.value)}
-                  className="h-16 w-96 text-xs p-2 border rounded-md resize-none"
-                />
-                <span className="text-xs text-muted-foreground mt-1">Copy from browser DevTools → Application → Cookies</span>
+              <div className="flex flex-col gap-1">
+                <p className="text-xs text-amber-600 font-medium">
+                  Cookie not working? Use username/password instead, or copy ALL cookies from DevTools → Application → Cookies → wholesale.courtside.com.ph
+                </p>
+                <div className="flex items-start gap-2">
+                  <textarea
+                    placeholder="wordpress_logged_in_...=xxx; wp_woocommerce_session_...=xxx; woocommerce_items_in_cart=xxx"
+                    value={courtsideSessionCookie}
+                    onChange={(e) => setCourtsideSessionCookie(e.target.value)}
+                    className="h-20 w-96 text-xs p-2 border rounded-md resize-none"
+                  />
+                </div>
               </div>
             </div>
           )}
