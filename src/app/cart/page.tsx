@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useApp } from "@/components/shared/app-provider"
+import { toast } from "sonner"
 
 export default function CartPage() {
   const router = useRouter()
@@ -49,24 +50,40 @@ export default function CartPage() {
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <div className="flex items-center rounded-full border border-neutral-200 bg-neutral-50">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Decrease quantity for ${item.name}`}
-                            onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <span className="w-10 text-center text-sm font-black">{item.quantity}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Increase quantity for ${item.name}`}
-                            onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="flex items-center rounded-full border border-neutral-200 bg-neutral-50">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`Decrease quantity for ${item.name}`}
+                              onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <span className="w-10 text-center text-sm font-black">{item.quantity}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`Increase quantity for ${item.name}`}
+                              disabled={item.maxQuantity !== undefined && item.quantity >= item.maxQuantity}
+                              onClick={() => {
+                                if (item.maxQuantity !== undefined && item.quantity >= item.maxQuantity) {
+                                  toast.error(`Only ${item.maxQuantity} available in stock`)
+                                  return
+                                }
+                                updateCartQuantity(item.id, item.quantity + 1)
+                              }}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          {item.maxQuantity !== undefined && (
+                            <span className="text-[10px] text-neutral-400 font-medium">
+                              {item.maxQuantity - item.quantity > 0
+                                ? `${item.maxQuantity - item.quantity} left`
+                                : 'Max reached'}
+                            </span>
+                          )}
                         </div>
                         <p className="w-24 text-right font-black">{fiatSymbol}{(item.price * item.quantity).toLocaleString()}</p>
                         <Button

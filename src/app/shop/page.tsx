@@ -11,7 +11,7 @@ import { productsApi } from "@/lib/api-client"
 import type { Product } from "@/types"
 import type { SortOption } from "@/features/shop/components/ProductFilters"
 
-type ApiCategory = { id: string; slug: string; label: string }
+type ApiCategory = { id: string; slug: string; label: string; image_url?: string | null }
 
 function ShopPageInner() {
   const { addToCart, fiatSymbol } = useApp()
@@ -24,8 +24,16 @@ function ShopPageInner() {
   const [apiCategories, setApiCategories] = useState<ApiCategory[]>([])
 
   /** Slug → label lookup built from API categories */
-  const categoryLabel = (slug: string) =>
-    apiCategories.find((c) => c.slug === slug)?.label ?? slug
+  const categoryLabel = useMemo(() => {
+    const map = new Map(apiCategories.map((c) => [c.slug, c]))
+    return (slug: string) => map.get(slug)?.label ?? slug
+  }, [apiCategories])
+
+  /** Slug → image_url lookup */
+  const categoryImage = useMemo(() => {
+    const map = new Map(apiCategories.map((c) => [c.slug, c.image_url]))
+    return (slug: string) => map.get(slug) ?? null
+  }, [apiCategories])
 
   useEffect(() => {
     fetch("/api/categories")
@@ -56,7 +64,7 @@ function ShopPageInner() {
     if (sortBy === "price_asc")  result.sort((a, b) => a.price - b.price)
     if (sortBy === "price_desc") result.sort((a, b) => b.price - a.price)
     return result
-  }, [search, category, sortBy, products, apiCategories])
+  }, [search, category, sortBy, products, categoryLabel])
 
   const activeFiltersCount = [category !== "all", search.trim() !== ""].filter(Boolean).length
   const clearFilters = () => { setSearch(""); setCategory("all"); setSortBy("relevance") }
@@ -66,18 +74,31 @@ function ShopPageInner() {
   return (
     <div className="min-h-screen bg-neutral-50">
       {/* ── Page header ── */}
-      <div className="bg-white border-b border-neutral-200">
-        <div className="mx-auto max-w-7xl px-4 pt-6 pb-5 lg:px-8 lg:pt-8 lg:pb-6">
+      <div
+        className="relative border-b border-neutral-200 overflow-hidden"
+        style={{
+          backgroundImage: category !== "all" && categoryImage(category)
+            ? `url(${categoryImage(category)})`
+            : undefined,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* Dark overlay for readability when banner image is present */}
+        {category !== "all" && categoryImage(category) && (
+          <div className="absolute inset-0 bg-black/40" />
+        )}
+        <div className="relative mx-auto max-w-7xl px-4 pt-6 pb-5 lg:px-8 lg:pt-8 lg:pb-6">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-widest text-primary mb-1">
+              <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${category !== "all" && categoryImage(category) ? "text-white/80" : "text-primary"}`}>
                 {category === "all" ? "All Categories" : categoryLabel(category)}
               </p>
-              <h1 className="text-xl font-black tracking-tight text-neutral-900 sm:text-2xl lg:text-3xl">
+              <h1 className={`text-xl font-black tracking-tight sm:text-2xl lg:text-3xl ${category !== "all" && categoryImage(category) ? "text-white" : "text-neutral-900"}`}>
                 {activeCategory}
               </h1>
             </div>
-            <p className="text-sm text-neutral-400 shrink-0 mt-1">
+            <p className={`text-sm shrink-0 mt-1 ${category !== "all" && categoryImage(category) ? "text-white/70" : "text-neutral-400"}`}>
               {filtered.length} product{filtered.length !== 1 ? "s" : ""}
             </p>
           </div>
@@ -119,7 +140,7 @@ function ShopPageInner() {
                 key={product.id}
                 product={product}
                 fiatSymbol={fiatSymbol}
-                onAddToCart={(p, qty) => addToCart({ id: p.id, name: p.name, price: p.price, category: p.category, seller_id: p.listing_seller_id ?? p.created_by ?? undefined }, qty)}
+                onAddToCart={(p, qty) => addToCart({ id: p.id, name: p.name, price: p.price, category: p.category, seller_id: p.listing_seller_id ?? p.created_by ?? undefined, maxQuantity: p.quantity }, qty, p.quantity)}
               />
             ))}
           </div>

@@ -111,9 +111,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     setCartItems((currentItems) =>
-      currentItems.map((item) =>
-        item.id === id ? { ...item, quantity } : item
-      )
+      currentItems.map((item) => {
+        if (item.id !== id) return item
+        const capped = item.maxQuantity !== undefined
+          ? Math.min(quantity, item.maxQuantity)
+          : quantity
+        return { ...item, quantity: capped }
+      })
     )
   }, [removeFromCart])
 

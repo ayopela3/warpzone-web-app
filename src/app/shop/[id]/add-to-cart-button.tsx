@@ -54,7 +54,7 @@ export default function AddToCartButton({ productId, name, price, category, inSt
         className="w-full h-12 rounded-xl text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90"
         disabled={!inStock}
         onClick={() => {
-          addToCart({ id: productId, name, price, category, seller_id: sellerId }, qty)
+          addToCart({ id: productId, name, price, category, seller_id: sellerId, maxQuantity: quantity }, qty, quantity)
         }}
       >
         <ShoppingCart className="h-4 w-4 mr-2" />

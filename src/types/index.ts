@@ -173,6 +173,8 @@ export type CartItem = {
   price: number
   category: string
   quantity: number
+  /** Stock limit — enforced when updating quantity in cart */
+  maxQuantity?: number
   /** "product" (default) or "pre_order" */
   itemType?: "product" | "pre_order"
   /** Set when itemType === "pre_order" */

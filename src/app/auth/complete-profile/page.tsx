@@ -5,7 +5,21 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useApp } from "@/components/shared/app-provider"
+
+const PH_PROVINCES: Record<string, string[]> = {
+  "Metro Manila": ["Caloocan", "Las Piñas", "Makati", "Malabon", "Mandaluyong", "Manila", "Marikina", "Muntinlupa", "Navotas", "Parañaque", "Pasay", "Pasig", "Pateros", "Quezon City", "San Juan", "Taguig", "Valenzuela"],
+  "Cebu": ["Cebu City", "Lapu-Lapu", "Mandaue", "Talisay", "Danao", "Naga", "Carcar", "Minglanilla", "Consolacion", "Liloan"],
+  "Davao del Sur": ["Davao City", "Digos", "Magsaysay", "Malalag", "Matanao", "Padada", "Santa Cruz", "Sulop"],
+  "Laguna": ["Calamba", "San Pedro", "Santa Rosa", "Biñan", "Cabuyao", "Los Baños", "Bay", "Calauan", "Bay", "Alaminos"],
+  "Cavite": ["Bacoor", "Imus", "Dasmariñas", "General Trias", "Trece Martires", "Tagaytay", "Carmona", "Silang", "Kawit"],
+  "Rizal": ["Antipolo", "Cainta", "Taytay", "Angono", "Binangonan", "Rodriguez", "San Mateo", "Teresa"],
+  "Bulacan": ["Malolos", "Meycauayan", "San Jose del Monte", "Santa Maria", "Baliuag", "Plaridel", "Pulilan", "Obando"],
+  "Pampanga": ["Angeles", "San Fernando", "Mabalacat", "Apalit", "Arayat", "Mexico", "Guagua", "Floridablanca"],
+  "Batangas": ["Batangas City", "Lipa", "Tanauan", "Santo Tomas", "Nasugbu", "Calaca", "Bauan", "Lemery"],
+  "Iloilo": ["Iloilo City", "Passi", "Oton", "Pototan", "Dumangas", "Santa Barbara", "Cabatuan", "Pavia"],
+}
 
 const sessionIdKey = "warpzone-session-id"
 
@@ -13,7 +27,8 @@ export default function CompleteProfilePage() {
   const router = useRouter()
   const { isAuthenticated } = useApp()
 
-  const [fullName, setFullName]       = useState("")
+  const [firstName, setFirstName]     = useState("")
+  const [lastName, setLastName]       = useState("")
   const [phone, setPhone]             = useState("")
   const [street, setStreet]           = useState("")
   const [city, setCity]               = useState("")
@@ -32,8 +47,8 @@ export default function CompleteProfilePage() {
     e.preventDefault()
     setError("")
 
-    if (!fullName.trim()) {
-      setError("Full name is required.")
+    if (!firstName.trim() || !lastName.trim()) {
+      setError("First and last name are required.")
       return
     }
 
@@ -48,7 +63,7 @@ export default function CompleteProfilePage() {
           Authorization: `Bearer ${sessionId}`,
         },
         body: JSON.stringify({
-          full_name: fullName.trim(),
+          full_name: `${firstName.trim()} ${lastName.trim()}`,
           phone_number: phone.trim() || null,
           street: street.trim(),
           city: city.trim(),
@@ -91,18 +106,32 @@ export default function CompleteProfilePage() {
               </div>
             )}
 
-            {/* Full name */}
-            <div className="space-y-1.5">
-              <label htmlFor="fullName" className="text-sm font-bold">
-                Full name <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="fullName"
-                placeholder="Juan dela Cruz"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-              />
+            {/* First + Last name */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label htmlFor="firstName" className="text-sm font-bold">
+                  First name <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  id="firstName"
+                  placeholder="Juan"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="lastName" className="text-sm font-bold">
+                  Last name <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  id="lastName"
+                  placeholder="Dela Cruz"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
             {/* Phone */}
@@ -133,25 +162,33 @@ export default function CompleteProfilePage() {
               />
             </div>
 
-            {/* City + Province */}
+            {/* Province + City dropdowns */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label htmlFor="city" className="text-sm font-bold">City / Municipality</label>
-                <Input
-                  id="city"
-                  placeholder="Quezon City"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                />
+                <label htmlFor="province" className="text-sm font-bold">Province</label>
+                <Select value={province} onValueChange={(val) => { setProvince(val); setCity("") }}>
+                  <SelectTrigger id="province">
+                    <SelectValue placeholder="Select province" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(PH_PROVINCES).map((p) => (
+                      <SelectItem key={p} value={p}>{p}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="province" className="text-sm font-bold">Province</label>
-                <Input
-                  id="province"
-                  placeholder="Metro Manila"
-                  value={province}
-                  onChange={(e) => setProvince(e.target.value)}
-                />
+                <label htmlFor="city" className="text-sm font-bold">City / Municipality</label>
+                <Select value={city} onValueChange={setCity} disabled={!province}>
+                  <SelectTrigger id="city">
+                    <SelectValue placeholder={province ? "Select city" : "Choose province first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {province && PH_PROVINCES[province]?.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
