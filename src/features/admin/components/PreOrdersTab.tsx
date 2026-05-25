@@ -30,6 +30,7 @@ const INITIAL_FORM = {
   description: "",
   game: "",
   full_price: "",
+  cutoff_date: "",
   release_date: "",
   max_slots: "",
   image_url: "",
@@ -215,6 +216,7 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
         game:         form.game,
         image_url:    form.image_url || undefined,
         full_price:   parseFloat(form.full_price) || 0,
+        cutoff_date:  form.cutoff_date || null,
         release_date: form.release_date,
         max_slots:    form.max_slots ? parseInt(form.max_slots, 10) : undefined,
       })
@@ -264,6 +266,7 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
       description: po.description ?? "",
       game: po.game,
       full_price: String(po.full_price ?? po.price ?? ""),
+      cutoff_date: po.cutoff_date ? po.cutoff_date.split("T")[0] : "",
       release_date: po.release_date ? po.release_date.split("T")[0] : "",
       max_slots: po.max_slots ? String(po.max_slots) : "",
       image_url: po.image_url ?? "",
@@ -289,6 +292,7 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
         game: editForm.game,
         image_url: editForm.image_url || undefined,
         full_price: fullPrice,
+        cutoff_date: editForm.cutoff_date || null,
         release_date: editForm.release_date,
         max_slots: editForm.max_slots ? parseInt(editForm.max_slots, 10) : undefined,
       })
@@ -423,6 +427,10 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
               <div className="space-y-1.5">
                 <Label htmlFor="po-date">Release Date *</Label>
                 <Input id="po-date" type="date" value={form.release_date} onChange={(e) => setForm({ ...form, release_date: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="po-cutoff">Reservation Cutoff Date <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Input id="po-cutoff" type="date" value={form.cutoff_date} onChange={(e) => setForm({ ...form, cutoff_date: e.target.value })} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="po-slots">Max Slots (blank = unlimited)</Label>
@@ -631,6 +639,15 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
                             type="date"
                             value={editForm.release_date}
                             onChange={(e) => setEditForm({ ...editForm, release_date: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`adm-edit-cutoff-${po.id}`}>Reservation Cutoff Date <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                          <Input
+                            id={`adm-edit-cutoff-${po.id}`}
+                            type="date"
+                            value={editForm.cutoff_date}
+                            onChange={(e) => setEditForm({ ...editForm, cutoff_date: e.target.value })}
                           />
                         </div>
                         <div className="space-y-1.5">

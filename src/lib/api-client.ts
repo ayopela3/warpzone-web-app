@@ -267,6 +267,7 @@ export const preOrdersApi = {
     price?: number
     full_price?: number
     downpayment_amount?: number | null
+    cutoff_date?: string | null
     release_date?: string
     max_slots?: number
   }) =>

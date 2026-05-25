@@ -8,8 +8,11 @@ const LUDUS_BASE = "https://www.ludusproducts.com"
 
 /** Collections exposed as importable sources */
 const LUDUS_COLLECTIONS = [
-  { slug: "magic-the-gathering", game: "Magic: The Gathering" },
-  { slug: "riftbound-tcg",       game: "League of Legends: Rift Bound" },
+  { slug: "magic-the-gathering",         game: "Magic: The Gathering" },
+  { slug: "riftbound-tcg",               game: "League of Legends: Rift Bound" },
+  { slug: "flesh-and-blood",             game: "Flesh and Blood TCG" },
+  { slug: "starcraft-miniatures-preorder", game: "Starcraft Miniatures" },
+  { slug: "cyberpunk-2077",              game: "Cyberpunk 2077 TCG" },
 ]
 
 // ---------------------------------------------------------------------------
@@ -165,6 +168,7 @@ export async function GET(request: NextRequest) {
       : LUDUS_COLLECTIONS
 
     const items: ScrapedPreOrderItem[] = []
+    const seenTitles = new Set<string>()
 
     for (const { slug, game } of collections) {
       let page = 1
@@ -180,6 +184,10 @@ export async function GET(request: NextRequest) {
         if (!products.length) break
 
         for (const p of products) {
+          const titleNorm = p.title.toLowerCase().trim()
+          if (seenTitles.has(titleNorm)) continue
+          seenTitles.add(titleNorm)
+
           const descText = stripHtml(p.body_html ?? "")
           const shopifyPrice = p.variants?.[0]?.price ?? "0"
           const full_price = extractPrice(descText, shopifyPrice)
@@ -197,7 +205,7 @@ export async function GET(request: NextRequest) {
             release_date,
             cutoff_date: null,
             source_url: `${LUDUS_BASE}/products/${p.handle}`,
-            already_exists: existingTitles.has(p.title.toLowerCase().trim()),
+            already_exists: existingTitles.has(titleNorm),
           })
         }
 

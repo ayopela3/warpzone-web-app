@@ -39,15 +39,18 @@ import { preOrdersApi } from "@/lib/api-client"
 interface ScrapedItem {
   _key: string
   source: string
-  game: string
+  game?: string
   title: string
-  description: string | null
+  description?: string | null
   image_url: string | null
-  full_price: number
-  release_date: string | null
-  cutoff_date: string | null
+  full_price?: number
+  price?: number
+  release_date?: string | null
+  cutoff_date?: string | null
   source_url: string
   already_exists: boolean
+  categories?: string[]
+  product_id?: string
 }
 
 interface LudusCollection {
@@ -98,6 +101,8 @@ function ImageThumb({ src, alt }: { src: string | null; alt: string }) {
 // Main dialog
 // ---------------------------------------------------------------------------
 
+type SourceType = "ludus" | "courtside"
+
 export function ImportPreOrdersDialog({ open, onClose, fiatSymbol, onImported }: Props) {
   const [fetching, setFetching]           = useState(false)
   const [importing, setImporting]         = useState(false)
@@ -111,6 +116,14 @@ export function ImportPreOrdersDialog({ open, onClose, fiatSymbol, onImported }:
   /** Which row is in edit mode */
   const [editingKey, setEditingKey]       = useState<string | null>(null)
 
+  // Source selection
+  const [source, setSource] = useState<SourceType>("ludus")
+
+  // Courtside credentials
+  const [courtsideUsername, setCourtsideUsername] = useState("")
+  const [courtsidePassword, setCourtsidePassword] = useState("")
+  const [courtsideSessionCookie, setCourtsideSessionCookie] = useState("")
+
   // ---------------------------------------------------------------------------
   // Fetch from API
   // ---------------------------------------------------------------------------
@@ -122,22 +135,53 @@ export function ImportPreOrdersDialog({ open, onClose, fiatSymbol, onImported }:
     setEdits({})
     setEditingKey(null)
     try {
-      const qs = new URLSearchParams({ source: "ludus" })
-      if (collection && collection !== "all") qs.set("collection", collection)
-
-      const res = await fetch(`/api/admin/scrape-preorders?${qs.toString()}`, {
-        credentials: "include",
-      })
-      const data = await res.json() as {
+      let res: Response
+      let data: {
         success: boolean
         items?: ScrapedItem[]
         collections?: LudusCollection[]
         error?: string
       }
-      if (!data.success) throw new Error(data.error ?? "Failed to fetch")
+
+      if (source === "ludus") {
+        const qs = new URLSearchParams({ source: "ludus" })
+        if (collection && collection !== "all") qs.set("collection", collection)
+
+        res = await fetch(`/api/admin/scrape-preorders?${qs.toString()}`, {
+          credentials: "include",
+        })
+        data = await res.json()
+        if (!data.success) throw new Error(data.error ?? "Failed to fetch")
+        if (data.collections) setCollections(data.collections)
+        toast.success(`Loaded ${data.items?.length ?? 0} product(s) from Ludus`)
+      } else {
+        // Courtside - requires credentials or session cookie
+        if (!courtsideSessionCookie && (!courtsideUsername || !courtsidePassword)) {
+          throw new Error("Courtside credentials or session cookie required")
+        }
+
+        // Use POST to avoid URL encoding issues with special characters in passwords
+        const requestBody: { username?: string; password?: string; sessionCookie?: string } = {}
+        if (courtsideSessionCookie) {
+          requestBody.sessionCookie = courtsideSessionCookie
+        } else {
+          requestBody.username = courtsideUsername
+          requestBody.password = courtsidePassword
+        }
+
+        res = await fetch("/api/admin/scrape-courtside", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(requestBody),
+        })
+        data = await res.json()
+        if (!data.success) throw new Error(data.error ?? "Failed to fetch")
+        setCollections([]) // Courtside doesn't have collections
+        toast.success(`Loaded ${data.items?.length ?? 0} product(s) from Courtside`)
+      }
 
       setItems(data.items ?? [])
-      if (data.collections) setCollections(data.collections)
 
       // Pre-select items that don't already exist
       const autoSelect = new Set(
@@ -146,22 +190,22 @@ export function ImportPreOrdersDialog({ open, onClose, fiatSymbol, onImported }:
           .map((i) => i._key),
       )
       setSelected(autoSelect)
-      toast.success(`Loaded ${data.items?.length ?? 0} product(s) from Ludus`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to load distributor data")
     } finally {
       setFetching(false)
     }
-  }, [])
+  }, [source, courtsideUsername, courtsidePassword, courtsideSessionCookie])
 
   // ---------------------------------------------------------------------------
   // Edit helpers
   // ---------------------------------------------------------------------------
 
   function getOverlay(item: ScrapedItem): EditOverlay {
+    const price = item.full_price ?? item.price ?? 0
     return edits[item._key] ?? {
       title:        item.title,
-      full_price:   String(item.full_price),
+      full_price:   String(price),
       release_date: item.release_date ?? "",
       cutoff_date:  item.cutoff_date  ?? "",
     }
@@ -236,10 +280,13 @@ export function ImportPreOrdersDialog({ open, onClose, fiatSymbol, onImported }:
         new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
 
       try {
+        // Determine game: Ludus has game field, Courtside has categories
+        const game = item.game ?? (item.categories && item.categories.length > 0 ? item.categories[0] : "Courtside")
+
         const result = await preOrdersApi.create({
           title:        overlay.title.trim(),
           description:  item.description ?? undefined,
-          game:         item.game,
+          game:         game,
           image_url:    item.image_url ?? undefined,
           full_price:   fullPrice,
           release_date: releaseDate,
@@ -282,46 +329,55 @@ export function ImportPreOrdersDialog({ open, onClose, fiatSymbol, onImported }:
         </DialogHeader>
 
         {/* Toolbar */}
-        <div className="px-6 py-3 border-b bg-gray-50 flex flex-wrap items-center gap-3">
-          {/* Source label */}
-          <div className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
-            <span>Source:</span>
-            <Badge variant="outline" className="font-semibold">Ludus Distributors</Badge>
+        <div className="px-6 py-3 border-b bg-gray-50 flex flex-col gap-3">
+          {/* Source selector */}
+          <div className="flex flex-wrap items-center gap-3">
+            <Select value={source} onValueChange={(v) => setSource(v as SourceType)}>
+              <SelectTrigger className="h-8 w-40 text-xs">
+                <SelectValue placeholder="Select source" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ludus">Ludus Distributors</SelectItem>
+                <SelectItem value="courtside">Courtside (PH)</SelectItem>
+              </SelectContent>
+            </Select>
+
             <a
-              href="https://www.ludusproducts.com"
+              href={source === "ludus" ? "https://www.ludusproducts.com" : "https://wholesale.courtside.com.ph"}
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
-          </div>
 
-          {/* Collection filter */}
-          <Select
-            value={collectionFilter}
-            onValueChange={(v) => setCollectionFilter(v)}
-          >
-            <SelectTrigger className="h-8 w-48 text-xs">
-              <SelectValue placeholder="All collections" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All collections</SelectItem>
-              {collections.map((c) => (
-                <SelectItem key={c.slug} value={c.slug}>{c.game}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {/* Collection filter - only for Ludus */}
+            {source === "ludus" && (
+              <Select
+                value={collectionFilter}
+                onValueChange={(v) => setCollectionFilter(v)}
+              >
+                <SelectTrigger className="h-8 w-48 text-xs">
+                  <SelectValue placeholder="All collections" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All collections</SelectItem>
+                  {collections.map((c) => (
+                    <SelectItem key={c.slug} value={c.slug}>{c.game}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
-          {/* Fetch / refresh */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => fetchItems(collectionFilter === "all" ? undefined : collectionFilter)}
-            disabled={fetching}
-            className="h-8 text-xs"
-          >
-            {fetching
+            {/* Fetch / refresh */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => fetchItems(collectionFilter === "all" ? undefined : collectionFilter)}
+              disabled={fetching || (source === "courtside" && (!courtsideSessionCookie && (!courtsideUsername || !courtsidePassword)))}
+              className="h-8 text-xs"
+            >
+              {fetching
               ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
               : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
             {items.length ? "Refresh" : "Load Products"}
@@ -341,6 +397,39 @@ export function ImportPreOrdersDialog({ open, onClose, fiatSymbol, onImported }:
               </span>
             </>
           )}
+          </div>
+
+          {/* Courtside credentials row */}
+          {source === "courtside" && (
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  type="text"
+                  placeholder="Courtside username"
+                  value={courtsideUsername}
+                  onChange={(e) => setCourtsideUsername(e.target.value)}
+                  className="h-8 w-48 text-xs"
+                />
+                <Input
+                  type="password"
+                  placeholder="Courtside password"
+                  value={courtsidePassword}
+                  onChange={(e) => setCourtsidePassword(e.target.value)}
+                  className="h-8 w-48 text-xs"
+                />
+                <span className="text-xs text-muted-foreground">or</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <textarea
+                  placeholder="Paste session cookie here (from browser DevTools) - starts with wordpress_logged_in..."
+                  value={courtsideSessionCookie}
+                  onChange={(e) => setCourtsideSessionCookie(e.target.value)}
+                  className="h-16 w-96 text-xs p-2 border rounded-md resize-none"
+                />
+                <span className="text-xs text-muted-foreground mt-1">Copy from browser DevTools → Application → Cookies</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -348,12 +437,17 @@ export function ImportPreOrdersDialog({ open, onClose, fiatSymbol, onImported }:
           {fetching ? (
             <div className="py-20 flex flex-col items-center gap-3 text-muted-foreground">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm">Fetching from Ludus…</p>
+              <p className="text-sm">Fetching from {source === "ludus" ? "Ludus" : "Courtside"}…</p>
             </div>
           ) : items.length === 0 ? (
             <div className="py-20 text-center text-sm text-muted-foreground">
               <Download className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p>Click <strong>Load Products</strong> to fetch available pre-orders from Ludus.</p>
+              <p>Click <strong>Load Products</strong> to fetch available pre-orders from {source === "ludus" ? "Ludus" : "Courtside"}.</p>
+              {source === "courtside" && (
+                <p className="text-xs mt-2 text-muted-foreground">
+                  Enter credentials OR paste session cookie from browser DevTools.
+                </p>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
@@ -406,7 +500,11 @@ export function ImportPreOrdersDialog({ open, onClose, fiatSymbol, onImported }:
                         )}
 
                         <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="outline" className="text-xs">{item.game}</Badge>
+                          {item.game ? (
+                            <Badge variant="outline" className="text-xs">{item.game}</Badge>
+                          ) : item.categories && item.categories.length > 0 ? (
+                            <Badge variant="outline" className="text-xs">{item.categories[0]}</Badge>
+                          ) : null}
                           {item.already_exists && (
                             <Badge variant="secondary" className="text-xs text-amber-700 bg-amber-50 border-amber-200 gap-1">
                               <AlertCircle className="h-3 w-3" /> Already imported

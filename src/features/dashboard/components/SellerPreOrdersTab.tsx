@@ -86,7 +86,10 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
 
   /** Inline edit state */
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState(INITIAL_FORM)
+  const [editForm, setEditForm] = useState<typeof INITIAL_FORM & { status: "active" | "closed" }>({
+    ...INITIAL_FORM,
+    status: "active",
+  })
   const [editSaving, setEditSaving] = useState(false)
   const [editUploading, setEditUploading] = useState(false)
 
@@ -179,6 +182,7 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
       release_date: po.release_date ? po.release_date.split("T")[0] : "",
       max_slots: po.max_slots ? String(po.max_slots) : "",
       image_url: po.image_url ?? "",
+      status: po.status === "closed" ? "closed" : "active",
     })
   }
 
@@ -201,8 +205,10 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
         game: editForm.game,
         image_url: editForm.image_url || undefined,
         full_price: fullPrice,
+        cutoff_date: editForm.cutoff_date || null,
         release_date: editForm.release_date,
         max_slots: editForm.max_slots ? parseInt(editForm.max_slots, 10) : undefined,
+        status: editForm.status,
       })
       if (!result.success) throw new Error(result.error ?? "Failed to save")
       toast.success("Pre-order updated")
@@ -685,6 +691,28 @@ export function SellerPreOrdersTab({ fiatSymbol }: Props) {
                             value={editForm.release_date}
                             onChange={(e) => setEditForm({ ...editForm, release_date: e.target.value })}
                           />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`edit-cutoff-${po.id}`}>Reservation Cutoff Date <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                          <Input
+                            id={`edit-cutoff-${po.id}`}
+                            type="date"
+                            value={editForm.cutoff_date}
+                            onChange={(e) => setEditForm({ ...editForm, cutoff_date: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`edit-status-${po.id}`}>Status</Label>
+                          <Select
+                            value={editForm.status}
+                            onValueChange={(v) => setEditForm({ ...editForm, status: v as "active" | "closed" })}
+                          >
+                            <SelectTrigger id={`edit-status-${po.id}`}><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="closed">Closed</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-1.5">
                           <Label htmlFor={`edit-slots-${po.id}`}>Max Slots (blank = unlimited)</Label>

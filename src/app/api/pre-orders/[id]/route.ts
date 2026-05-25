@@ -319,6 +319,7 @@ export async function PUT(
       price?: number /** Display price (downpayment if applicable) */
       full_price?: number /** Total price buyer must pay */
       downpayment_amount?: number | null /** Optional downpayment amount */
+      cutoff_date?: string | null /** After this date buyers can no longer reserve */
       release_date?: string
       max_slots?: number
     }
@@ -367,6 +368,7 @@ export async function PUT(
       updates.push("downpayment_amount = ?"); 
       binds.push(body.downpayment_amount) 
     }
+    if (body.cutoff_date !== undefined) { updates.push("cutoff_date = ?"); binds.push(body.cutoff_date) }
     if (body.release_date) { updates.push("release_date = ?"); binds.push(body.release_date) }
     if (body.max_slots !== undefined) { updates.push("max_slots = ?"); binds.push(body.max_slots) }
 

@@ -144,11 +144,39 @@ function ShopPageInner() {
           <div className="text-center py-16">
             <ShoppingBag className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
             <h3 className="text-lg font-bold text-neutral-700">No products found</h3>
-            <p className="text-sm text-neutral-400 mt-1">
-              {activeFiltersCount > 0 ? "Try adjusting your filters" : "Check back later for new listings"}
-            </p>
-            {activeFiltersCount > 0 && (
-              <Button variant="outline" className="mt-4" onClick={clearFilters}>Clear Filters</Button>
+            {search.trim() ? (
+              <>
+                <p className="text-sm text-neutral-500 mt-2 max-w-xs mx-auto">
+                  <span className="font-semibold text-neutral-700">&ldquo;{search.trim()}&rdquo;</span> is not found in the Warp.
+                  Would you like to request this product?
+                </p>
+                <a
+                  href="https://www.facebook.com/warpzonePH/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#1877F2] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#166fe5] transition-colors"
+                >
+                  {/* Facebook icon */}
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+                    <path d="M24 12.073C24 5.404 18.627 0 12 0S0 5.404 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.883v2.271h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" />
+                  </svg>
+                  Message us on Facebook
+                </a>
+                {activeFiltersCount > 0 && (
+                  <div className="mt-3">
+                    <Button variant="outline" size="sm" onClick={clearFilters}>Clear Filters</Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-neutral-400 mt-1">
+                  {activeFiltersCount > 0 ? "Try adjusting your filters" : "Check back later for new listings"}
+                </p>
+                {activeFiltersCount > 0 && (
+                  <Button variant="outline" className="mt-4" onClick={clearFilters}>Clear Filters</Button>
+                )}
+              </>
             )}
           </div>
         ) : (
