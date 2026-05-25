@@ -100,7 +100,7 @@ export function Navbar() {
                   router.push("/shop")
                 }
               }}
-              className="relative hidden lg:block"
+              className="relative hidden lg:block mr-3"
             >
               <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
               <Input
