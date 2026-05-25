@@ -13,8 +13,9 @@ import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { toast } from "sonner"
 import { sellerOrdersApi, ordersApi } from "@/lib/api-client"
-import { OrderStatusBadge } from "@/features/checkout/components/OrderStatusBadge"
+import { OrderTable } from "@/components/orders/OrderTable"
 import type { Order, OrderStatus } from "@/types"
+import type { ExtendedOrder } from "@/components/orders/OrderTable"
 
 /** Statuses a seller is allowed to set (excludes pending_payment which is buyer-driven) */
 const SELLER_STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
@@ -40,8 +41,11 @@ export function SellerOrdersTab({ fiatSymbol }: Props) {
     setLoading(true)
     try {
       const data = await sellerOrdersApi.list()
-      if (data.success) setOrders(data.orders)
-    } catch {
+      if (data.success) {
+        setOrders(data.orders)
+      }
+    } catch (error) {
+      console.error('Error fetching seller orders:', error)
       toast.error("Failed to load orders")
     } finally {
       setLoading(false)
@@ -143,181 +147,131 @@ export function SellerOrdersTab({ fiatSymbol }: Props) {
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm">
-        {/* Header */}
-        <div className="grid grid-cols-[1fr_1.5fr_1.5fr_1.5fr_1.2fr_auto] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Order</span>
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Buyer</span>
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</span>
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</span>
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</span>
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</span>
-        </div>
-
-        <div className="divide-y divide-gray-100">
-      {orders.map((order) => {
-        const isExpanded = expandedId === order.id
-        const isUpdating = updatingId === order.id
-
-        return (
-          <div key={order.id} className="bg-white">
-            {/* Table row */}
-            <div
-              className={`grid grid-cols-[1fr_1.5fr_1.5fr_1.5fr_1.2fr_auto] gap-4 px-5 py-4 items-center hover:bg-gray-50 transition-colors ${isExpanded ? "bg-gray-50" : ""}`}
+      <OrderTable
+        orders={orders as ExtendedOrder[]}
+        fiatSymbol={fiatSymbol}
+        loading={loading}
+        config={{
+          columns: ["order", "buyer", "date", "status", "total", "actions"],
+          showExpanded: true,
+          expandedId,
+          onToggleExpand: (id) => setExpandedId(expandedId === id ? null : id),
+          renderActions: (order) => (
+            <button
+              type="button"
+              onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}
+              className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors"
+              aria-label="Toggle details"
             >
-              {/* Order # */}
-              <span className="text-sm font-bold text-primary font-mono">
-                #{order.id.slice(0, 6).toUpperCase()}
-              </span>
-
-              {/* Buyer */}
-              <div className="min-w-0">
-                <p className="text-sm text-gray-800 truncate">{order.buyer_name ?? "—"}</p>
-                {order.buyer_email && <p className="text-xs text-gray-400 truncate">{order.buyer_email}</p>}
-              </div>
-
-              {/* Date */}
-              <span className="text-sm text-gray-700">
-                {new Date(order.created_at).toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric" })}
-              </span>
-
-              {/* Status */}
+              Details {expandedId === order.id ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </button>
+          ),
+          renderExpanded: (order) => (
+            <div className="px-5 pb-5 space-y-4">
+              {/* Items */}
               <div>
-                <OrderStatusBadge status={order.status} size="sm" />
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Items</p>
+                <div className="space-y-2">
+                  {(order.items ?? []).map((item) => (
+                    <div key={item.id} className="flex items-center gap-3">
+                      <div className="relative h-10 w-10 rounded bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
+                        {item.product_image_url
+                          ? <Image src={item.product_image_url} alt={item.product_name ?? ""} fill className="object-contain" />
+                          : <Package className="h-5 w-5 text-gray-400" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{item.product_name ?? "Product"}</p>
+                        <p className="text-xs text-gray-500">x{item.quantity} @ {fiatSymbol}{item.price.toLocaleString()}</p>
+                      </div>
+                      <p className="text-sm font-bold text-gray-900 shrink-0">
+                        {fiatSymbol}{(item.price * item.quantity).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {/* Total */}
-              <span className="text-sm font-semibold text-gray-900">
-                {fiatSymbol}{order.total.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
-                {(order.items?.length ?? 0) > 0 && (
-                  <span className="text-xs font-normal text-gray-500 ml-1">
-                    for {order.items!.length} {order.items!.length === 1 ? "item" : "items"}
-                  </span>
-                )}
-              </span>
+              {/* Buyer contact */}
+              {(order.buyer_email ?? order.buyer_phone) && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Buyer Contact</p>
+                  {order.buyer_email && <p className="text-sm text-gray-700">{order.buyer_email}</p>}
+                  {order.buyer_phone && <p className="text-sm text-gray-700">{order.buyer_phone}</p>}
+                </div>
+              )}
 
-              {/* Actions */}
-              <button
-                type="button"
-                onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors"
-                aria-label="Toggle details"
-              >
-                Details {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-              </button>
-            </div>
+              {/* Notes */}
+              {order.notes && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Note from buyer</p>
+                  <p className="text-sm text-gray-700 bg-gray-50 rounded p-2">{order.notes}</p>
+                </div>
+              )}
 
-            {/* Expanded details panel */}
-            {isExpanded && (
-              <div className="px-5 pb-5 space-y-4 border-t border-gray-100 pt-4 bg-white">
-                  {/* Items */}
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Items</p>
-                    <div className="space-y-2">
-                      {(order.items ?? []).map((item) => (
-                        <div key={item.id} className="flex items-center gap-3">
-                          <div className="relative h-10 w-10 rounded bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
-                            {item.product_image_url
-                              ? <Image src={item.product_image_url} alt={item.product_name ?? ""} fill className="object-contain" />
-                              : <Package className="h-5 w-5 text-gray-400" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{item.product_name ?? "Product"}</p>
-                            <p className="text-xs text-gray-500">x{item.quantity} @ {fiatSymbol}{item.price.toLocaleString()}</p>
-                          </div>
-                          <p className="text-sm font-bold text-gray-900 shrink-0">
-                            {fiatSymbol}{(item.price * item.quantity).toLocaleString()}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Buyer contact */}
-                  {(order.buyer_email ?? order.buyer_phone) && (
-                    <div>
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Buyer Contact</p>
-                      {order.buyer_email && <p className="text-sm text-gray-700">{order.buyer_email}</p>}
-                      {order.buyer_phone && <p className="text-sm text-gray-700">{order.buyer_phone}</p>}
-                    </div>
-                  )}
-
-                  {/* Notes */}
-                  {order.notes && (
-                    <div>
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Note from buyer</p>
-                      <p className="text-sm text-gray-700 bg-gray-50 rounded p-2">{order.notes}</p>
-                    </div>
-                  )}
-
-                  {/* Payment proof */}
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Payment Proof</p>
-                    {order.payment_proof_url ? (
-                      <div className="space-y-3">
-                        <a
-                          href={order.payment_proof_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block bg-white rounded-lg overflow-hidden border border-gray-200"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={order.payment_proof_url}
-                            alt="Payment proof"
-                            className="max-h-64 w-full object-contain cursor-zoom-in"
-                          />
-                        </a>
-                        {(order.status === "pending_payment" || order.status === "payment_submitted" || order.status === "confirming_payment") && (
-                          <Button
-                            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-11"
-                            disabled={confirmingId === order.id}
-                            onClick={() => handleConfirmPayment(order.id)}
-                          >
-                            {confirmingId === order.id
-                              ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Confirming…</>
-                              : <><CheckCheck className="h-4 w-4 mr-2" />Confirm Payment Received</>}
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3 text-sm text-gray-500 bg-white rounded-lg px-4 py-4 border border-gray-200 border-dashed">
-                        <div className="p-2 bg-gray-100 rounded-full">
-                          <ImageIcon className="h-4 w-4 shrink-0" />
-                        </div>
-                        <span>No payment screenshot uploaded yet.</span>
-                      </div>
+              {/* Payment proof */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Payment Proof</p>
+                {order.payment_proof_url ? (
+                  <div className="space-y-3">
+                    <a
+                      href={order.payment_proof_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block bg-white rounded-lg overflow-hidden border border-gray-200"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={order.payment_proof_url}
+                        alt="Payment proof"
+                        className="max-h-64 w-full object-contain cursor-zoom-in"
+                      />
+                    </a>
+                    {(order.status === "pending_payment" || order.status === "payment_submitted" || order.status === "confirming_payment") && (
+                      <Button
+                        className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-11"
+                        disabled={confirmingId === order.id}
+                        onClick={() => handleConfirmPayment(order.id)}
+                      >
+                        {confirmingId === order.id
+                          ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Confirming…</>
+                          : <><CheckCheck className="h-4 w-4 mr-2" />Confirm Payment Received</>}
+                      </Button>
                     )}
                   </div>
-
-                  {/* Status action */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 pt-2 border-t border-gray-100">
-                    <p className="text-sm font-medium text-gray-700">Update status</p>
-                    <Select
-                      value={order.status}
-                      onValueChange={(v) => handleStatusChange(order.id, v as OrderStatus)}
-                      disabled={isUpdating || order.status === "cancelled"}
-                    >
-                      <SelectTrigger className="w-full sm:w-64 h-10 text-sm bg-white">
-                        {isUpdating
-                          ? <span className="flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" />Updating…</span>
-                          : <SelectValue />}
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SELLER_STATUS_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                ) : (
+                  <div className="flex items-center gap-3 text-sm text-gray-500 bg-white rounded-lg px-4 py-4 border border-gray-200 border-dashed">
+                    <div className="p-2 bg-gray-100 rounded-full">
+                      <ImageIcon className="h-4 w-4 shrink-0" />
+                    </div>
+                    <span>No payment screenshot uploaded yet.</span>
                   </div>
+                )}
               </div>
-            )}
-          </div>
-        )
-      })}
-        </div>
-      </div>
+
+              {/* Status action */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 pt-2 border-t border-gray-100">
+                <p className="text-sm font-medium text-gray-700">Update status</p>
+                <Select
+                  value={order.status}
+                  onValueChange={(v) => handleStatusChange(order.id, v as OrderStatus)}
+                  disabled={updatingId === order.id || order.status === "cancelled"}
+                >
+                  <SelectTrigger className="w-full sm:w-64 h-10 text-sm bg-white">
+                    {updatingId === order.id
+                      ? <span className="flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" />Updating…</span>
+                      : <SelectValue />}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SELLER_STATUS_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )
+        }}
+      />
     </div>
   )
 }

@@ -9,24 +9,29 @@ const STATUS_CONFIG: Record<
   { label: string; className: string; Icon: React.ElementType }
 > = {
   pending_payment: {
-    label: "Pending Payment",
+    label: "Awaiting Payment",
     className: "bg-amber-50 text-amber-700 border-amber-200",
     Icon: Clock,
   },
   payment_submitted: {
-    label: "Proof Submitted",
-    className: "bg-orange-50 text-orange-700 border-orange-200",
-    Icon: Loader2,
-  },
-  confirming_payment: {
-    label: "Confirming Payment",
+    label: "Payment Proof Submitted",
     className: "bg-blue-50 text-blue-700 border-blue-200",
     Icon: Loader2,
   },
+  confirming_payment: {
+    label: "Payment Verification",
+    className: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    Icon: Loader2,
+  },
   confirmed: {
-    label: "Confirmed",
+    label: "Payment Confirmed",
     className: "bg-green-50 text-green-700 border-green-200",
     Icon: CheckCircle2,
+  },
+  processing: {
+    label: "Order Processing",
+    className: "bg-blue-50 text-blue-700 border-blue-200",
+    Icon: Loader2,
   },
   ready_for_pickup: {
     label: "Ready for Pickup",

@@ -59,6 +59,7 @@ export type OrderStatus =
   | "payment_submitted"
   | "confirming_payment"
   | "confirmed"
+  | "processing"
   | "ready_for_pickup"
   | "shortlisted"
   | "out_of_stock"

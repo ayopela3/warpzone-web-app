@@ -9,13 +9,15 @@ import { ApprovalsTab } from "@/features/admin/components/ApprovalsTab"
 import { ProductsTab } from "@/features/admin/components/ProductsTab"
 import { TournamentsTab } from "@/features/admin/components/TournamentsTab"
 import { PreOrdersTab } from "@/features/admin/components/PreOrdersTab"
+import { PaymentsTab } from "@/features/admin/components/PaymentsTab"
 import { SettingsTab } from "@/features/admin/components/SettingsTab"
 import { UsersTab } from "@/features/admin/components/UsersTab"
 import { SellersTab } from "@/features/admin/components/SellersTab"
-import { ReportsTab } from "@/features/admin/components/ReportsTab"
+import { CashoutsTab } from "@/features/admin/components/CashoutsTab"
 import { CategoriesTab } from "@/features/admin/components/CategoriesTab"
-import { ServiceFeesTab } from "@/features/admin/components/ServiceFeesTab"
+import { ReportsTab } from "@/features/admin/components/ReportsTab"
 import { RewardsTab } from "@/features/admin/components/RewardsTab"
+import { ServiceFeesTab } from "@/features/admin/components/ServiceFeesTab"
 import { adminApi, productsApi } from "@/lib/api-client"
 import type { Product } from "@/types"
 
@@ -136,29 +138,47 @@ export default function AdminDashboard() {
           pendingCount={pendingProducts.length}
         />
 
-        <Tabs defaultValue='approvals' className='space-y-6'>
-          <TabsList className='grid grid-cols-11 w-full max-w-7xl'>
-            <TabsTrigger value='approvals'>Approvals</TabsTrigger>
-            <TabsTrigger value='sellers'>Sellers</TabsTrigger>
+        <Tabs defaultValue='orders' className='space-y-6'>
+          <TabsList className='grid grid-cols-12 w-full max-w-7xl'>
+            <TabsTrigger value='orders'>Orders</TabsTrigger>
             <TabsTrigger value='products'>Products</TabsTrigger>
             <TabsTrigger value='pre-orders'>Pre-Orders</TabsTrigger>
-            <TabsTrigger value='tournaments'>Tournaments</TabsTrigger>
-            <TabsTrigger value='categories'>Categories</TabsTrigger>
-            <TabsTrigger value='service-fees'>Fees</TabsTrigger>
-            <TabsTrigger value='rewards'>Rewards</TabsTrigger>
+            <TabsTrigger value='sellers'>Sellers</TabsTrigger>
             <TabsTrigger value='users'>Users</TabsTrigger>
+            <TabsTrigger value='tournaments'>Tournaments</TabsTrigger>
+            <TabsTrigger value='cashouts'>Cashouts</TabsTrigger>
+            <TabsTrigger value='categories'>Categories</TabsTrigger>
+            <TabsTrigger value='rewards'>Rewards</TabsTrigger>
             <TabsTrigger value='reports'>Reports</TabsTrigger>
+            <TabsTrigger value='fees'>Fees</TabsTrigger>
             <TabsTrigger value='settings'>Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value='approvals'>
-            <ApprovalsTab
-              products={pendingProducts}
-              loading={approvalsLoading}
-              view={approvalsView}
-              onViewChange={setApprovalsView}
-              onApprove={handleApprove}
-            />
+          <TabsContent value='orders'>
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Orders & Payments</h2>
+                <p className="text-gray-600">Manage customer orders, payments, and product approvals</p>
+              </div>
+              
+              {/* Product Approvals Section */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Product Approvals</h3>
+                <ApprovalsTab
+                  products={pendingProducts}
+                  loading={approvalsLoading}
+                  view={approvalsView}
+                  onViewChange={setApprovalsView}
+                  onApprove={handleApprove}
+                />
+              </div>
+              
+              {/* Payments Section */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Management</h3>
+                <PaymentsTab />
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value='products'>
@@ -177,10 +197,6 @@ export default function AdminDashboard() {
             <PreOrdersTab fiatSymbol={fiatSymbol} />
           </TabsContent>
 
-          <TabsContent value='tournaments'>
-            <TournamentsTab />
-          </TabsContent>
-
           <TabsContent value='sellers'>
             <SellersTab />
           </TabsContent>
@@ -189,12 +205,16 @@ export default function AdminDashboard() {
             <UsersTab />
           </TabsContent>
 
-          <TabsContent value='categories'>
-            <CategoriesTab />
+          <TabsContent value='tournaments'>
+            <TournamentsTab />
           </TabsContent>
 
-          <TabsContent value='service-fees'>
-            <ServiceFeesTab fiatSymbol={fiatSymbol} />
+          <TabsContent value='cashouts'>
+            <CashoutsTab fiatSymbol={fiatSymbol} />
+          </TabsContent>
+
+          <TabsContent value='categories'>
+            <CategoriesTab />
           </TabsContent>
 
           <TabsContent value='rewards'>
@@ -203,6 +223,10 @@ export default function AdminDashboard() {
 
           <TabsContent value='reports'>
             <ReportsTab />
+          </TabsContent>
+
+          <TabsContent value='fees'>
+            <ServiceFeesTab fiatSymbol={fiatSymbol} />
           </TabsContent>
 
           <TabsContent value='settings'>

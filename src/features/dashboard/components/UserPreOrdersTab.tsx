@@ -5,9 +5,16 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Package, Loader2, ArrowRight, LockKeyhole, CheckCircle2, Eye } from "lucide-react"
+import { Package, Loader2, ArrowRight, LockKeyhole, CheckCircle2, Eye, Clock, XCircle } from "lucide-react"
 import { preOrdersApi } from "@/lib/api-client"
 import type { PreOrderReservation } from "@/types"
+
+const ALLOCATION_LABELS: Record<string, { label: string; color: string; icon: typeof Clock }> = {
+  pending:    { label: "Pending",   color: "bg-amber-50 text-amber-700 border-amber-200", icon: Clock },
+  allocated:  { label: "Allocated", color: "bg-green-50 text-green-700 border-green-200", icon: CheckCircle2 },
+  shortlisted:{ label: "Cut",       color: "bg-red-50 text-red-700 border-red-200", icon: XCircle },
+  refunded:   { label: "Refunded",  color: "bg-gray-50 text-gray-500 border-gray-200", icon: LockKeyhole },
+}
 
 type Props = { fiatSymbol: string }
 
@@ -70,7 +77,8 @@ export function UserPreOrdersTab({ fiatSymbol }: Props) {
         {/* Rows */}
         <div className="divide-y divide-gray-100">
           {reservations.map((r) => {
-            const isClosed = r.status === "closed"
+            const allocationCfg = ALLOCATION_LABELS[r.allocation_status ?? "pending"]
+            const AllocationIcon = allocationCfg.icon
             return (
               <div
                 key={r.id}
@@ -91,11 +99,12 @@ export function UserPreOrdersTab({ fiatSymbol }: Props) {
                     : "—"}
                 </span>
 
-                {/* Status badge */}
+                {/* Status badge - now using allocation_status */}
                 <div>
-                  {isClosed
-                    ? <Badge variant="secondary" className="text-xs flex items-center gap-1 w-fit"><LockKeyhole className="h-3 w-3" />Closed</Badge>
-                    : <Badge className="bg-green-500 text-white text-xs flex items-center gap-1 w-fit"><CheckCircle2 className="h-3 w-3" />Reserved</Badge>}
+                  <Badge variant="outline" className={`${allocationCfg.color} text-xs flex items-center gap-1 w-fit`}>
+                    <AllocationIcon className="h-3 w-3" />
+                    {allocationCfg.label}
+                  </Badge>
                 </div>
 
                 {/* Price */}

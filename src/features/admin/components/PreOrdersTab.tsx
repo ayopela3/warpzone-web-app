@@ -13,21 +13,17 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Package, Plus, Loader2, CheckCircle2, XCircle, LockKeyhole,
   Unlock, ChevronDown, ChevronUp, Upload, Users, Calendar, Pencil, Trash2, Download,
-  CheckCheck, Clock, Eye,
+  CheckCheck, Clock, MoreHorizontal,
 } from "lucide-react"
 import { toast } from "sonner"
 import { preOrdersApi } from "@/lib/api-client"
 import type { PreOrder } from "@/types"
 import { ImportPreOrdersDialog } from "./ImportPreOrdersDialog"
-
-const ALLOCATION_LABELS: Record<string, { label: string; color: string }> = {
-  pending:    { label: "Pending",   color: "bg-amber-50 text-amber-700 border-amber-200" },
-  allocated:  { label: "Allocated", color: "bg-green-50 text-green-700 border-green-200" },
-  shortlisted:{ label: "Cut",       color: "bg-red-50 text-red-700 border-red-200" },
-  refunded:   { label: "Refunded",  color: "bg-gray-50 text-gray-500 border-gray-200" },
-}
 
 const INITIAL_FORM = {
   title: "",
@@ -132,13 +128,55 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
       const data = await response.json()
       if (data.success) {
         toast.success("Payment approved successfully")
-        // Refresh reservation details
         await fetchReservationDetails(preOrderId)
       } else {
         toast.error(data.error || "Failed to approve payment")
       }
     } catch {
       toast.error("Failed to approve payment")
+    }
+  }
+
+  const handleRejectPayment = async (reservationId: string, preOrderId: string) => {
+    try {
+      const response = await fetch(`/api/admin/reservations/${reservationId}/reject-payment`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem("warpzone-session-id") ?? ""}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      const data = await response.json()
+      if (data.success) {
+        toast.success("Payment rejected and refunded")
+        await fetchReservationDetails(preOrderId)
+      } else {
+        toast.error(data.error || "Failed to reject payment")
+      }
+    } catch {
+      toast.error("Failed to reject payment")
+    }
+  }
+
+  const handleUpdateAllocationStatus = async (reservationId: string, preOrderId: string, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/admin/reservations/${reservationId}/allocation-status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem("warpzone-session-id") ?? ""}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ allocation_status: newStatus })
+      })
+      const data = await response.json()
+      if (data.success) {
+        toast.success("Allocation status updated successfully")
+        await fetchReservationDetails(preOrderId)
+      } else {
+        toast.error(data.error || "Failed to update allocation status")
+      }
+    } catch {
+      toast.error("Failed to update allocation status")
     }
   }
 
@@ -804,38 +842,80 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
                                 </div>
                                 {/* Status + action */}
                                 <div className='flex items-center gap-2 shrink-0 flex-wrap justify-end'>
-                                  {/* Payment badge */}
+                                  {/* Single combined status badge */}
                                   <span
                                     className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold border ${
-                                      r.paid === 1
-                                        ? 'bg-green-50 text-green-700 border-green-200'
-                                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                                      r.allocation_status === 'refunded'
+                                        ? 'bg-gray-50 text-gray-500 border-gray-200'
+                                        : r.allocation_status === 'shortlisted'
+                                          ? 'bg-red-50 text-red-700 border-red-200'
+                                          : r.paid === 1
+                                            ? 'bg-green-50 text-green-700 border-green-200'
+                                            : 'bg-amber-50 text-amber-700 border-amber-200'
                                     }`}
                                   >
-                                    {r.paid === 1 ? (
+                                    {r.allocation_status === 'refunded' ? (
+                                      <>
+                                        <LockKeyhole className='h-3 w-3' />
+                                        Refunded
+                                      </>
+                                    ) : r.allocation_status === 'shortlisted' ? (
+                                      <>
+                                        <XCircle className='h-3 w-3' />
+                                        Cut
+                                      </>
+                                    ) : r.paid === 1 ? (
                                       <>
                                         <CheckCircle2 className='h-3 w-3' />
-                                        Paid
+                                        Paid & Allocated
                                       </>
                                     ) : (
                                       <>
                                         <Clock className='h-3 w-3' />
-                                        Pending
+                                        Pending Payment
                                       </>
                                     )}
                                   </span>
-                                  {/* Allocation status */}
-                                  {r.allocation_status && (
-                                    <span
-                                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold border ${
-                                        ALLOCATION_LABELS[r.allocation_status]?.color ||
-                                        'bg-gray-50 text-gray-700 border-gray-200'
-                                      }`}
-                                    >
-                                      {ALLOCATION_LABELS[r.allocation_status]?.label ||
-                                        r.allocation_status}
-                                    </span>
-                                  )}
+                                  {/* Actions dropdown */}
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button size='sm' variant='ghost' className='h-7 w-7 p-0'>
+                                        <MoreHorizontal className='h-4 w-4' />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align='end'>
+                                      {r.paid === 0 && r.allocation_status !== 'refunded' && r.allocation_status !== 'shortlisted' && (
+                                        <DropdownMenuItem onClick={() => handleApprovePayment(r.id, po.id)}>
+                                          <CheckCircle2 className='h-4 w-4 mr-2 text-green-600' />
+                                          Approve Payment
+                                        </DropdownMenuItem>
+                                      )}
+                                      {r.paid === 1 && (
+                                        <DropdownMenuItem onClick={() => handleRejectPayment(r.id, po.id)}>
+                                          <XCircle className='h-4 w-4 mr-2 text-red-600' />
+                                          Reject & Refund
+                                        </DropdownMenuItem>
+                                      )}
+                                      {r.allocation_status !== 'shortlisted' && (
+                                        <DropdownMenuItem onClick={() => handleUpdateAllocationStatus(r.id, po.id, 'shortlisted')}>
+                                          <XCircle className='h-4 w-4 mr-2 text-orange-600' />
+                                          Mark as Cut
+                                        </DropdownMenuItem>
+                                      )}
+                                      {r.allocation_status !== 'refunded' && (
+                                        <DropdownMenuItem onClick={() => handleUpdateAllocationStatus(r.id, po.id, 'refunded')}>
+                                          <LockKeyhole className='h-4 w-4 mr-2 text-gray-600' />
+                                          Mark as Refunded
+                                        </DropdownMenuItem>
+                                      )}
+                                      {r.allocation_status !== 'allocated' && r.paid === 1 && (
+                                        <DropdownMenuItem onClick={() => handleUpdateAllocationStatus(r.id, po.id, 'allocated')}>
+                                          <CheckCircle2 className='h-4 w-4 mr-2 text-blue-600' />
+                                          Mark as Allocated
+                                        </DropdownMenuItem>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </div>
                               </div>
                             )

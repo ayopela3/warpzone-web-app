@@ -4,7 +4,8 @@ import { getDb } from "@/lib/db"
 export const runtime = "edge"
 
 // ---------------------------------------------------------------------------
-// POST /api/admin/reservations/[id]/approve-payment — admin approves payment
+// POST /api/admin/reservations/[id]/reject-payment — admin rejects payment
+// Body: { reason?: string }
 // ---------------------------------------------------------------------------
 
 export async function POST(
@@ -39,39 +40,37 @@ export async function POST(
       return NextResponse.json({ success: false, error: "Admin access required" }, { status: 403 })
     }
 
-    // Get reservation details
+    const body = await request.json().catch(() => ({}))
+
+    // Check reservation exists
     const reservation = await db
-      .prepare(`
-        SELECT pre_order_id, quantity, unit_price, downpayment_amount
-        FROM pre_order_reservations 
-        WHERE id = ?
-      `)
+      .prepare("SELECT id FROM pre_order_reservations WHERE id = ?")
       .bind(id)
-      .first<{ pre_order_id: string; quantity: number; unit_price: number; downpayment_amount: number | null }>()
+      .first<{ id: string }>()
 
     if (!reservation) {
       return NextResponse.json({ success: false, error: "Reservation not found" }, { status: 404 })
     }
 
-    // Calculate payment amount
-    const totalAmount = reservation.quantity * reservation.unit_price
-
-    // Update reservation as paid and set allocation status
+    // Update reservation as rejected/refunded
     await db.prepare(`
       UPDATE pre_order_reservations
-      SET paid = 1, is_paid = 1, total_paid = ?, allocation_status = 'allocated'
+      SET paid = 0, is_paid = 0, total_paid = 0, allocation_status = 'refunded'
       WHERE id = ?
-    `).bind(totalAmount, id).run()
+    `).bind(id).run()
 
-    return NextResponse.json({ success: true, message: "Payment approved successfully" })
+    return NextResponse.json({
+      success: true,
+      message: "Payment rejected successfully",
+      reason: body.reason || null
+    })
   } catch (error) {
-    console.error("Payment approval error:", error)
+    console.error("Payment rejection error:", error)
     const errorMessage = error instanceof Error ? error.message : String(error)
     const errorStack = error instanceof Error ? error.stack : ""
-    console.error("Error stack:", errorStack)
     return NextResponse.json({
       success: false,
-      error: `Failed to approve payment: ${errorMessage}`,
+      error: `Failed to reject payment: ${errorMessage}`,
       details: errorMessage,
       stack: errorStack
     }, { status: 500 })

@@ -4,10 +4,10 @@ import { getDb } from "@/lib/db"
 export const runtime = "edge"
 
 // ---------------------------------------------------------------------------
-// POST /api/admin/reservations/[id]/approve-payment — admin approves payment
+// PATCH /api/admin/reservations/[id]/allocation-status — admin updates allocation status
 // ---------------------------------------------------------------------------
 
-export async function POST(
+export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -39,41 +39,38 @@ export async function POST(
       return NextResponse.json({ success: false, error: "Admin access required" }, { status: 403 })
     }
 
-    // Get reservation details
+    const { allocation_status } = await request.json()
+
+    // Validate allocation status
+    const validStatuses = ["pending", "allocated", "shortlisted", "refunded"]
+    if (!allocation_status || !validStatuses.includes(allocation_status)) {
+      return NextResponse.json({ success: false, error: "Invalid allocation status" }, { status: 400 })
+    }
+
+    // Check if reservation exists
     const reservation = await db
-      .prepare(`
-        SELECT pre_order_id, quantity, unit_price, downpayment_amount
-        FROM pre_order_reservations 
-        WHERE id = ?
-      `)
+      .prepare("SELECT id FROM pre_order_reservations WHERE id = ?")
       .bind(id)
-      .first<{ pre_order_id: string; quantity: number; unit_price: number; downpayment_amount: number | null }>()
+      .first<{ id: string }>()
 
     if (!reservation) {
       return NextResponse.json({ success: false, error: "Reservation not found" }, { status: 404 })
     }
 
-    // Calculate payment amount
-    const totalAmount = reservation.quantity * reservation.unit_price
-
-    // Update reservation as paid and set allocation status
-    await db.prepare(`
+    // Update allocation status
+    const result = await db.prepare(`
       UPDATE pre_order_reservations
-      SET paid = 1, is_paid = 1, total_paid = ?, allocation_status = 'allocated'
+      SET allocation_status = ?
       WHERE id = ?
-    `).bind(totalAmount, id).run()
+    `).bind(allocation_status, id).run()
 
-    return NextResponse.json({ success: true, message: "Payment approved successfully" })
+    if (result.meta.changes === 0) {
+      return NextResponse.json({ success: false, error: "No rows updated" }, { status: 400 })
+    }
+
+    return NextResponse.json({ success: true, message: "Allocation status updated successfully" })
   } catch (error) {
-    console.error("Payment approval error:", error)
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    const errorStack = error instanceof Error ? error.stack : ""
-    console.error("Error stack:", errorStack)
-    return NextResponse.json({
-      success: false,
-      error: `Failed to approve payment: ${errorMessage}`,
-      details: errorMessage,
-      stack: errorStack
-    }, { status: 500 })
+    console.error("Allocation status update error:", error)
+    return NextResponse.json({ success: false, error: "Failed to update allocation status" }, { status: 500 })
   }
 }

@@ -136,7 +136,9 @@ export async function PATCH(
 
     const body = await request.json() as {
       payment_proof_url?: string
-      action?: "mark_paid"
+      action?: "mark_paid" | "update_status"
+      status?: string
+      notes?: string
     }
 
     if (body.payment_proof_url !== undefined) {
@@ -157,6 +159,21 @@ export async function PATCH(
       await db
         .prepare("UPDATE orders SET status = 'confirmed', updated_at = datetime('now') WHERE id = ?")
         .bind(id)
+        .run()
+      return NextResponse.json({ success: true })
+    }
+
+    if (body.action === "update_status") {
+      if (!isAdmin) {
+        return NextResponse.json({ success: false, error: "Only admin can update order status" }, { status: 403 })
+      }
+      if (!body.status) {
+        return NextResponse.json({ success: false, error: "Status is required" }, { status: 400 })
+      }
+      
+      await db
+        .prepare("UPDATE orders SET status = ?, admin_notes = ?, updated_at = datetime('now') WHERE id = ?")
+        .bind(body.status, body.notes || "", id)
         .run()
       return NextResponse.json({ success: true })
     }
