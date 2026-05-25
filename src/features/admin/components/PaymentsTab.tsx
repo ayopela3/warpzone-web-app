@@ -72,7 +72,7 @@ export function PaymentsTab() {
       
       const data = await response.json()
       setPayments(data.payments || [])
-      setPagination(prev => ({ ...prev, total: data.total || 0 }))
+      setPagination(prev => ({ ...prev, total: data.pagination?.total || data.total || 0 }))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load payments")
     } finally {

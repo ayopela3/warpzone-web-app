@@ -16,7 +16,7 @@ type ApiCategory = { id: string; slug: string; label: string; image_url?: string
 function ShopPageInner() {
   const { addToCart, fiatSymbol } = useApp()
   const searchParams = useSearchParams()
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState(searchParams.get("search") ?? "")
   const [category, setCategory] = useState(searchParams.get("category") ?? "all")
   const [sortBy, setSortBy] = useState<SortOption>("relevance")
   const [products, setProducts] = useState<Product[]>([])
@@ -41,6 +41,24 @@ function ShopPageInner() {
       .then((d: { success: boolean; categories: ApiCategory[] }) => { if (d.success) setApiCategories(d.categories) })
       .catch(console.error)
   }, [])
+
+  /** React to external URL changes (e.g. navbar search while on /shop) */
+  useEffect(() => {
+    const newSearch = searchParams.get("search") ?? ""
+    const newCategory = searchParams.get("category") ?? "all"
+    setSearch(newSearch)
+    setCategory(newCategory)
+  }, [searchParams])
+
+  /** Sync search + category to URL without triggering navigation */
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (search.trim()) url.searchParams.set("search", search.trim())
+    else url.searchParams.delete("search")
+    if (category !== "all") url.searchParams.set("category", category)
+    else url.searchParams.delete("category")
+    window.history.replaceState({}, "", url.toString())
+  }, [search, category])
 
   useEffect(() => {
     setLoading(true)

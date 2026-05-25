@@ -2,9 +2,11 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Menu, X, ShoppingCart, Search, User, Store } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,8 +23,10 @@ const navigation = [
 ]
 
 export function Navbar() {
+  const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   const { cartCount, isAuthenticated, userRole, signOut } = useApp()
 
   useEffect(() => {
@@ -87,9 +91,26 @@ export function Navbar() {
 
         <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:gap-4">
           {showShoppingFeatures && (
-            <Button variant="ghost" size="icon" aria-label="Search inventory">
-              <Search className="h-5 w-5" />
-            </Button>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (searchQuery.trim()) {
+                  router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`)
+                } else {
+                  router.push("/shop")
+                }
+              }}
+              className="relative hidden lg:block"
+            >
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
+              <Input
+                type="search"
+                placeholder="Search products..."
+                className="h-8 w-40 pl-9 text-xs rounded-full border-neutral-300"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </form>
           )}
           {showSellButton && (
             <Button variant="outline" asChild>
@@ -164,6 +185,33 @@ export function Navbar() {
 
           {/* Navigation Links */}
           <div className="flex-1 overflow-y-auto px-4 py-6">
+            {/* Mobile search */}
+            {showShoppingFeatures && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (searchQuery.trim()) {
+                    router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`)
+                  } else {
+                    router.push("/shop")
+                  }
+                  setMobileMenuOpen(false)
+                }}
+                className="mb-4"
+              >
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                  <Input
+                    type="search"
+                    placeholder="Search products..."
+                    className="w-full pl-10 h-10 text-sm rounded-full border-neutral-300"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </form>
+            )}
+
             <div className="space-y-1">
               {showShoppingFeatures && navigation.map((item) => (
                 <Link
