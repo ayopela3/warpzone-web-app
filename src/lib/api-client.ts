@@ -266,6 +266,7 @@ export const preOrdersApi = {
     image_url?: string
     price?: number
     full_price?: number
+    downpayment_pct?: number | null
     downpayment_amount?: number | null
     cutoff_date?: string | null
     release_date?: string

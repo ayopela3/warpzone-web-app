@@ -318,6 +318,7 @@ export async function PUT(
       image_url?: string
       price?: number /** Display price (downpayment if applicable) */
       full_price?: number /** Total price buyer must pay */
+      downpayment_pct?: number | null /** e.g. 30 (%) or 0.30 (fraction) */
       downpayment_amount?: number | null /** Optional downpayment amount */
       cutoff_date?: string | null /** After this date buyers can no longer reserve */
       release_date?: string
@@ -362,6 +363,49 @@ export async function PUT(
           updates.push("price = ?")
           binds.push(body.full_price)
         }
+      }
+    }
+    if (body.downpayment_pct !== undefined) {
+      // Normalise: accept 30 or 0.30
+      const newPct = body.downpayment_pct !== null
+        ? (body.downpayment_pct > 1 ? body.downpayment_pct / 100 : body.downpayment_pct)
+        : null
+      updates.push("downpayment_pct = ?")
+      binds.push(newPct)
+      // Recalculate amount + display price from the full_price in this request or stored value
+      let basePrice: number
+      if (body.full_price !== undefined) {
+        basePrice = body.full_price
+      } else {
+        const stored = await db
+          .prepare("SELECT full_price FROM pre_orders WHERE id = ?")
+          .bind(id)
+          .first<{ full_price: number }>()
+        basePrice = stored?.full_price ?? 0
+      }
+      if (newPct && newPct > 0) {
+        const dp = Math.round((basePrice as number) * newPct * 100) / 100
+        // Only set price/downpayment_amount if not already set by full_price block above
+        if (body.full_price === undefined) {
+          updates.push("price = ?")
+          binds.push(dp)
+        }
+        updates.push("downpayment_amount = ?")
+        binds.push(dp)
+      } else {
+        // Removing downpayment — price = full_price
+        if (body.full_price === undefined) {
+          const storedFp = await db
+            .prepare("SELECT full_price FROM pre_orders WHERE id = ?")
+            .bind(id)
+            .first<{ full_price: number }>()
+          if (storedFp) {
+            updates.push("price = ?")
+            binds.push(storedFp.full_price)
+          }
+        }
+        updates.push("downpayment_amount = ?")
+        binds.push(null)
       }
     }
     if (body.downpayment_amount !== undefined) { 

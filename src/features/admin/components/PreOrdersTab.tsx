@@ -30,6 +30,7 @@ const INITIAL_FORM = {
   description: "",
   game: "",
   full_price: "",
+  downpayment_pct: "",
   cutoff_date: "",
   release_date: "",
   max_slots: "",
@@ -211,14 +212,15 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
     setSaving(true)
     try {
       const result = await preOrdersApi.create({
-        title:        form.title.trim(),
-        description:  form.description || undefined,
-        game:         form.game,
-        image_url:    form.image_url || undefined,
-        full_price:   parseFloat(form.full_price) || 0,
-        cutoff_date:  form.cutoff_date || null,
-        release_date: form.release_date,
-        max_slots:    form.max_slots ? parseInt(form.max_slots, 10) : undefined,
+        title:           form.title.trim(),
+        description:     form.description || undefined,
+        game:            form.game,
+        image_url:       form.image_url || undefined,
+        full_price:      parseFloat(form.full_price) || 0,
+        downpayment_pct: form.downpayment_pct ? parseFloat(form.downpayment_pct) : null,
+        cutoff_date:     form.cutoff_date || null,
+        release_date:    form.release_date,
+        max_slots:       form.max_slots ? parseInt(form.max_slots, 10) : undefined,
       })
       if (!result.success) throw new Error(result.error ?? "Failed to create")
       toast.success("Pre-order created")
@@ -266,6 +268,7 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
       description: po.description ?? "",
       game: po.game,
       full_price: String(po.full_price ?? po.price ?? ""),
+      downpayment_pct: po.downpayment_pct ? String(po.downpayment_pct * 100) : "",
       cutoff_date: po.cutoff_date ? po.cutoff_date.split("T")[0] : "",
       release_date: po.release_date ? po.release_date.split("T")[0] : "",
       max_slots: po.max_slots ? String(po.max_slots) : "",
@@ -287,14 +290,15 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
     setEditSaving(true)
     try {
       const result = await preOrdersApi.update(id, {
-        title: editForm.title.trim(),
-        description: editForm.description || "",
-        game: editForm.game,
-        image_url: editForm.image_url || undefined,
-        full_price: fullPrice,
-        cutoff_date: editForm.cutoff_date || null,
-        release_date: editForm.release_date,
-        max_slots: editForm.max_slots ? parseInt(editForm.max_slots, 10) : undefined,
+        title:           editForm.title.trim(),
+        description:     editForm.description || "",
+        game:            editForm.game,
+        image_url:       editForm.image_url || undefined,
+        full_price:      fullPrice,
+        downpayment_pct: editForm.downpayment_pct ? parseFloat(editForm.downpayment_pct) : null,
+        cutoff_date:     editForm.cutoff_date || null,
+        release_date:    editForm.release_date,
+        max_slots:       editForm.max_slots ? parseInt(editForm.max_slots, 10) : undefined,
       })
       if (!result.success) throw new Error(result.error ?? "Failed to save")
       toast.success("Pre-order updated")
@@ -427,6 +431,23 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
               <div className="space-y-1.5">
                 <Label htmlFor="po-date">Release Date *</Label>
                 <Input id="po-date" type="date" value={form.release_date} onChange={(e) => setForm({ ...form, release_date: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="po-dp">Downpayment % <span className="text-muted-foreground font-normal">(blank = full payment)</span></Label>
+                <Input
+                  id="po-dp"
+                  type="number"
+                  min="1"
+                  max="100"
+                  placeholder="e.g. 30"
+                  value={form.downpayment_pct}
+                  onChange={(e) => setForm({ ...form, downpayment_pct: e.target.value })}
+                />
+                {form.downpayment_pct && parseFloat(form.downpayment_pct) > 0 && form.full_price && (
+                  <p className="text-xs text-muted-foreground">
+                    Buyer pays {fiatSymbol}{(parseFloat(form.full_price) * parseFloat(form.downpayment_pct) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} upfront
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="po-cutoff">Reservation Cutoff Date <span className="text-muted-foreground font-normal">(optional)</span></Label>
@@ -640,6 +661,23 @@ export function PreOrdersTab({ fiatSymbol }: Props) {
                             value={editForm.release_date}
                             onChange={(e) => setEditForm({ ...editForm, release_date: e.target.value })}
                           />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`adm-edit-dp-${po.id}`}>Downpayment % <span className="text-muted-foreground font-normal">(blank = full payment)</span></Label>
+                          <Input
+                            id={`adm-edit-dp-${po.id}`}
+                            type="number"
+                            min="1"
+                            max="100"
+                            placeholder="e.g. 30"
+                            value={editForm.downpayment_pct}
+                            onChange={(e) => setEditForm({ ...editForm, downpayment_pct: e.target.value })}
+                          />
+                          {editForm.downpayment_pct && parseFloat(editForm.downpayment_pct) > 0 && editForm.full_price && (
+                            <p className="text-xs text-muted-foreground">
+                              Buyer pays {fiatSymbol}{(parseFloat(editForm.full_price) * parseFloat(editForm.downpayment_pct) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} upfront
+                            </p>
+                          )}
                         </div>
                         <div className="space-y-1.5">
                           <Label htmlFor={`adm-edit-cutoff-${po.id}`}>Reservation Cutoff Date <span className="text-muted-foreground font-normal">(optional)</span></Label>
