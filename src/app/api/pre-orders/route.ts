@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
     } else {
       conditions.push("po.approval_status = 'approved'")
       conditions.push("po.status = 'active'")
+      conditions.push("(po.cutoff_date IS NULL OR po.cutoff_date >= date('now'))")
     }
 
     if (game) {
@@ -76,6 +77,10 @@ export async function GET(request: NextRequest) {
     const query = `
       SELECT
         po.*,
+        CASE
+          WHEN po.cutoff_date IS NOT NULL AND po.cutoff_date < date('now') THEN 'closed'
+          ELSE po.status
+        END AS status,
         pr.full_name    AS seller_name,
         pr.business_name AS seller_business,
         COUNT(por.id)   AS reservation_count

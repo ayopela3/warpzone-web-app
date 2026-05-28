@@ -42,7 +42,12 @@ export async function GET(
 
     const preOrder = await db
       .prepare(`
-        SELECT po.*, pr.full_name AS seller_name, pr.business_name AS seller_business,
+        SELECT po.*,
+               CASE
+                 WHEN po.cutoff_date IS NOT NULL AND po.cutoff_date < date('now') THEN 'closed'
+                 ELSE po.status
+               END AS status,
+               pr.full_name AS seller_name, pr.business_name AS seller_business,
                COUNT(por.id) AS reservation_count
         FROM pre_orders po
         LEFT JOIN profiles pr ON po.seller_id = pr.id
