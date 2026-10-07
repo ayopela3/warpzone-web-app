@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import { authErrorResponse, requireAdmin } from "@/lib/auth"
 
 export const runtime = "edge"
 
@@ -71,6 +72,8 @@ export async function POST(request: NextRequest) {
     const db = await getDb()
     if (!db) return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
 
+    await requireAdmin(request, db)
+
     const body = await request.json() as {
       slug: string; label: string; emoji?: string; image_url?: string; color?: string; sort_order?: number
     }
@@ -96,6 +99,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, id })
   } catch (error) {
+    const authResponse = authErrorResponse(error)
+    if (authResponse) return authResponse
+
     console.error("POST /api/categories error:", error)
     return NextResponse.json({ success: false, error: "Failed to create category" }, { status: 500 })
   }

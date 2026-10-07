@@ -21,6 +21,7 @@ type Product = {
   condition: string
   created_at: string
   created_by: string | null
+  listing_id: string | null
   listing_seller_id: string | null
 }
 
@@ -60,16 +61,18 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         p.rarity,
         p.description,
         p.image_url,
-        p.quantity,
-        p.price,
+        COALESCE(pl.quantity, p.quantity) AS quantity,
+        COALESCE(pl.price, p.price) AS price,
         p.approval_status,
         p.condition,
         p.created_at,
         p.created_by,
+        pl.id as listing_id,
         pl.seller_id as listing_seller_id
       FROM products p
-      LEFT JOIN product_listings pl ON pl.product_id = p.id
+      LEFT JOIN product_listings pl ON pl.product_id = p.id AND pl.in_stock = 1
       WHERE p.id = ? AND p.approval_status = 'approved' AND p.is_active = 1
+      ORDER BY pl.price ASC
       LIMIT 1
     `)
     .bind(id)
@@ -171,6 +174,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                 category={product.category}
                 inStock={product.quantity > 0}
                 quantity={product.quantity}
+                listingId={product.listing_id ?? undefined}
                 sellerId={product.listing_seller_id ?? undefined}
               />
             </div>

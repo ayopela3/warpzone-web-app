@@ -186,7 +186,7 @@ function ShopPageInner() {
                 key={product.id}
                 product={product}
                 fiatSymbol={fiatSymbol}
-                onAddToCart={(p, qty) => addToCart({ id: p.id, name: p.name, price: p.price, category: p.category, seller_id: p.listing_seller_id ?? p.created_by ?? undefined, maxQuantity: p.quantity }, qty, p.quantity)}
+                onAddToCart={(p, qty) => addToCart({ id: p.id, name: p.name, price: p.price, category: p.category, listing_id: p.listing_id ?? undefined, seller_id: p.listing_seller_id ?? p.created_by ?? undefined, maxQuantity: p.quantity }, qty, p.quantity)}
               />
             ))}
           </div>

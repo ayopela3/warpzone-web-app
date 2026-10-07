@@ -12,10 +12,11 @@ type AddToCartButtonProps = {
   category: string
   inStock: boolean
   quantity: number
+  listingId?: string
   sellerId?: string
 }
 
-export default function AddToCartButton({ productId, name, price, category, inStock, quantity, sellerId }: AddToCartButtonProps) {
+export default function AddToCartButton({ productId, name, price, category, inStock, quantity, listingId, sellerId }: AddToCartButtonProps) {
   const { addToCart } = useApp()
   const [qty, setQty] = useState(1)
 
@@ -54,7 +55,7 @@ export default function AddToCartButton({ productId, name, price, category, inSt
         className="w-full h-12 rounded-xl text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90"
         disabled={!inStock}
         onClick={() => {
-          addToCart({ id: productId, name, price, category, seller_id: sellerId, maxQuantity: quantity }, qty, quantity)
+          addToCart({ id: productId, name, price, category, listing_id: listingId, seller_id: sellerId, maxQuantity: quantity }, qty, quantity)
         }}
       >
         <ShoppingCart className="h-4 w-4 mr-2" />

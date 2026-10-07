@@ -101,6 +101,8 @@ export type Product = {
   seller_business?: string | null
   /** Joined from product_listings - the actual seller profile id for checkout */
   listing_seller_id?: string | null
+  /** Joined from product_listings - the concrete listing to buy */
+  listing_id?: string | null
 }
 
 export type ProductListItem = Pick<
@@ -181,6 +183,8 @@ export type CartItem = {
   preOrderId?: string
   /** Seller profile id — needed to look up payment QR */
   seller_id?: string
+  /** Concrete product listing id — needed to submit unambiguous product orders */
+  listing_id?: string
 }
 
 // ---------------------------------------------------------------------------

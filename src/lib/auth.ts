@@ -98,6 +98,9 @@ export async function requireAdmin(
   if (!user) {
     throw new Error("Not authenticated")
   }
+  if (user.isBanned) {
+    throw new Error("Forbidden")
+  }
   if (user.role !== "admin") {
     throw new Error("Forbidden")
   }
@@ -115,8 +118,25 @@ export async function requireSeller(
   if (!user) {
     throw new Error("Not authenticated")
   }
+  if (user.isBanned) {
+    throw new Error("Forbidden")
+  }
   if (user.role !== "seller" && user.role !== "admin") {
     throw new Error("Forbidden")
   }
   return user
+}
+
+export function authErrorResponse(error: unknown): Response | null {
+  if (!(error instanceof Error)) return null
+
+  if (error.message === "Not authenticated") {
+    return Response.json({ success: false, error: "Not authenticated" }, { status: 401 })
+  }
+
+  if (error.message === "Forbidden") {
+    return Response.json({ success: false, error: "Forbidden" }, { status: 403 })
+  }
+
+  return null
 }

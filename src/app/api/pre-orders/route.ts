@@ -57,9 +57,8 @@ export async function GET(request: NextRequest) {
       conditions.push("po.seller_id = ?")
       params.push(sellerId)
     } else {
+      // Public listing: show all approved pre-orders (active + closed)
       conditions.push("po.approval_status = 'approved'")
-      conditions.push("po.status = 'active'")
-      conditions.push("(po.cutoff_date IS NULL OR po.cutoff_date >= date('now'))")
     }
 
     if (game) {
@@ -67,12 +66,17 @@ export async function GET(request: NextRequest) {
       params.push(game)
     }
 
+    // Status filter uses HAVING on the computed status (accounts for cutoff_date)
+    const havingConditions: string[] = []
+    const havingParams: (string | number)[] = []
     if (status && !showAll && !sellerId) {
-      conditions.push("po.status = ?")
-      params.push(status)
+      havingConditions.push(`CASE WHEN po.cutoff_date IS NOT NULL AND po.cutoff_date < date('now') THEN 'closed' ELSE po.status END = ?`)
+      havingParams.push(status)
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : ""
+    const having = havingConditions.length ? `HAVING ${havingConditions.join(" AND ")}` : ""
+    const allParams = [...params, ...havingParams]
 
     const query = `
       SELECT
@@ -89,11 +93,12 @@ export async function GET(request: NextRequest) {
       LEFT JOIN pre_order_reservations por ON po.id = por.pre_order_id
       ${where}
       GROUP BY po.id
+      ${having}
       ORDER BY po.release_date ASC, po.created_at DESC
     `
 
-    const result = params.length
-      ? await db.prepare(query).bind(...params).all<Record<string, unknown>>()
+    const result = allParams.length
+      ? await db.prepare(query).bind(...allParams).all<Record<string, unknown>>()
       : await db.prepare(query).all<Record<string, unknown>>()
 
     return NextResponse.json({ success: true, preOrders: result.results })

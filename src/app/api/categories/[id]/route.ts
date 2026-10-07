@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import { authErrorResponse, requireAdmin } from "@/lib/auth"
 
 export const runtime = "edge"
 
@@ -11,6 +12,8 @@ export async function PUT(
     const { id } = await params
     const db = await getDb()
     if (!db) return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
+
+    await requireAdmin(request, db)
 
     const body = await request.json() as {
       slug?: string; label?: string; emoji?: string | null; image_url?: string | null
@@ -39,13 +42,16 @@ export async function PUT(
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    const authResponse = authErrorResponse(error)
+    if (authResponse) return authResponse
+
     console.error("PUT /api/categories/[id] error:", error)
     return NextResponse.json({ success: false, error: "Failed to update category" }, { status: 500 })
   }
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -53,10 +59,15 @@ export async function DELETE(
     const db = await getDb()
     if (!db) return NextResponse.json({ success: false, error: "Database not available" }, { status: 503 })
 
+    await requireAdmin(request, db)
+
     await db.prepare("DELETE FROM categories WHERE id = ?").bind(id).run()
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    const authResponse = authErrorResponse(error)
+    if (authResponse) return authResponse
+
     console.error("DELETE /api/categories/[id] error:", error)
     return NextResponse.json({ success: false, error: "Failed to delete category" }, { status: 500 })
   }

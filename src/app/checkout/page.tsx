@@ -213,36 +213,29 @@ export default function CheckoutPage() {
     try {
       const sellerId = await resolveGroupSellerId(activeGroup) ?? ""
 
-      // Fetch listing_id for regular products, skip for pre-orders
-      const itemsWithListingIds = await Promise.all(
-        activeGroup.items.map(async (item) => {
-          // Pre-orders don't have product_listings entries
-          if (item.itemType === "pre_order") {
-            return {
-              product_id: item.id,
-              listing_id: null, // Pre-orders don't use product_listings
-              seller_id: sellerId,
-              quantity: item.quantity,
-              price: item.price,
-              pre_order_id: item.preOrderId,
-            }
-          }
-
-          // Get listing_id from product API for regular products
-          const res = await fetch(`/api/products/${item.id}`)
-          const data = await res.json() as { success: boolean; product?: { listing_id?: string } }
-          const listingId = data.success && data.product?.listing_id ? data.product.listing_id : item.id
-
+      // Regular products carry their concrete product_listing id from the cart.
+      const itemsWithListingIds = activeGroup.items.map((item) => {
+        // Pre-orders don't have product_listings entries
+        if (item.itemType === "pre_order") {
           return {
             product_id: item.id,
-            listing_id: listingId,
+            listing_id: null, // Pre-orders don't use product_listings
             seller_id: sellerId,
             quantity: item.quantity,
             price: item.price,
-            pre_order_id: undefined,
+            pre_order_id: item.preOrderId,
           }
-        })
-      )
+        }
+
+        return {
+          product_id: item.id,
+          listing_id: item.listing_id ?? null,
+          seller_id: sellerId,
+          quantity: item.quantity,
+          price: item.price,
+          pre_order_id: undefined,
+        }
+      })
 
       // Payment proof is MANDATORY - must be provided with order
       if (!proofUrl) {
