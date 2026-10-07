@@ -41,7 +41,7 @@ const socialLinks = [
 
 export function Footer() {
   return (
-    <footer className="bg-muted">
+    <footer className="border-t border-border bg-foreground text-background">
       <div className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           {/* Brand */}
@@ -49,7 +49,7 @@ export function Footer() {
             <Link href="/" prefetch={false}>
               <Image src="/images/warpzone.png" alt="The Warpzone" width={140} height={40} className="h-9 w-auto object-contain" />
             </Link>
-            <p className="mt-4 text-sm text-muted-foreground">
+            <p className="mt-4 max-w-xs text-sm leading-6 text-background/65">
               Your ultimate destination for trading cards, tournaments, and collectibles.
             </p>
             <div className="mt-4 flex gap-4">
@@ -59,7 +59,7 @@ export function Footer() {
                   href={item.href}
                   target={item.href.startsWith("mailto:") ? undefined : "_blank"}
                   rel={item.href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-background/60 transition-colors hover:text-primary"
                 >
                   <span className="sr-only">{item.name}</span>
                   <item.icon className="h-5 w-5" />
@@ -70,14 +70,14 @@ export function Footer() {
 
           {/* Shop */}
           <div>
-            <h3 className="text-sm font-semibold">Shop</h3>
+            <h3 className="label-meta text-primary">Shop</h3>
             <ul className="mt-4 space-y-2">
               {footerNavigation.shop.map((item) => (
                 <li key={item.name}>
                   <Link
                     href={item.href}
                     prefetch={false}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-sm text-background/65 transition-colors hover:text-background"
                   >
                     {item.name}
                   </Link>
@@ -88,14 +88,14 @@ export function Footer() {
 
           {/* Events */}
           <div>
-            <h3 className="text-sm font-semibold">Events</h3>
+            <h3 className="label-meta text-primary">Events</h3>
             <ul className="mt-4 space-y-2">
               {footerNavigation.events.map((item) => (
                 <li key={item.name}>
                   <Link
                     href={item.href}
                     prefetch={false}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-sm text-background/65 transition-colors hover:text-background"
                   >
                     {item.name}
                   </Link>
@@ -106,7 +106,7 @@ export function Footer() {
 
           {/* Support */}
           <div>
-            <h3 className="text-sm font-semibold">Support</h3>
+            <h3 className="label-meta text-primary">Support</h3>
             <ul className="mt-4 space-y-2">
               {footerNavigation.support.map((item) => (
                 <li key={item.name}>
@@ -115,7 +115,7 @@ export function Footer() {
                       href={item.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      className="text-sm text-background/65 transition-colors hover:text-background"
                     >
                       {item.name}
                     </a>
@@ -123,7 +123,7 @@ export function Footer() {
                     <Link
                       href={item.href}
                       prefetch={false}
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      className="text-sm text-background/65 transition-colors hover:text-background"
                     >
                       {item.name}
                     </Link>
@@ -134,8 +134,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t pt-8">
-          <p className="text-sm text-muted-foreground text-center">
+        <div className="mt-12 border-t border-background/15 pt-8">
+          <p className="text-center text-xs text-background/55">
             &copy; {new Date().getFullYear()} The Warpzone. All rights reserved.
           </p>
         </div>

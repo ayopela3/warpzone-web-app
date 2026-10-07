@@ -278,11 +278,12 @@ export default function CheckoutPage() {
   if (!isAuthenticated) return null
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="border-b bg-white shadow-sm">
+      <div className="border-b border-border bg-background">
         <div className="mx-auto max-w-3xl px-4 py-6 lg:px-8">
-          <h1 className="text-2xl font-black text-gray-900">Checkout</h1>
+          <p className="label-meta mb-2 text-foreground">Secure order flow</p>
+          <h1 className="text-2xl font-black text-foreground">Checkout</h1>
           {/* Step indicator */}
           <div className="flex items-center gap-2 mt-3">
             {(["review", "payment", "confirmed"] as Step[]).map((s, i) => {
@@ -294,17 +295,17 @@ export default function CheckoutPage() {
               <div key={s} className="flex items-center gap-2">
                 <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
                   isPast
-                    ? "bg-green-500 text-white"
+                    ? "bg-green-600 text-white"
                     : isActive
-                      ? "bg-primary text-white"
-                      : "bg-gray-200 text-gray-500"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
                 }`}>
                   {isPast ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                 </div>
-                <span className={`text-sm font-medium hidden sm:block ${isActive ? "text-gray-900 font-semibold" : isPast ? "text-green-600" : "text-gray-400"}`}>
+                <span className={`hidden text-sm font-medium sm:block ${isActive ? "font-semibold text-foreground" : isPast ? "text-green-700" : "text-muted-foreground"}`}>
                   {s === "review" ? "Review" : s === "payment" ? "Payment" : "Confirmed"}
                 </span>
-                {i < 2 && <ArrowRight className="h-3 w-3 text-gray-300" />}
+                {i < 2 && <ArrowRight className="h-3 w-3 text-muted-foreground/50" />}
               </div>
               )
             })}
@@ -318,7 +319,7 @@ export default function CheckoutPage() {
         {step === "review" && (
           <div className="space-y-6">
             {/* Items — grouped by seller with checkboxes */}
-            <Card className="bg-white shadow-sm">
+            <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2 text-lg">
@@ -328,7 +329,7 @@ export default function CheckoutPage() {
                   <button
                     type="button"
                     onClick={toggleAll}
-                    className="text-xs font-bold text-primary hover:underline"
+                    className="text-xs font-bold text-foreground underline"
                   >
                     {selectedIds.size === cartItems.length ? "Deselect all" : "Select all"}
                   </button>
@@ -346,17 +347,17 @@ export default function CheckoutPage() {
                 ).map((group) => (
                   <div key={group.sellerId}>
                     {/* Seller header */}
-                    <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100">
+                    <div className="mb-2 flex items-center gap-2 border-b border-border pb-1.5">
                       <Store className="h-3.5 w-3.5 text-primary shrink-0" />
-                      <span className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                      <span className="label-meta text-muted-foreground">
                         {group.sellerId === "__unknown__" ? "Warpzone Shop" : `Seller · ${group.sellerId.slice(0, 8)}…`}
                       </span>
                     </div>
                     {group.items.map((item) => (
                       <label
                         key={item.id}
-                        className={`flex items-center gap-3 py-3 cursor-pointer rounded-lg px-2 transition ${
-                          selectedIds.has(item.id) ? "bg-primary/5" : "hover:bg-gray-50"
+                        className={`flex cursor-pointer items-center gap-3 rounded-md px-2 py-3 transition ${
+                          selectedIds.has(item.id) ? "bg-muted" : "hover:bg-muted"
                         }`}
                       >
                         <input
@@ -365,16 +366,16 @@ export default function CheckoutPage() {
                           onChange={() => toggleItem(item.id)}
                           className="h-4 w-4 accent-primary shrink-0"
                         />
-                        <div className="h-12 w-12 shrink-0 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
-                          <Package className="h-5 w-5 text-gray-400" />
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
+                          <Package className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900 text-sm truncate">{item.name}</p>
-                          <p className="text-xs text-gray-500 capitalize">{item.category}</p>
+                          <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                          <p className="text-xs capitalize text-muted-foreground">{item.category}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="font-bold text-gray-900 text-sm">{fiatSymbol}{(item.price * item.quantity).toLocaleString()}</p>
-                          <p className="text-xs text-gray-400">×{item.quantity} @ {fiatSymbol}{item.price.toLocaleString()}</p>
+                          <p className="text-sm font-bold text-foreground">{fiatSymbol}{(item.price * item.quantity).toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">×{item.quantity} @ {fiatSymbol}{item.price.toLocaleString()}</p>
                         </div>
                       </label>
                     ))}
@@ -384,7 +385,7 @@ export default function CheckoutPage() {
             </Card>
 
             {/* Fulfillment */}
-            <Card className="bg-white shadow-sm">
+            <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">How would you like to receive your order?</CardTitle>
               </CardHeader>
@@ -395,23 +396,23 @@ export default function CheckoutPage() {
                       key={type}
                       type="button"
                       onClick={() => setFulfillment(type)}
-                      className={`w-full flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition text-left ${
-                        fulfillment === type ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
+                      className={`flex w-full cursor-pointer items-start gap-4 rounded-md border p-4 text-left transition ${
+                        fulfillment === type ? "border-foreground bg-muted" : "border-border hover:border-foreground"
                       }`}
                     >
                       <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                        fulfillment === type ? "border-primary" : "border-gray-300"
+                        fulfillment === type ? "border-primary" : "border-border"
                       }`}>
                         {fulfillment === type && <div className="h-2 w-2 rounded-full bg-primary" />}
                       </div>
                       <div>
-                        <div className="flex items-center gap-2 font-semibold text-gray-900">
+                        <div className="flex items-center gap-2 font-semibold text-foreground">
                           {type === "pickup"
                             ? <Store className="h-4 w-4 text-primary" />
                             : <Truck className="h-4 w-4 text-primary" />}
                           {type === "pickup" ? "In-store Pickup" : "Shipping"}
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="mt-1 text-sm text-muted-foreground">
                           {type === "pickup"
                             ? "Collect your order at the shop once the seller marks it ready."
                             : "Contact the seller after payment is confirmed to arrange delivery."}
@@ -424,9 +425,9 @@ export default function CheckoutPage() {
             </Card>
 
             {/* Notes */}
-            <Card className="bg-white shadow-sm">
+            <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Order Notes <span className="font-normal text-gray-400">(optional)</span></CardTitle>
+                <CardTitle className="text-lg">Order Notes <span className="font-normal text-muted-foreground">(optional)</span></CardTitle>
               </CardHeader>
               <CardContent>
                 <Textarea
@@ -440,15 +441,15 @@ export default function CheckoutPage() {
             </Card>
 
             {/* Order total */}
-            <Card className="bg-white shadow-sm">
+            <Card>
               <CardContent className="p-6">
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+                <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
                   <span>Selected ({selectedCount} item{selectedCount !== 1 ? "s" : ""})</span>
                   <span>{fiatSymbol}{selectedTotal.toLocaleString()}</span>
                 </div>
-                <div className="flex items-center justify-between font-black text-lg border-t pt-3">
+                <div className="flex items-center justify-between border-t border-border pt-3 text-lg font-black">
                   <span>Total</span>
-                  <span className="text-primary">{fiatSymbol}{selectedTotal.toLocaleString()}</span>
+                  <span className="text-foreground">{fiatSymbol}{selectedTotal.toLocaleString()}</span>
                 </div>
               </CardContent>
             </Card>
@@ -460,7 +461,7 @@ export default function CheckoutPage() {
                   Back to Cart
                 </Link>
               </Button>
-              <Button className="flex-1 bg-primary hover:bg-primary/90 text-white" onClick={handleProceedToPayment}>
+              <Button className="flex-1" onClick={handleProceedToPayment}>
                 Proceed to Payment
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
@@ -474,18 +475,18 @@ export default function CheckoutPage() {
 
             {/* Multi-seller progress bar */}
             {sellerGroups.length > 1 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
+              <div className="rounded-md border border-border bg-card p-4">
+                <p className="label-meta mb-3 text-muted-foreground">
                   Payment progress — {currentGroupIdx + 1} of {sellerGroups.length} sellers
                 </p>
                 <div className="flex gap-2">
                   {sellerGroups.map((g, idx) => (
                     <div key={g.sellerId} className="flex-1 flex flex-col gap-1">
                       <div className={`h-2 rounded-full ${
-                        idx < currentGroupIdx ? "bg-green-500" :
-                        idx === currentGroupIdx ? "bg-primary" : "bg-gray-200"
+                        idx < currentGroupIdx ? "bg-green-600" :
+                        idx === currentGroupIdx ? "bg-primary" : "bg-border"
                       }`} />
-                      <span className="text-xs text-gray-400 truncate">
+                      <span className="truncate text-xs text-muted-foreground">
                         {idx < currentGroupIdx ? "✓ Paid" :
                          idx === currentGroupIdx ? "Paying now" : "Pending"}
                       </span>
@@ -496,28 +497,28 @@ export default function CheckoutPage() {
             )}
 
             {/* Active group items summary */}
-            <Card className="bg-white shadow-sm">
+            <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
                   <Store className="h-4 w-4 text-primary" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                  <span className="label-meta text-muted-foreground">
                     {sellerGroups.length > 1
                       ? `Seller ${currentGroupIdx + 1} of ${sellerGroups.length}`
                       : "Your Order"}
                   </span>
                 </div>
               </CardHeader>
-              <CardContent className="pt-0 divide-y divide-gray-100">
+              <CardContent className="divide-y divide-border pt-0">
                 {activeGroup?.items.map((item) => (
                   <div key={item.id} className="flex items-center gap-3 py-2.5">
-                    <div className="h-9 w-9 shrink-0 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <Package className="h-4 w-4 text-gray-400" />
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted">
+                      <Package className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{item.name}</p>
-                      <p className="text-xs text-gray-400">×{item.quantity}</p>
+                      <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">×{item.quantity}</p>
                     </div>
-                    <p className="text-sm font-bold text-gray-900 shrink-0">
+                    <p className="shrink-0 text-sm font-bold text-foreground">
                       {fiatSymbol}{(item.price * item.quantity).toLocaleString()}
                     </p>
                   </div>
@@ -525,7 +526,7 @@ export default function CheckoutPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white shadow-sm">
+            <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <QrCode className="h-5 w-5 text-primary" />
@@ -536,14 +537,14 @@ export default function CheckoutPage() {
                 {loadingQr ? (
                   <div className="flex flex-col items-center py-10 gap-3">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="text-sm text-gray-500">Loading payment details...</p>
+                    <p className="text-sm text-muted-foreground">Loading payment details...</p>
                   </div>
                 ) : platformQr?.payment_qr_url ? (
                   <div className="flex flex-col items-center gap-4">
-                    <p className="text-gray-700 text-center">
+                    <p className="text-center text-muted-foreground">
                       Scan the QR code below to send payment directly to the seller via GCash, Maya, or your bank.
                     </p>
-                    <div className="border-4 border-primary rounded-2xl p-3 bg-white shadow-lg">
+                    <div className="rounded-md border border-primary bg-card p-3">
                       <div className="relative h-56 w-56">
                         <Image
                           src={platformQr.payment_qr_url}
@@ -553,12 +554,12 @@ export default function CheckoutPage() {
                         />
                       </div>
                     </div>
-                    <p className="text-sm text-gray-500 text-center">
-                      Pay to: <span className="font-semibold text-gray-800">{platformQr.seller_name}</span>
+                    <p className="text-center text-sm text-muted-foreground">
+                      Pay to: <span className="font-semibold text-foreground">{platformQr.seller_name}</span>
                     </p>
-                    <div className="w-full bg-amber-50 border border-amber-200 rounded-xl p-4">
-                      <p className="text-sm font-bold text-amber-800">Amount to pay</p>
-                      <p className="text-3xl font-black text-amber-700 mt-1">
+                    <div className="w-full rounded-md border border-border bg-muted p-4">
+                      <p className="label-meta text-muted-foreground">Amount to pay</p>
+                      <p className="price mt-2 text-3xl text-foreground">
                         {fiatSymbol}{activeGroupTotal.toLocaleString()}
                       </p>
                     </div>
@@ -566,8 +567,8 @@ export default function CheckoutPage() {
                 ) : (
                   <div className="flex flex-col items-center py-10 gap-3 text-center">
                     <AlertCircle className="h-10 w-10 text-amber-500" />
-                    <p className="font-semibold text-gray-800">Payment QR not available</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-semibold text-foreground">Payment QR not available</p>
+                    <p className="text-sm text-muted-foreground">
                       The seller has not uploaded a payment QR yet. Please contact them directly to arrange payment.
                     </p>
                   </div>
@@ -576,10 +577,10 @@ export default function CheckoutPage() {
             </Card>
 
             {/* Instructions */}
-            <Card className="bg-blue-50 border-blue-200 shadow-sm">
+            <Card className="border-preorder/25 bg-muted">
               <CardContent className="p-5">
-                <p className="font-semibold text-blue-800 mb-2">How it works</p>
-                <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+                <p className="mb-2 font-semibold text-foreground">How it works</p>
+                <ol className="list-inside list-decimal space-y-1 text-sm text-muted-foreground">
                   <li>Scan the QR and send the exact amount shown.</li>
                   <li>Take a screenshot of your payment confirmation.</li>
                   <li>Upload the screenshot below.</li>
@@ -589,7 +590,7 @@ export default function CheckoutPage() {
             </Card>
 
             {/* Proof of payment upload */}
-            <Card className="bg-white shadow-sm">
+            <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Upload className="h-4 w-4 text-primary" />
@@ -599,7 +600,7 @@ export default function CheckoutPage() {
               <CardContent className="space-y-3">
                 {proofUrl ? (
                   <div className="flex flex-col items-center gap-3">
-                    <div className="relative h-40 w-full rounded-xl overflow-hidden border border-border">
+                    <div className="relative h-40 w-full overflow-hidden rounded-md border border-border">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={proofUrl} alt="Payment proof" className="h-full w-full object-contain bg-muted" />
                     </div>
@@ -612,7 +613,7 @@ export default function CheckoutPage() {
                     </button>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-border rounded-xl py-8 cursor-pointer hover:border-primary hover:bg-primary/5 transition">
+                  <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-md border border-dashed border-border py-8 transition hover:border-foreground hover:bg-muted">
                     {uploadingProof
                       ? <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       : <ImageIcon className="h-8 w-8 text-muted-foreground" />}
@@ -632,8 +633,8 @@ export default function CheckoutPage() {
             </Card>
 
             {/* Fulfillment summary */}
-            <Card className="bg-white shadow-sm">
-              <CardContent className="p-5 flex items-center gap-3 text-sm text-gray-600">
+            <Card>
+              <CardContent className="flex items-center gap-3 p-5 text-sm text-muted-foreground">
                 {fulfillment === "pickup"
                   ? <Store className="h-5 w-5 text-primary shrink-0" />
                   : <Truck className="h-5 w-5 text-primary shrink-0" />}
@@ -656,7 +657,7 @@ export default function CheckoutPage() {
                 Back
               </Button>
               <Button
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+                className="flex-1 font-bold"
                 onClick={handlePlaceOrder}
                 disabled={placingOrder || !proofUrl}
               >
@@ -673,17 +674,17 @@ export default function CheckoutPage() {
         {/* ── STEP 3: CONFIRMED ──────────────────────────────────── */}
         {step === "confirmed" && (
           <div className="space-y-6">
-            <Card className="bg-white shadow-sm text-center">
+            <Card className="text-center">
               <CardContent className="p-10 space-y-4">
                 <div className="flex justify-center">
                   <div className="h-20 w-20 rounded-full bg-green-100 flex items-center justify-center">
-                    <CheckCircle2 className="h-10 w-10 text-green-600" />
+                    <CheckCircle2 className="h-10 w-10 text-green-700" />
                   </div>
                 </div>
-                <h2 className="text-2xl font-black text-gray-900">
+                <h2 className="text-2xl font-black text-foreground">
                   {placedOrderIds.length > 1 ? "All Orders Placed!" : "Order Placed!"}
                 </h2>
-                <p className="text-gray-600 max-w-sm mx-auto">
+                <p className="mx-auto max-w-sm text-muted-foreground">
                   {placedOrderIds.length > 1
                     ? `${placedOrderIds.length} orders are now pending payment confirmation from each seller.`
                     : "Your order is now pending payment confirmation from the seller."}
@@ -692,7 +693,7 @@ export default function CheckoutPage() {
                 {placedOrderIds.length > 0 && (
                   <div className="space-y-1">
                     {placedOrderIds.map((id, i) => id && (
-                      <p key={id} className="text-xs text-gray-400 font-mono">
+                      <p key={id} className="font-mono text-xs text-muted-foreground">
                         {placedOrderIds.length > 1 ? `Order ${i + 1}: ` : "Order ID: "}{id}
                       </p>
                     ))}
@@ -702,7 +703,7 @@ export default function CheckoutPage() {
             </Card>
 
             {/* What happens next */}
-            <Card className="bg-white shadow-sm">
+            <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">What happens next?</CardTitle>
               </CardHeader>
@@ -715,12 +716,12 @@ export default function CheckoutPage() {
                     : "Contact the seller to arrange shipping after the order is confirmed." },
                 ].map(({ icon: Icon, title, desc }, i) => (
                   <div key={i} className="flex gap-3">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-muted">
                       <Icon className="h-4 w-4 text-primary" />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900 text-sm">{title}</p>
-                      <p className="text-sm text-gray-500">{desc}</p>
+                      <p className="text-sm font-semibold text-foreground">{title}</p>
+                      <p className="text-sm text-muted-foreground">{desc}</p>
                     </div>
                   </div>
                 ))}
@@ -731,7 +732,7 @@ export default function CheckoutPage() {
               <Button variant="outline" asChild className="flex-1">
                 <Link href="/shop">Continue Shopping</Link>
               </Button>
-              <Button asChild className="flex-1 bg-primary hover:bg-primary/90 text-white">
+              <Button asChild className="flex-1">
                 <Link href="/dashboard">
                   View My Orders
                   <ArrowRight className="h-4 w-4 ml-2" />

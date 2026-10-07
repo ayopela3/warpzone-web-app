@@ -90,10 +90,10 @@ function ShopPageInner() {
   const activeCategory = category === "all" ? "All Products" : (categoryLabel(category) || "All Products")
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-background">
       {/* ── Page header ── */}
       <div
-        className="relative border-b border-neutral-200 overflow-hidden"
+        className="relative overflow-hidden border-b border-border"
         style={{
           backgroundImage: category !== "all" && categoryImage(category)
             ? `url(${categoryImage(category)})`
@@ -109,14 +109,14 @@ function ShopPageInner() {
         <div className="relative mx-auto max-w-7xl px-4 pt-6 pb-5 lg:px-8 lg:pt-8 lg:pb-6">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${category !== "all" && categoryImage(category) ? "text-white/80" : "text-primary"}`}>
+              <p className={`label-meta mb-2 ${category !== "all" && categoryImage(category) ? "text-white/80" : "text-foreground"}`}>
                 {category === "all" ? "All Categories" : categoryLabel(category)}
               </p>
-              <h1 className={`text-xl font-black tracking-tight sm:text-2xl lg:text-3xl ${category !== "all" && categoryImage(category) ? "text-white" : "text-neutral-900"}`}>
+              <h1 className={`text-3xl font-black sm:text-4xl ${category !== "all" && categoryImage(category) ? "text-white" : "text-foreground"}`}>
                 {activeCategory}
               </h1>
             </div>
-            <p className={`text-sm shrink-0 mt-1 ${category !== "all" && categoryImage(category) ? "text-white/70" : "text-neutral-400"}`}>
+            <p className={`label-meta mt-1 shrink-0 ${category !== "all" && categoryImage(category) ? "text-white/70" : "text-muted-foreground"}`}>
               {filtered.length} product{filtered.length !== 1 ? "s" : ""}
             </p>
           </div>
@@ -138,23 +138,23 @@ function ShopPageInner() {
         {loading ? (
           <div className="text-center py-16">
             <Loader2 className="h-10 w-10 text-primary mx-auto mb-4 animate-spin" />
-            <p className="text-sm text-neutral-400">Loading products...</p>
+            <p className="text-sm text-muted-foreground">Loading products...</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">
-            <ShoppingBag className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-neutral-700">No products found</h3>
+            <ShoppingBag className="mx-auto mb-4 h-12 w-12 text-muted-foreground/45" />
+            <h3 className="text-lg font-bold text-foreground">No products found</h3>
             {search.trim() ? (
               <>
-                <p className="text-sm text-neutral-500 mt-2 max-w-xs mx-auto">
-                  <span className="font-semibold text-neutral-700">&ldquo;{search.trim()}&rdquo;</span> is not found in the Warp.
+                <p className="mx-auto mt-2 max-w-xs text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">&ldquo;{search.trim()}&rdquo;</span> is not found in the Warp.
                   Would you like to request this product?
                 </p>
                 <a
                   href="https://www.facebook.com/warpzonePH/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#1877F2] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#166fe5] transition-colors"
+                  className="mt-5 inline-flex items-center gap-2 rounded-md border border-[#1877F2] bg-[#1877F2] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#166fe5]"
                 >
                   {/* Facebook icon */}
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
@@ -170,7 +170,7 @@ function ShopPageInner() {
               </>
             ) : (
               <>
-                <p className="text-sm text-neutral-400 mt-1">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {activeFiltersCount > 0 ? "Try adjusting your filters" : "Check back later for new listings"}
                 </p>
                 {activeFiltersCount > 0 && (
@@ -180,7 +180,7 @@ function ShopPageInner() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {filtered.map((product) => (
               <ProductCard
                 key={product.id}

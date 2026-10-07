@@ -50,38 +50,27 @@ export function HeroSection({ isSeller, featuredProducts, activeFeaturedIndex, f
 
   return (
     <section
-      className="relative"
-      style={{ background: "linear-gradient(135deg, #1a1200 0%, #111 40%, #1c1400 100%)", color: "#fff" }}
+      className="relative border-b border-border bg-background text-foreground"
     >
-      {/* Yellow glow — top right */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 60% at 80% 10%, rgba(250,204,21,0.30), transparent 70%)" }} />
-      {/* Warm tint — bottom left */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 40% at 10% 90%, rgba(250,160,21,0.12), transparent 60%)" }} />
-
       <div className="relative mx-auto max-w-7xl px-4 lg:px-8">
-        <div className={`grid items-center gap-10 py-16 ${!isSeller && total > 0 ? "lg:grid-cols-[1fr_400px] lg:py-14" : ""}`}>
+        <div className={`grid items-center gap-10 py-14 ${!isSeller && total > 0 ? "lg:grid-cols-[1.35fr_400px] lg:py-16" : ""}`}>
 
           {/* ── Left: copy ── */}
           <div className="flex flex-col justify-center">
-            <span
-              className="inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest mb-6"
-              style={{ background: "rgba(250,204,21,0.15)", border: "1px solid rgba(250,204,21,0.35)", color: "#facc15" }}
-            >
+            <span className="label-meta mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-primary" />
               Your local TCG hobby shop — online
             </span>
 
-            <h1
-              className="text-5xl font-black tracking-tight leading-[1.05] lg:text-6xl"
-              style={{ color: "#ffffff" }}
-            >
+            <h1 className="max-w-3xl text-5xl font-black leading-none text-foreground lg:text-6xl">
               {isSeller ? (
-                <>Manage your<br /><span style={{ color: "#facc15" }}>store</span> with ease.</>
+                <>Manage your<br /><span className="bg-primary px-2 text-primary-foreground">store</span> with ease.</>
               ) : (
-                <>Cards, sealed,<br />auctions &amp;<br /><span style={{ color: "#facc15" }}>more.</span></>
+                <>Cards, sealed,<br />auctions &amp;<br /><span className="bg-primary px-2 text-primary-foreground">more.</span></>
               )}
             </h1>
 
-            <p className="mt-6 text-base leading-relaxed max-w-lg" style={{ color: "rgba(255,255,255,0.75)" }}>
+            <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground">
               {isSeller
                 ? "Upload listings, manage pre-orders, and track your sales — all in one place."
                 : "Browse verified singles, bid on grails, reserve upcoming releases, and join local tournaments at The Warpzone."}
@@ -89,18 +78,18 @@ export function HeroSection({ isSeller, featuredProducts, activeFeaturedIndex, f
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               {isSeller ? (
-                <Button size="lg" className="bg-primary text-black font-bold hover:bg-primary/90" asChild>
+                <Button size="lg" asChild>
                   <Link href="/dashboard" prefetch={false}>Go to Dashboard <ArrowRight className="h-4 w-4" /></Link>
                 </Button>
               ) : (
                 <>
-                  <Button size="lg" className="bg-primary text-black font-bold hover:bg-primary/90" asChild>
+                  <Button size="lg" asChild>
                     <Link href="/shop" prefetch={false}>Shop now <ArrowRight className="h-4 w-4" /></Link>
                   </Button>
-                  <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 hover:text-white" asChild>
+                  <Button size="lg" variant="outline" asChild>
                     <Link href="/auctions" prefetch={false}>Live auctions <Gavel className="h-4 w-4" /></Link>
                   </Button>
-                  <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 hover:text-white" asChild>
+                  <Button size="lg" variant="outline" asChild>
                     <Link href="/tournaments" prefetch={false}>Tournaments <Trophy className="h-4 w-4" /></Link>
                   </Button>
                 </>
@@ -113,12 +102,12 @@ export function HeroSection({ isSeller, featuredProducts, activeFeaturedIndex, f
             <div className="relative flex flex-col select-none">
 
               {/* Card */}
-              <div className="rounded-2xl overflow-hidden shadow-2xl" style={{ background: "#fff" }}>
+              <div className="overflow-hidden rounded-md border border-border bg-card">
 
                 {/* Image area */}
                 <div
-                  className="relative flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing"
-                  style={{ height: "280px", background: "#fdf6e3" }}
+                  style={{ height: "280px" }}
+                  className="relative flex cursor-grab items-center justify-center overflow-hidden bg-muted active:cursor-grabbing"
                   onPointerDown={total > 1 ? handlePointerDown : undefined}
                   onPointerMove={total > 1 ? handlePointerMove : undefined}
                   onPointerUp={total > 1 ? handlePointerUp : undefined}
@@ -133,33 +122,31 @@ export function HeroSection({ isSeller, featuredProducts, activeFeaturedIndex, f
                         transform: `scale(0.9) translateX(${dragging ? dragDelta * 0.15 : 0}px)`,
                         transition: dragging ? "none" : "transform 0.35s cubic-bezier(.4,0,.2,1)",
                       }}
-                      className="h-full w-full object-contain pointer-events-none"
+                      className="pointer-events-none h-full w-full object-contain"
                     />
                   ) : (
-                    <ShoppingBag className="h-20 w-20" style={{ color: "#ccc" }} />
+                    <ShoppingBag className="h-20 w-20 text-muted-foreground/45" />
                   )}
 
                   {/* Category badge */}
                   <span
-                    className="absolute top-3 left-3 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide"
-                    style={{ background: "#facc15", color: "#000" }}
+                    className="label-meta absolute left-3 top-3 rounded-full border border-primary bg-primary px-3 py-1 text-primary-foreground"
                   >
                     {active?.category}
                   </span>
                 </div>
 
                 {/* Product info — white bg, dark text, always readable */}
-                <div className="px-5 py-4" style={{ background: "#fff", borderTop: "1px solid #f0f0f0" }}>
-                  <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#999" }}>Featured</p>
-                  <h3 className="text-base font-black leading-snug line-clamp-2" style={{ color: "#111" }}>{active?.name}</h3>
-                  <p className="mt-1 text-2xl font-black" style={{ color: "#facc15", textShadow: "0 0 0 #000", WebkitTextStroke: "0.5px #d4a400" }}>
+                <div className="border-t border-border bg-card px-5 py-4">
+                  <p className="label-meta mb-1 text-muted-foreground">Featured</p>
+                  <h3 className="line-clamp-2 text-base font-black leading-tight text-foreground">{active?.name}</h3>
+                  <p className="price mt-2 text-2xl text-foreground">
                     {fiatSymbol}{(active?.price ?? 0).toLocaleString()}
                   </p>
                   <Link
                     href={`/shop/${active?.id ?? ""}`}
                     prefetch={false}
-                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-opacity hover:opacity-90"
-                    style={{ background: "#facc15", color: "#000" }}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-md border border-primary bg-primary py-2.5 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary-hover"
                   >
                     View product <ArrowRight className="h-4 w-4" />
                   </Link>
@@ -180,7 +167,7 @@ export function HeroSection({ isSeller, featuredProducts, activeFeaturedIndex, f
                         borderRadius: "9999px",
                         transition: "all 0.3s",
                         width: activeFeaturedIndex === i ? "24px" : "6px",
-                        background: activeFeaturedIndex === i ? "#facc15" : "rgba(255,255,255,0.35)",
+                        background: activeFeaturedIndex === i ? "var(--primary)" : "var(--border)",
                         border: "none",
                         cursor: "pointer",
                         padding: 0,
@@ -203,23 +190,23 @@ type CtaSectionProps = { isSeller: boolean }
 export function CtaSection({ isSeller }: CtaSectionProps) {
   if (isSeller) return null
   return (
-    <section className="mx-auto grid max-w-7xl gap-8 px-4 py-16 lg:grid-cols-2 lg:px-8">
-      <div className="rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm">
-        <span className="inline-flex w-fit rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Live now</span>
-        <h2 className="mt-3 flex items-center gap-2 text-2xl font-black">
+    <section className="mx-auto grid max-w-7xl gap-4 px-4 py-16 lg:grid-cols-2 lg:px-8">
+      <div className="surface-panel p-6">
+        <span className="label-meta inline-flex w-fit rounded-full border border-primary bg-primary px-3 py-1 text-primary-foreground">Live now</span>
+        <h2 className="mt-4 flex items-center gap-2 text-2xl font-black">
           <Gavel className="h-6 w-6 text-primary" />
           Auction block
         </h2>
-        <p className="mb-6 mt-2 text-neutral-600">Bid on graded slabs, sealed boxes, and hard-to-find singles.</p>
+        <p className="mb-6 mt-2 text-muted-foreground">Bid on graded slabs, sealed boxes, and hard-to-find singles.</p>
         <Button asChild><Link href="/auctions" prefetch={false}>Browse auctions</Link></Button>
       </div>
-      <div className="rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm">
-        <span className="inline-flex w-fit rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Events</span>
-        <h2 className="mt-3 flex items-center gap-2 text-2xl font-black">
+      <div className="surface-panel p-6">
+        <span className="label-meta inline-flex w-fit rounded-full border border-primary bg-primary px-3 py-1 text-primary-foreground">Events</span>
+        <h2 className="mt-4 flex items-center gap-2 text-2xl font-black">
           <Trophy className="h-6 w-6 text-primary" />
           Upcoming tournaments
         </h2>
-        <p className="mb-6 mt-2 text-neutral-600">Join our community events and tournaments.</p>
+        <p className="mb-6 mt-2 text-muted-foreground">Join our community events and tournaments.</p>
         <Button variant="outline" asChild><Link href="/tournaments" prefetch={false}>See event calendar</Link></Button>
       </div>
     </section>

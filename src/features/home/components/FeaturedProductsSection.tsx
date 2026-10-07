@@ -26,54 +26,54 @@ function ProductTile({
   const [qty, setQty] = useState(1)
 
   return (
-    <div className="group bg-white rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-200 flex flex-col">
+    <div className="card-interactive group flex flex-col overflow-hidden rounded-md border border-border bg-card">
       {/* Image */}
       <Link href={`/shop/${product.id}`} prefetch={false} className="block relative">
-        <div className="flex items-center justify-center bg-[#fdf6e3] overflow-hidden" style={{ height: "200px" }}>
+        <div className="flex items-center justify-center overflow-hidden bg-muted" style={{ height: "200px" }}>
           {product.image_url ? (
             <img
               src={product.image_url}
               alt={product.name}
-              className="h-full w-full object-contain p-4 transition-transform duration-200 group-hover:scale-105"
+              className="h-full w-full object-contain p-4 transition-transform duration-200 group-hover:scale-[1.03]"
             />
           ) : (
-            <ShoppingBag className="h-16 w-16 text-primary/40" />
+            <ShoppingBag className="h-16 w-16 text-muted-foreground/45" />
           )}
           {/* Category pill */}
-          <span className="absolute top-2 left-2 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black">
+          <span className="label-meta absolute left-2 top-2 rounded-full border border-primary bg-primary px-2.5 py-1 text-primary-foreground">
             {product.category}
           </span>
           {/* Out of stock overlay */}
           {outOfStock && (
-            <div className="absolute inset-0 bg-foreground/40 flex items-center justify-center">
-              <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-foreground">Out of Stock</span>
+            <div className="absolute inset-0 flex items-center justify-center bg-foreground/40">
+              <span className="label-meta rounded-full bg-card px-3 py-1 text-foreground">Out of Stock</span>
             </div>
           )}
         </div>
       </Link>
 
       {/* Info */}
-      <div className="flex flex-col flex-1 p-4 gap-3">
+      <div className="flex flex-1 flex-col gap-3 border-t border-border p-4">
         <div>
           <Link href={`/shop/${product.id}`} prefetch={false}>
-            <h3 className="font-bold text-sm leading-snug text-foreground line-clamp-2 hover:text-primary transition-colors">
+            <h3 className="line-clamp-2 text-sm font-extrabold leading-tight text-foreground transition-colors hover:underline">
               {product.name}
             </h3>
           </Link>
           {product.rarity && (
-            <p className="mt-0.5 text-xs text-muted-foreground">{product.rarity}</p>
+            <p className="label-meta mt-1 text-muted-foreground">{product.rarity}</p>
           )}
         </div>
 
         <div className="mt-auto space-y-1.5">
-          <p className="font-black leading-none" style={{ fontSize: "1.05rem", color: "#d97706" }}>
+          <p className="price text-foreground">
             {fiatSymbol}{(product.price ?? 0).toLocaleString()}
           </p>
           <span
-            className="block w-fit text-[10px] font-bold rounded-full px-2 py-0.5"
+            className="label-meta block w-fit rounded-full border px-2 py-1"
             style={outOfStock
-              ? { background: "#f3f4f6", color: "#6b7280" }
-              : { background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0" }
+              ? { background: "var(--muted)", color: "var(--muted-foreground)", borderColor: "var(--border)" }
+              : { background: "var(--card)", color: "var(--foreground)", borderColor: "var(--border)" }
             }
           >
             {outOfStock ? "Out of stock" : `In stock (${product.quantity})`}
@@ -81,7 +81,7 @@ function ProductTile({
 
           {/* Stepper */}
           {!outOfStock && (
-            <div className="flex items-center justify-between border border-border rounded-xl px-3 h-9">
+            <div className="flex h-9 items-center justify-between rounded-md border border-border px-3">
               <button
                 type="button"
                 className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
@@ -105,7 +105,7 @@ function ProductTile({
           )}
 
           <Button
-            className="w-full h-9 text-xs font-bold rounded-xl bg-primary text-black hover:bg-primary/90"
+            className="h-9 w-full text-xs font-bold"
             disabled={outOfStock}
             onClick={() => onAddToCart(product, qty)}
           >
@@ -122,12 +122,12 @@ export function FeaturedProductsSection({ products, isSeller, fiatSymbol, onAddT
   if (isSeller || products.length === 0) return null
 
   return (
-    <section className="bg-neutral-50 border-t border-border py-14">
+    <section className="section-rule bg-background py-14">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         {/* Header */}
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Featured</p>
+            <p className="label-meta mb-2 text-foreground">Featured</p>
             <h2 className="text-2xl font-black text-foreground">Great additions to your collection</h2>
           </div>
           <Button variant="outline" asChild className="shrink-0">
@@ -136,7 +136,7 @@ export function FeaturedProductsSection({ products, isSeller, fiatSymbol, onAddT
         </div>
 
         {/* Grid */}
-        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {products.map((product) => (
             <ProductTile
               key={product.id}

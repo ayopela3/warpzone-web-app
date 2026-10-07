@@ -97,72 +97,72 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 pt-6 pb-12 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 pb-12 pt-6 lg:px-8">
 
         {/* ── Back link ── */}
         <Link
           href="/shop"
           prefetch={false}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
+          className="mb-8 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Shop
         </Link>
 
         {/* ── Main grid ── */}
-        <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-14 items-start">
+        <div className="grid items-start gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10">
 
           {/* Image panel */}
-          <div className="rounded-2xl overflow-hidden bg-[#fdf6e3] border border-border" style={{ minHeight: "420px" }}>
+          <div className="overflow-hidden rounded-md border border-border bg-muted" style={{ minHeight: "420px" }}>
             <ProductImageCarousel imageUrl={product.image_url} productName={product.name} />
           </div>
 
           {/* Product info */}
-          <div className="flex flex-col">
+          <div className="flex flex-col rounded-md border border-border bg-card p-5 lg:p-6">
 
             {/* Pill tags */}
             <div className="flex flex-wrap gap-2 mb-5">
-              <span className="inline-flex items-center rounded-full bg-primary/90 px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary-foreground">
+              <span className="label-meta inline-flex items-center rounded-full border border-primary bg-primary px-3 py-1 text-primary-foreground">
                 {product.category}
               </span>
-              <span className="inline-flex items-center rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-foreground">
+              <span className="label-meta inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-muted-foreground">
                 SKU: {product.sku}
               </span>
               {product.rarity && (
-                <span className="inline-flex items-center rounded-full bg-primary/90 px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary-foreground">
+                <span className="label-meta inline-flex items-center rounded-full border border-primary bg-primary px-3 py-1 text-primary-foreground">
                   {product.rarity}
                 </span>
               )}
-              <span className="inline-flex items-center rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-foreground">
+              <span className="label-meta inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-muted-foreground">
                 Condition: {conditionLabels[product.condition] || product.condition}
               </span>
             </div>
 
             {/* Title */}
-            <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground leading-tight lg:text-5xl">
+            <h1 className="font-display text-4xl font-black leading-none text-foreground lg:text-5xl">
               {product.name}
             </h1>
 
             {/* Description */}
             {product.description && (
-              <p className="mt-4 text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+              <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                 {product.description}
               </p>
             )}
 
             {/* Price + CTA card */}
-            <div className="mt-8 rounded-2xl border border-border bg-muted/40 p-5 space-y-4">
+            <div className="mt-8 space-y-4 border-t border-border pt-6">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Price</p>
-                  <p className="font-display text-3xl font-extrabold text-foreground leading-none">
+                  <p className="label-meta mb-2 text-muted-foreground">Price</p>
+                  <p className="price text-4xl text-foreground">
                     {fiatSymbol}{product.price.toLocaleString()}
                   </p>
                 </div>
-                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${
+                <span className={`label-meta inline-flex items-center rounded-full border px-3 py-1 ${
                   product.quantity > 0
-                    ? "bg-primary/90 text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-muted text-muted-foreground"
                 }`}>
                   {product.quantity > 0 ? `In stock (${product.quantity})` : "Out of stock"}
                 </span>
@@ -180,18 +180,18 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* Info cards */}
-            <div className="mt-6 grid grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-border bg-white p-6">
-                <ShieldCheck className="h-6 w-6 text-primary mb-4" />
-                <h2 className="font-display font-extrabold text-lg text-foreground leading-snug">Verified condition</h2>
-                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="rounded-md border border-border bg-background p-4">
+                <ShieldCheck className="mb-4 h-6 w-6 text-primary" />
+                <h2 className="text-base font-extrabold leading-tight text-foreground">Verified condition</h2>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   Every listing is reviewed and authenticated before publishing.
                 </p>
               </div>
-              <div className="rounded-2xl border border-border bg-white p-6">
-                <Truck className="h-6 w-6 text-primary mb-4" />
-                <h2 className="font-display font-extrabold text-lg text-foreground leading-snug">Pickup on our shop</h2>
-                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+              <div className="rounded-md border border-border bg-background p-4">
+                <Truck className="mb-4 h-6 w-6 text-primary" />
+                <h2 className="text-base font-extrabold leading-tight text-foreground">Pickup on our shop</h2>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   You&apos;ll be able to conveniently pick up your items at our main shop.
                 </p>
               </div>

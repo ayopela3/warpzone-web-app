@@ -86,12 +86,12 @@ export default function BecomeSellerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="flex min-h-screen items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-2xl border-neutral-200 bg-white shadow-sm">
+        <Card className="w-full max-w-2xl">
           <CardHeader>
             <CardTitle className="text-2xl font-black">Become a Seller</CardTitle>
-            <p className="text-sm text-neutral-600">Create your seller account to start listing products</p>
+            <p className="text-sm text-muted-foreground">Create your seller account to start listing products</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -241,9 +241,9 @@ export default function BecomeSellerPage() {
                 {loading ? "Creating account..." : "Create Seller Account"}
               </Button>
 
-              <p className="text-center text-sm text-neutral-600">
+              <p className="text-center text-sm text-muted-foreground">
                 Already have an account?{" "}
-                <Link href="/auth/signin" className="font-bold text-black underline">
+                <Link href="/auth/signin" className="font-bold text-foreground underline">
                   Sign in
                 </Link>
               </p>

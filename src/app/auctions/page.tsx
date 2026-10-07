@@ -69,18 +69,19 @@ export default function AuctionsPage() {
   const clearFilters = () => { setSearchQuery(""); setActiveTab("all") }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="border-b bg-white shadow-sm">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="border-b border-border bg-background">
         <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900">Live Auctions</h1>
-          <p className="text-gray-600 mt-1">Bid on rare collectibles, sealed products, and exclusive items from verified sellers.</p>
+          <p className="label-meta mb-2 text-foreground">Auction Block</p>
+          <h1 className="text-3xl font-black text-foreground">Live Auctions</h1>
+          <p className="mt-2 max-w-2xl text-muted-foreground">Bid on rare collectibles, sealed products, and exclusive items from verified sellers.</p>
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search auctions..."
               className="pl-10"
@@ -89,40 +90,40 @@ export default function AuctionsPage() {
             />
           </div>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AuctionFilter)} className="w-auto">
-            <TabsList className="bg-white p-1">
-              <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-white">All</TabsTrigger>
-              <TabsTrigger value="active" className="data-[state=active]:bg-primary data-[state=active]:text-white">Live Now</TabsTrigger>
-              <TabsTrigger value="upcoming" className="data-[state=active]:bg-primary data-[state=active]:text-white">Upcoming</TabsTrigger>
-              <TabsTrigger value="ended" className="data-[state=active]:bg-primary data-[state=active]:text-white">Ended</TabsTrigger>
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="active">Live Now</TabsTrigger>
+              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+              <TabsTrigger value="ended">Ended</TabsTrigger>
             </TabsList>
           </Tabs>
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-600">
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
               <X className="h-4 w-4 mr-1" />
               Clear
             </Button>
           )}
         </div>
 
-        <p className="text-sm text-gray-600 mb-4">
-          Showing <span className="font-medium text-gray-900">{filtered.length}</span> of {auctions.length} auctions
+        <p className="label-meta mb-4 text-muted-foreground">
+          Showing <span className="text-foreground">{filtered.length}</span> of {auctions.length} auctions
         </p>
 
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-            <p className="mt-4 text-gray-600">Loading auctions...</p>
+            <p className="mt-4 text-muted-foreground">Loading auctions...</p>
           </div>
         ) : filtered.length === 0 ? (
-          <Card className="bg-white shadow-md">
+          <Card>
             <CardContent className="p-12 text-center">
-              <Gavel className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900">No auctions found</h3>
-              <p className="text-gray-600 mt-1">
+              <Gavel className="mx-auto mb-4 h-16 w-16 text-muted-foreground/45" />
+              <h3 className="text-xl font-semibold text-foreground">No auctions found</h3>
+              <p className="mt-1 text-muted-foreground">
                 {hasActiveFilters ? "Try adjusting your filters" : "Check back later for new auctions"}
               </p>
               {hasActiveFilters && (
-                <Button variant="outline" className="mt-4 border-2" onClick={clearFilters}>Clear Filters</Button>
+                <Button variant="outline" className="mt-4" onClick={clearFilters}>Clear Filters</Button>
               )}
             </CardContent>
           </Card>

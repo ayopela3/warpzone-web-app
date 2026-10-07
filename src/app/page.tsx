@@ -37,7 +37,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="bg-white">
+    <div className="bg-background">
       <AnnouncementBar />
       <HeroSection
         isSeller={isSeller}

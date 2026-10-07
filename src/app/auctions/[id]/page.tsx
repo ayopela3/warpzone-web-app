@@ -200,16 +200,16 @@ export default function AuctionDetailPage() {
 
         {/* ── Page header ── */}
         <div className="flex items-start justify-between gap-4 mb-1">
-          <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground leading-tight">
+          <h1 className="font-display text-3xl font-extrabold leading-tight text-foreground">
             {auction.title}
           </h1>
           {/* Status badge */}
-          <span className={`inline-flex items-center gap-1.5 shrink-0 rounded-full px-3 py-1 text-sm font-semibold border ${
+          <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold ${
             isActive
-              ? "bg-white border-red-200 text-red-600"
+              ? "border-red-200 bg-card text-red-600"
               : isUpcoming
-              ? "bg-white border-amber-200 text-amber-600"
-              : "bg-white border-gray-200 text-gray-500"
+              ? "border-amber-200 bg-card text-amber-700"
+              : "border-border bg-card text-muted-foreground"
           }`}>
             {isActive && <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />}
             {isActive ? "Live" : isUpcoming ? "Upcoming" : "Ended"}
@@ -226,7 +226,7 @@ export default function AuctionDetailPage() {
           <div className="lg:col-span-3 space-y-5">
 
             {/* Image panel */}
-            <div className="rounded-2xl overflow-hidden bg-[#fdf6e3] border border-border flex items-center justify-center" style={{ minHeight: "340px" }}>
+            <div className="flex items-center justify-center overflow-hidden rounded-md border border-border bg-muted" style={{ minHeight: "340px" }}>
               {auction.image_url ? (
                 <div className="relative w-full" style={{ height: "340px" }}>
                   <Image
@@ -237,12 +237,12 @@ export default function AuctionDetailPage() {
                   />
                 </div>
               ) : (
-                <Gavel className="h-24 w-24 text-amber-300 my-16" />
+                <Gavel className="my-16 h-24 w-24 text-primary" />
               )}
             </div>
 
             {/* Item details card */}
-            <div className="bg-white rounded-2xl border border-border p-6">
+            <div className="rounded-md border border-border bg-card p-6">
               <h2 className="font-display text-base font-bold text-foreground mb-4">Item Details</h2>
               <div className="divide-y divide-border">
                 {[
@@ -270,12 +270,12 @@ export default function AuctionDetailPage() {
           <div className="lg:col-span-2 space-y-5">
 
             {/* Bid panel */}
-            <div className="bg-white rounded-2xl border border-border p-6 space-y-5">
+            <div className="space-y-5 rounded-md border border-border bg-card p-6">
 
               {/* Current bid display */}
               <div className="text-center space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Current Bid</p>
-                <p className="font-display text-4xl font-extrabold text-primary leading-none">
+                <p className="label-meta text-muted-foreground">Current Bid</p>
+                <p className="price text-4xl text-foreground">
                   {fiatSymbol}{(auction.current_bid || auction.starting_price).toLocaleString()}
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -294,7 +294,7 @@ export default function AuctionDetailPage() {
                 const msLeft = new Date(auction.end_time).getTime() - Date.now()
                 const inSnipeWindow = msLeft > 0 && msLeft <= 60 * 60 * 1000
                 return (inSnipeWindow || sniped) ? (
-                  <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-800">
+                  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-muted px-3 py-2.5 text-xs text-amber-800">
                     <Zap className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-500" />
                     <span>
                       {sniped
@@ -308,7 +308,7 @@ export default function AuctionDetailPage() {
               {/* ── Seller view ── */}
               {isSeller && (
                 <div className="space-y-3 pt-1 border-t border-border">
-                  <div className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-3 py-2 text-sm text-primary font-semibold">
+                  <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm font-semibold text-foreground">
                     <Gavel className="h-4 w-4 shrink-0" />
                     You are selling this item
                   </div>
@@ -338,7 +338,7 @@ export default function AuctionDetailPage() {
                   <div className="space-y-1.5">
                     <Label
                       htmlFor="bid_amount"
-                      className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
+                      className="label-meta text-muted-foreground"
                     >
                       Your Bid <span className="font-normal normal-case tracking-normal">(min. {fiatSymbol}{minBid.toLocaleString()})</span>
                     </Label>
@@ -351,11 +351,11 @@ export default function AuctionDetailPage() {
                       value={bidAmount}
                       onChange={(e) => setBidAmount(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") handleBid() }}
-                      className="h-12 text-lg font-semibold rounded-xl border-border"
+                      className="h-12 rounded-md border-border text-lg font-semibold"
                     />
                   </div>
                   <Button
-                    className="w-full h-12 rounded-xl text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="h-12 w-full text-base font-bold"
                     onClick={handleBid}
                     disabled={placing}
                   >
@@ -365,7 +365,7 @@ export default function AuctionDetailPage() {
                   </Button>
                   {!isAuthenticated && (
                     <p className="text-xs text-center text-muted-foreground">
-                      <Link href="/auth/signin" className="text-primary font-semibold hover:underline">Sign in</Link>
+                      <Link href="/auth/signin" className="font-semibold text-foreground underline">Sign in</Link>
                       {" "}to place a bid
                     </p>
                   )}
@@ -406,7 +406,7 @@ export default function AuctionDetailPage() {
             </div>
 
             {/* Bid history */}
-            <div className="bg-white rounded-2xl border border-border p-6">
+            <div className="rounded-md border border-border bg-card p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-display text-base font-bold text-foreground flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-primary" />
@@ -425,21 +425,21 @@ export default function AuctionDetailPage() {
                   {bids.map((bid, i) => (
                     <div
                       key={i}
-                      className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm ${
+                      className={`flex items-center justify-between rounded-md px-4 py-3 text-sm ${
                         i === 0
-                          ? "bg-primary/10 border border-primary/20"
+                          ? "border border-border bg-muted"
                           : "bg-muted/50"
                       }`}
                     >
                       <div className="space-y-0.5">
                         {i === 0 && (
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Leading</p>
+                          <p className="label-meta text-foreground">Leading</p>
                         )}
                         <p className="text-xs text-muted-foreground">
                           {new Date(bid.bid_time).toLocaleString()}
                         </p>
                       </div>
-                      <span className={`font-display font-bold text-base ${i === 0 ? "text-primary" : "text-foreground"}`}>
+                      <span className="font-display text-base font-bold text-foreground">
                         {fiatSymbol}{bid.bid_amount.toLocaleString()}
                       </span>
                     </div>

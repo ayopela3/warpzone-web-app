@@ -54,9 +54,9 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="flex min-h-screen items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-md border-neutral-200 bg-white shadow-sm">
+        <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-2xl font-black">Sign up</CardTitle>
           </CardHeader>
@@ -99,7 +99,7 @@ export default function SignUpPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -124,7 +124,7 @@ export default function SignUpPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     tabIndex={-1}
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -136,9 +136,9 @@ export default function SignUpPage() {
                 {loading ? "Creating account..." : "Sign up"}
               </Button>
 
-              <p className="text-center text-sm text-neutral-600">
+              <p className="text-center text-sm text-muted-foreground">
                 Already have an account?{" "}
-                <Link href="/auth/signin" prefetch={false} className="font-bold text-black underline">
+                <Link href="/auth/signin" prefetch={false} className="font-bold text-foreground underline">
                   Sign in
                 </Link>
               </p>

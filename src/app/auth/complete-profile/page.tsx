@@ -88,12 +88,12 @@ export default function CompleteProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-lg border-neutral-200 bg-white shadow-sm">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 text-foreground">
+      <Card className="w-full max-w-lg">
         <CardHeader className="space-y-1 pb-4">
-          <p className="text-xs font-bold uppercase tracking-widest text-primary">Almost there</p>
+          <p className="label-meta text-foreground">Almost there</p>
           <CardTitle className="text-2xl font-black">Complete your profile</CardTitle>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-muted-foreground">
             Tell us a bit about yourself so we can personalise your experience.
           </p>
         </CardHeader>
@@ -148,8 +148,8 @@ export default function CompleteProfilePage() {
               />
             </div>
 
-            <hr className="border-neutral-100" />
-            <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">Shipping address</p>
+            <hr className="border-border" />
+            <p className="label-meta text-muted-foreground">Shipping address</p>
 
             {/* Street */}
             <div className="space-y-1.5">
@@ -221,7 +221,7 @@ export default function CompleteProfilePage() {
             <button
               type="button"
               onClick={() => router.replace("/")}
-              className="w-full text-center text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+              className="w-full text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               Skip for now
             </button>

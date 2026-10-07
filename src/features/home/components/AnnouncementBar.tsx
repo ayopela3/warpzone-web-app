@@ -21,12 +21,12 @@ export function AnnouncementBar() {
   if (!visible) return null
 
   return (
-    <div className="relative bg-black text-white text-center text-sm font-semibold py-2.5 px-10">
+    <div className="relative bg-foreground px-10 py-2.5 text-center text-sm font-semibold text-background">
       <span>{MESSAGES[msgIndex]}</span>
       <button
         type="button"
         onClick={() => setVisible(false)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-background/60 transition-colors hover:text-background"
         aria-label="Dismiss announcement"
       >
         <X className="h-4 w-4" />

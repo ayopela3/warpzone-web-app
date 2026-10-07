@@ -27,17 +27,17 @@ const ITEMS = [
 
 export function TrustStrip() {
   return (
-    <section className="border-t border-border bg-neutral-50 py-12">
+    <section className="border-t border-border bg-muted py-12">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
           {ITEMS.map((item) => (
-            <div key={item.title} className="flex flex-col items-center text-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <div key={item.title} className="flex flex-col items-center gap-3 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-card text-primary">
                 <item.icon className="h-6 w-6" />
               </div>
               <div>
-                <p className="font-bold text-sm text-foreground">{item.title}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{item.body}</p>
+                <p className="text-sm font-bold text-foreground">{item.title}</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{item.body}</p>
               </div>
             </div>
           ))}

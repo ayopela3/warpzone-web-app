@@ -29,18 +29,18 @@ export function CategoryTiles() {
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
-      <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-5">Shop by Category</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+      <h2 className="label-meta mb-5 text-muted-foreground">Shop by Category</h2>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 lg:grid-cols-8">
         {loading
           ? Array.from({ length: 7 }).map((_, i) => (
-              <div key={i} className="h-20 rounded-2xl bg-gray-100 animate-pulse" />
+              <div key={i} className="h-20 animate-pulse rounded-md bg-muted" />
             ))
           : categories.map((cat) => (
               <Link
                 key={cat.id}
                 href={`/shop?category=${encodeURIComponent(cat.slug)}`}
                 prefetch={false}
-                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 py-4 px-2 transition-all duration-150 ${cat.color}`}
+                className="flex flex-col items-center justify-center gap-2 rounded-md border border-border bg-card px-2 py-4 transition-all duration-150 hover:border-foreground"
               >
                 <div className="h-10 w-full flex items-center justify-center">
                   {cat.image_url ? (
@@ -55,7 +55,7 @@ export function CategoryTiles() {
                     <span className="text-3xl leading-none">{cat.emoji ?? "🏷️"}</span>
                   )}
                 </div>
-                <span className="text-[11px] font-bold text-center text-foreground leading-tight">{cat.label}</span>
+                <span className="text-center text-[11px] font-bold leading-tight text-foreground">{cat.label}</span>
               </Link>
             ))}
       </div>

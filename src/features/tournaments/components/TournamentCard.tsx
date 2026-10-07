@@ -21,8 +21,8 @@ export function TournamentCard({ tournament, registering, onRegister }: Props) {
   const isRegistered = tournament.user_registered === 1
 
   return (
-    <Card className="border-neutral-200 bg-white py-0 shadow-sm transition hover:-translate-y-1 hover:border-black hover:shadow-xl">
-      <div className="h-32 bg-[linear-gradient(135deg,#fff7cc,#ffffff)] flex items-center justify-center">
+    <Card className="card-interactive overflow-hidden py-0">
+      <div className="flex h-32 items-center justify-center bg-muted">
         <Trophy className="h-12 w-12 text-primary" />
       </div>
 
@@ -61,7 +61,7 @@ export function TournamentCard({ tournament, registering, onRegister }: Props) {
             <DollarSign className="h-3 w-3" />
             Prize Pool
           </span>
-          <span className="font-black text-black">{tournament.prize_pool || "TBD"}</span>
+          <span className="font-black text-foreground">{tournament.prize_pool || "TBD"}</span>
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground flex items-center gap-1">
@@ -75,7 +75,7 @@ export function TournamentCard({ tournament, registering, onRegister }: Props) {
         </div>
         {/* Description — toggled by View Details */}
         {expanded && tournament.description && (
-          <p className="text-sm text-muted-foreground border-t border-neutral-100 pt-3">
+          <p className="border-t border-border pt-3 text-sm text-muted-foreground">
             {tournament.description}
           </p>
         )}

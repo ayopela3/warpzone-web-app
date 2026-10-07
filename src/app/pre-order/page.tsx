@@ -120,29 +120,30 @@ export default function PreOrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="border-b border-neutral-200 bg-neutral-50">
+      <div className="border-b border-border bg-background">
         <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
+          <p className="label-meta mb-2 text-foreground">Pre-orders</p>
           <h1 className="text-3xl font-black">Pre-order Upcoming Releases</h1>
-          <p className="mt-1 text-neutral-600">Reserve booster boxes, bundles, and sealed releases before launch day.</p>
+          <p className="mt-2 max-w-2xl text-muted-foreground">Reserve booster boxes, bundles, and sealed releases before launch day.</p>
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-2 lg:px-8">
         {/* Info button */}
         <Link href="/pre-orders/how-it-works">
-          <div className="mb-4 border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer rounded-xl p-3 flex items-center gap-3">
-            <div className="p-1.5 bg-white rounded-lg shadow-sm shrink-0">
+          <div className="mb-4 flex cursor-pointer items-center gap-3 rounded-md border border-border bg-card p-3 transition-colors hover:border-foreground">
+            <div className="shrink-0 rounded-md border border-border bg-background p-1.5">
               <Info className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-foreground text-sm">How Pre-Orders Work</p>
+              <p className="text-sm font-semibold text-foreground">How Pre-Orders Work</p>
               <p className="text-xs text-muted-foreground truncate">
                 Down payments, allocation, cancellations, and more.
               </p>
             </div>
-            <div className="text-primary font-semibold text-xs whitespace-nowrap hidden sm:block">
+            <div className="hidden whitespace-nowrap text-xs font-semibold text-foreground underline sm:block">
               Learn more →
             </div>
           </div>
@@ -151,7 +152,7 @@ export default function PreOrderPage() {
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-3 mb-4 flex-wrap">
           <div className="relative flex-1 min-w-48 max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search pre-orders..."
               className="pl-10"
@@ -171,10 +172,10 @@ export default function PreOrderPage() {
             <button
               type="button"
               onClick={() => setGameFilter("All")}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+              className={`h-10 rounded-full border px-3 text-xs font-bold transition ${
                 gameFilter === "All"
-                  ? "bg-primary text-white border-primary"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary"
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border bg-card text-muted-foreground hover:border-foreground hover:text-foreground"
               }`}
             >
               All
@@ -185,10 +186,10 @@ export default function PreOrderPage() {
                 key={cat.id}
                 type="button"
                 onClick={() => setGameFilter(cat.label)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+                className={`h-10 rounded-full border px-3 text-xs font-bold transition ${
                   gameFilter === cat.label
-                    ? "bg-primary text-white border-primary"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary"
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-card text-muted-foreground hover:border-foreground hover:text-foreground"
                 }`}
               >
                 {cat.label}
@@ -196,27 +197,27 @@ export default function PreOrderPage() {
             ))}
           </div>
           {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-500 shrink-0">
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="shrink-0 text-muted-foreground">
               <X className="h-4 w-4 mr-1" />Clear
             </Button>
           )}
         </div>
 
-        <p className="text-sm text-gray-500 mb-4">
-          Showing <span className="font-semibold text-gray-800">{filtered.length}</span> of {preOrders.length} pre-orders
+        <p className="label-meta mb-4 text-muted-foreground">
+          Showing <span className="text-foreground">{filtered.length}</span> of {preOrders.length} pre-orders
         </p>
 
         {/* Content */}
         {loading ? (
           <div className="flex flex-col items-center py-20 gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-gray-500">Loading pre-orders...</p>
+            <p className="text-muted-foreground">Loading pre-orders...</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">
-            <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-800">No pre-orders found</h3>
-            <p className="text-sm text-gray-500 mt-1">
+            <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground/45" />
+            <h3 className="text-lg font-semibold text-foreground">No pre-orders found</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
               {hasFilters ? "Try adjusting your filters." : "No pre-orders are currently available. Check back soon!"}
             </p>
             {hasFilters && (
@@ -234,11 +235,11 @@ export default function PreOrderPage() {
               return (
                 <Card
                   key={po.id}
-                  className={`bg-white shadow-sm hover:shadow-md transition-shadow flex flex-col ${isClosed ? "opacity-70" : ""}`}
+                  className={`card-interactive flex flex-col overflow-hidden ${isClosed ? "opacity-70" : ""}`}
                 >
                   {/* Image — links to detail page */}
                   <Link href={`/pre-order/${po.id}`} className="block">
-                    <div className="relative h-48 bg-gradient-to-br from-amber-50 to-white rounded-t-lg overflow-hidden flex items-center justify-center">
+                    <div className="relative flex h-48 items-center justify-center overflow-hidden bg-muted">
                       {po.image_url ? (
                         <Image src={po.image_url} alt={po.title} fill className="object-contain" />
                       ) : (
@@ -256,7 +257,7 @@ export default function PreOrderPage() {
                       </div>
                       {isReserved && (
                         <div className="absolute top-2 left-2">
-                          <Badge className="bg-primary text-white text-xs flex items-center gap-1">
+                          <Badge className="flex items-center gap-1 bg-primary text-xs text-primary-foreground">
                             <CheckCircle2 className="h-3 w-3" />Reserved
                           </Badge>
                         </div>
@@ -267,29 +268,29 @@ export default function PreOrderPage() {
                   <CardContent className="p-4 flex flex-col flex-1 gap-3">
                     {/* Game tag */}
                     <div className="flex items-center gap-1.5">
-                      <Badge variant="outline" className="text-xs text-primary border-primary/30 bg-primary/5">
+                      <Badge variant="outline" className="border-border bg-card text-xs text-foreground">
                         <Tag className="h-3 w-3 mr-1" />{po.game}
                       </Badge>
                       {(po.seller_business ?? po.seller_name) && (
-                        <span className="text-xs text-gray-400">by {po.seller_business ?? po.seller_name}</span>
+                        <span className="text-xs text-muted-foreground">by {po.seller_business ?? po.seller_name}</span>
                       )}
                     </div>
 
                     {/* Title + price */}
                     <div>
                       <Link href={`/pre-order/${po.id}`} className="hover:underline">
-                        <h3 className="font-black text-gray-900 leading-tight">{po.title}</h3>
+                        <h3 className="font-black leading-tight text-foreground">{po.title}</h3>
                       </Link>
                       {po.description && (
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">{po.description}</p>
+                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{po.description}</p>
                       )}
-                      <p className="text-xl font-black text-primary mt-2">
+                      <p className="price mt-2 text-xl text-foreground">
                         {fiatSymbol}{po.price.toLocaleString()}
                       </p>
                     </div>
 
                     {/* Meta */}
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         Releases {new Date(po.release_date).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
@@ -321,8 +322,8 @@ export default function PreOrderPage() {
                       ) : (
                         <>
                           {/* Quantity picker */}
-                          <div className="flex items-center justify-between rounded-xl border border-border bg-white px-3 py-2">
-                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Qty</span>
+                          <div className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2">
+                            <span className="label-meta text-muted-foreground">Qty</span>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
@@ -342,7 +343,7 @@ export default function PreOrderPage() {
                             </div>
                           </div>
                           <Button
-                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+                            className="w-full font-bold"
                             onClick={() => handleAddToCart(po)}
                             disabled={!isAuthenticated}
                           >

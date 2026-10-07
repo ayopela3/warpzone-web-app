@@ -46,17 +46,17 @@ export function ProductFilters({ search, category, sortBy, onSearchChange, onCat
     "Price"
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 border-b border-border pb-5">
       {/* Row 1: sort button left · category chips centre · search right */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex flex-wrap items-center gap-3">
         {/* Price sort pill */}
         <button
           type="button"
           onClick={cycleSortPrice}
-          className={`inline-flex items-center gap-1.5 rounded-full border px-3 h-8 text-xs font-semibold transition-colors shrink-0 ${
+          className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition-colors ${
             sortBy === "price_asc" || sortBy === "price_desc"
-              ? "bg-neutral-900 text-white border-neutral-900"
-              : "bg-white text-neutral-700 border-neutral-300 hover:border-neutral-500"
+              ? "border-foreground bg-foreground text-background"
+              : "border-border bg-card text-muted-foreground hover:border-foreground hover:text-foreground"
           }`}
         >
           <ArrowUpDown className="h-3 w-3" />
@@ -69,10 +69,10 @@ export function ProductFilters({ search, category, sortBy, onSearchChange, onCat
           <button
             type="button"
             onClick={() => onCategoryChange("all")}
-            className={`rounded-full border px-3.5 h-8 text-xs font-semibold transition-colors ${
+            className={`h-10 rounded-full border px-3.5 text-xs font-bold transition-colors ${
               category === "all"
-                ? "bg-neutral-900 text-white border-neutral-900"
-                : "bg-white text-neutral-700 border-neutral-300 hover:border-neutral-500"
+                ? "border-foreground bg-foreground text-background"
+                : "border-border bg-card text-muted-foreground hover:border-foreground hover:text-foreground"
             }`}
           >
             All
@@ -84,10 +84,10 @@ export function ProductFilters({ search, category, sortBy, onSearchChange, onCat
               key={cat.id}
               type="button"
               onClick={() => onCategoryChange(cat.slug)}
-              className={`rounded-full border px-3.5 h-8 text-xs font-semibold transition-colors ${
+              className={`h-10 rounded-full border px-3.5 text-xs font-bold transition-colors ${
                 category === cat.slug
-                  ? "bg-neutral-900 text-white border-neutral-900"
-                  : "bg-white text-neutral-700 border-neutral-300 hover:border-neutral-500"
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border bg-card text-muted-foreground hover:border-foreground hover:text-foreground"
               }`}
             >
               {cat.label}
@@ -97,10 +97,10 @@ export function ProductFilters({ search, category, sortBy, onSearchChange, onCat
 
         {/* Search */}
         <div className="relative shrink-0 w-52">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search products..."
-            className="pl-9 h-8 text-xs rounded-full border-neutral-300"
+            className="h-10 rounded-md border-border pl-9 text-sm"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
           />

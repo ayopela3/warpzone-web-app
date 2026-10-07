@@ -2,33 +2,35 @@
 
 /* ─────────────────────────────────────────
    THE WARPZONE — Design System Tokens
-   Palette: Warm Parchment × Electric Yellow
-   Typography: Montserrat (headings) + Inter (body)
+   Visual direction: warm paper, near-black ink,
+   1px rules, compact controls, mono metadata.
    ───────────────────────────────────────── */
 
 :root {
   /* ── Surface scale ─────────────────────── */
-  --background:                 #fff9ef;
-  --surface-dim:                #e1d9c7;
-  --surface-container-lowest:   #ffffff;
-  --surface-container-low:      #fbf3e0;
-  --surface-container:          #f6edda;
-  --surface-container-high:     #f0e7d5;
-  --surface-container-highest:  #eae2cf;
+  --background:                 #f4f3ee;
+  --surface-dim:                #e6e3da;
+  --surface-container-lowest:   #fffefb;
+  --surface-container-low:      #faf8f0;
+  --surface-container:          #f0eee6;
+  --surface-container-high:     #e9e6dc;
+  --surface-container-highest:  #dedbd1;
 
   /* ── Foreground / on-surface ────────────── */
-  --foreground:                 #1f1b10;
-  --on-surface-variant:         #4d4732;
-  --inverse-surface:            #343024;
-  --inverse-on-surface:         #f9f0dd;
+  --foreground:                 #151513;
+  --on-surface-variant:         #56554f;
+  --inverse-surface:            #151513;
+  --inverse-on-surface:         #f4f3ee;
 
   /* ── Outline ────────────────────────────── */
-  --border:                     #d0c6ab;
-  --outline:                    #7e775f;
+  --border:                     #d7d6cf;
+  --outline:                    #aaa9a0;
+  --rule-strong:                #151513;
 
   /* ── Primary — Electric Yellow ──────────── */
   --primary:                    #ffbf2a;
   --primary-foreground:         #1f1b10;
+  --primary-hover:              #e8aa16;
   --primary-container:          #ffbf2a;
   --on-primary-container:       #705e00;
   --primary-fixed:              #ffd470;
@@ -36,21 +38,21 @@
   --inverse-primary:            #ffbf2a;
 
   /* ── Secondary ──────────────────────────── */
-  --secondary:                  #ffbf2a;
-  --secondary-foreground:       #1f1b10;
-  --secondary-container:        #e4e1e5;
-  --on-secondary-container:     #656467;
+  --secondary:                  #151513;
+  --secondary-foreground:       #f4f3ee;
+  --secondary-container:        #fffefb;
+  --on-secondary-container:     #56554f;
 
   /* ── Muted / neutral ────────────────────── */
-  --muted:                      #f6edda;
-  --muted-foreground:           #4d4732;
+  --muted:                      #f0eee6;
+  --muted-foreground:           #6d6d66;
 
   /* ── Accent (bright yellow highlight) ──── */
   --accent:                     #ffbf2a;
   --accent-foreground:          #1f1b10;
 
   /* ── Card / popover ─────────────────────── */
-  --card:                       #ffffff;
+  --card:                       #fffefb;
   --card-foreground:            #1f1b10;
   --popover:                    #ffffff;
   --popover-foreground:         #1f1b10;
@@ -60,20 +62,20 @@
   --destructive-foreground:     #ffffff;
 
   /* ── Input / focus ring ─────────────────── */
-  --input:                      #d0c6ab;
+  --input:                      #c9c8c1;
   --ring:                       #ffbf2a;
 
   /* ── Status accents ─────────────────────── */
   --status-live:                #e8410a;
-  --status-preorder:            #1a56db;
-  --status-tournament:          #7c3aed;
+  --status-preorder:            #3458f4;
+  --status-tournament:          #346a57;
 
   /* ── Radius scale ────────────────────────── */
   --radius-sm:   0.25rem;   /* 4px  */
-  --radius:      0.5rem;    /* 8px  */
-  --radius-md:   0.75rem;   /* 12px */
-  --radius-lg:   1rem;      /* 16px */
-  --radius-xl:   1.5rem;    /* 24px */
+  --radius:      0.375rem;  /* 6px  */
+  --radius-md:   0.5rem;    /* 8px  */
+  --radius-lg:   0.75rem;   /* 12px */
+  --radius-xl:   1rem;      /* 16px */
   --radius-full: 9999px;
 }
 
@@ -87,6 +89,7 @@
   --color-popover-foreground:       var(--popover-foreground);
   --color-primary:                  var(--primary);
   --color-primary-foreground:       var(--primary-foreground);
+  --color-primary-hover:            var(--primary-hover);
   --color-secondary:                var(--secondary);
   --color-secondary-foreground:     var(--secondary-foreground);
   --color-muted:                    var(--muted);
@@ -96,6 +99,7 @@
   --color-destructive:              var(--destructive);
   --color-destructive-foreground:   var(--destructive-foreground);
   --color-border:                   var(--border);
+  --color-rule-strong:              var(--rule-strong);
   --color-input:                    var(--input);
   --color-ring:                     var(--ring);
 
@@ -114,8 +118,8 @@
 
   /* Fonts */
   --font-sans:     var(--font-inter);
-  --font-display:  var(--font-montserrat);
-  --font-mono:     ui-monospace, "Cascadia Code", monospace;
+  --font-display:  var(--font-archivo);
+  --font-mono:     var(--font-jetbrains-mono);
 }
 
 /* ─── Base reset ────────────────────────── */
@@ -134,23 +138,30 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-inter), system-ui, sans-serif;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /* ─── Typography scale ───────────────────── */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-montserrat), system-ui, sans-serif;
-  font-weight: 700;
-  line-height: 1.2;
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 800;
+  line-height: 1.05;
   color: var(--foreground);
+  letter-spacing: 0;
 }
 
-h1 { font-size: 3rem;   font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
-h2 { font-size: 2rem;   font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
-h3 { font-size: 1.5rem; font-weight: 700; line-height: 1.3; }
-h4 { font-size: 1.125rem; font-weight: 600; line-height: 1.4; }
+h1 { font-size: 3rem; font-weight: 900; line-height: 0.98; }
+h2 { font-size: 2rem; font-weight: 850; line-height: 1.05; }
+h3 { font-size: 1.25rem; font-weight: 800; line-height: 1.15; }
+h4 { font-size: 1rem; font-weight: 750; line-height: 1.25; }
+
+@media (max-width: 640px) {
+  h1 { font-size: 2.25rem; }
+  h2 { font-size: 1.625rem; }
+}
 
 /* ─── Input focus ring — Electric Yellow ── */
 input:focus-visible,
@@ -163,11 +174,12 @@ select:focus-visible {
 
 /* ─── Card hover — border transitions to yellow ── */
 .card-interactive {
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 .card-interactive:hover {
-  border-color: var(--accent) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: var(--foreground) !important;
+  box-shadow: 0 10px 26px rgba(21, 21, 19, 0.08);
+  transform: translateY(-1px);
 }
 
 /* ─── Status badge utilities ────────────── */
@@ -187,21 +199,39 @@ select:focus-visible {
   border-radius: var(--radius-full);
 }
 
-/* ─── Price display — always Montserrat ─── */
+/* ─── Price display ─────────────────────── */
 .price {
-  font-family: var(--font-montserrat), system-ui, sans-serif;
-  font-weight: 800;
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 900;
   font-size: 1.5rem;
   line-height: 1;
 }
 
 /* ─── Metadata labels — uppercase ──────── */
 .label-meta {
-  font-family: var(--font-inter), system-ui, sans-serif;
-  font-size: 0.75rem;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 0.625rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0;
   text-transform: uppercase;
+}
+
+.surface-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.section-rule {
+  border-top: 1px solid var(--border);
+}
+
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
 }
 
 /* ─── Scrollbar (subtle) ────────────────── */

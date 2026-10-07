@@ -68,11 +68,12 @@ export default function TournamentsPage() {
   const clearFilters = () => { setSearchQuery(""); setActiveTab("all") }
 
   return (
-    <div className="min-h-screen bg-white text-black">
-      <div className="border-b border-neutral-200 bg-neutral-50">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="border-b border-border bg-background">
         <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
+          <p className="label-meta mb-2 text-foreground">Events</p>
           <h1 className="text-3xl font-black">Tournaments & Events</h1>
-          <p className="mt-1 text-neutral-600">Register for local tournaments, casual play nights, and prerelease events.</p>
+          <p className="mt-2 max-w-2xl text-muted-foreground">Register for local tournaments, casual play nights, and prerelease events.</p>
         </div>
       </div>
 
@@ -103,8 +104,8 @@ export default function TournamentsPage() {
           )}
         </div>
 
-        <p className="text-sm text-muted-foreground mb-4">
-          Showing <span className="font-medium">{filtered.length}</span> of {tournaments.length} tournaments
+        <p className="label-meta mb-4 text-muted-foreground">
+          Showing <span className="text-foreground">{filtered.length}</span> of {tournaments.length} tournaments
         </p>
 
         {loading ? (

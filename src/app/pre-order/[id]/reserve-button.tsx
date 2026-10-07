@@ -84,15 +84,15 @@ export default function ReserveButton({
       {/* Quantity stepper — only show when reservable */}
       {!disabled && (
         <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          <span className="label-meta text-muted-foreground">
             Quantity
           </span>
-          <div className="flex items-center border border-border rounded-xl overflow-hidden">
+          <div className="flex items-center overflow-hidden rounded-md border border-border">
             <button
               type="button"
               onClick={() => setQty((q) => Math.max(1, q - 1))}
               disabled={qty <= 1}
-              className="px-3 h-10 text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+              className="h-10 px-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
               aria-label="Decrease quantity"
             >
               <Minus className="h-4 w-4" />
@@ -104,7 +104,7 @@ export default function ReserveButton({
               type="button"
               onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
               disabled={qty >= maxQty}
-              className="px-3 h-10 text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+              className="h-10 px-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
               aria-label="Increase quantity"
             >
               <Plus className="h-4 w-4" />
@@ -116,7 +116,7 @@ export default function ReserveButton({
       {/* CTA button */}
       {isInCart ? (
         <Button
-          className="w-full h-12 rounded-xl text-base font-bold bg-green-600 hover:bg-green-700 text-white"
+          className="h-12 w-full text-base font-bold"
           disabled
         >
           <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -124,7 +124,7 @@ export default function ReserveButton({
         </Button>
       ) : isClosed || isFull ? (
         <Button
-          className="w-full h-12 rounded-xl text-base font-bold"
+          className="h-12 w-full text-base font-bold"
           variant="outline"
           disabled
         >
@@ -133,7 +133,7 @@ export default function ReserveButton({
         </Button>
       ) : (
         <Button
-          className="w-full h-12 rounded-xl text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+          className="h-12 w-full text-base font-bold"
           onClick={handleReserve}
           disabled={reserving || !isAuthenticated}
         >

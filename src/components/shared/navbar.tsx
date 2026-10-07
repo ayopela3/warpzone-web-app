@@ -52,8 +52,8 @@ export function Navbar() {
 
   return (
     <>
-    <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between p-4 lg:px-8" aria-label="Global">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 lg:px-8" aria-label="Global">
         <div className="flex lg:flex-1">
           <Link href="/" prefetch={false} className="-m-1.5 p-1.5">
             <span className="sr-only">The Warpzone</span>
@@ -64,7 +64,7 @@ export function Navbar() {
         <div className="flex lg:hidden">
           <button
             type="button"
-            className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700"
+            className="focus-ring -m-2.5 inline-flex items-center justify-center rounded-md border border-border bg-card p-2.5 text-foreground"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             <span className="sr-only">{mobileMenuOpen ? "Close menu" : "Open menu"}</span>
@@ -76,13 +76,13 @@ export function Navbar() {
           </button>
         </div>
         
-        <div className="hidden lg:flex lg:gap-x-8">
+        <div className="hidden rounded-xl border border-border bg-card/70 p-1 lg:flex lg:gap-x-1">
           {showShoppingFeatures && navigation.map((item) => (
             <Link
               key={item.name}
               href={item.href}
               prefetch={false}
-              className="rounded-full px-3 py-2 text-sm font-bold leading-6 text-black transition-colors hover:bg-primary/15"
+              className="rounded-md px-3 py-2 text-xs font-bold leading-none text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
             >
               {item.name}
             </Link>
@@ -100,13 +100,13 @@ export function Navbar() {
                   router.push("/shop")
                 }
               }}
-              className="relative hidden lg:block mr-3"
+              className="relative mr-3 hidden lg:block"
             >
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search products..."
-                className="h-8 w-40 pl-9 text-xs rounded-full border-neutral-300"
+                className="h-9 w-44 rounded-md border-border bg-card pl-9 text-xs"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -125,7 +125,7 @@ export function Navbar() {
               <Link href="/cart" prefetch={false}>
                 <ShoppingCart className="h-5 w-5" />
                 {mounted && cartCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-black px-1 text-xs font-black text-white">
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-background bg-foreground px-1 text-[10px] font-black text-background">
                     {cartCount}
                   </span>
                 )}
@@ -167,15 +167,15 @@ export function Navbar() {
 
       {/* Mobile menu — outside <header> to escape its stacking context */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-9999 flex flex-col bg-white overflow-hidden lg:hidden">
+        <div className="fixed inset-0 z-9999 flex flex-col overflow-hidden bg-background lg:hidden">
           {/* Header row */}
-          <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 p-4">
+          <div className="flex shrink-0 items-center justify-between border-b border-border p-4">
             <Link href="/" prefetch={false} className="-m-1.5 p-1.5" onClick={() => setMobileMenuOpen(false)}>
               <Image src="/images/warpzone.png" alt="The Warpzone" width={140} height={40} className="h-9 w-auto object-contain" />
             </Link>
             <button
               type="button"
-              className="-m-2.5 rounded-md p-2.5 text-gray-700"
+              className="focus-ring -m-2.5 rounded-md border border-border bg-card p-2.5 text-foreground"
               onClick={() => setMobileMenuOpen(false)}
             >
               <span className="sr-only">Close menu</span>
@@ -200,11 +200,11 @@ export function Navbar() {
                 className="mb-4"
               >
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     type="search"
                     placeholder="Search products..."
-                    className="w-full pl-10 h-10 text-sm rounded-full border-neutral-300"
+                    className="h-10 w-full rounded-md border-border pl-10 text-sm"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -218,7 +218,7 @@ export function Navbar() {
                   key={item.name}
                   href={item.href}
                   prefetch={false}
-                  className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
+                  className="block rounded-md border-b border-border px-1 py-4 text-sm font-bold text-foreground"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.name}
@@ -228,7 +228,7 @@ export function Navbar() {
                 <Link
                   href="/auth/become-seller"
                   prefetch={false}
-                  className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
+                  className="block rounded-md border-b border-border px-1 py-4 text-sm font-bold text-foreground"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Sell with us
@@ -236,13 +236,13 @@ export function Navbar() {
               )}
             </div>
 
-            <div className="mt-8 border-t border-neutral-200 pt-6">
+            <div className="mt-8 border-t border-border pt-6">
               {isAuthenticated ? (
                 <div className="space-y-1">
                   <Link
                     href={dashboardHref}
                     prefetch={false}
-                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
+                    className="block rounded-md px-1 py-4 text-sm font-bold text-foreground"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Dashboard
@@ -251,7 +251,7 @@ export function Navbar() {
                     <Link
                       href="/dashboard/orders"
                       prefetch={false}
-                      className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
+                      className="block rounded-md px-1 py-4 text-sm font-bold text-foreground"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       My Orders
@@ -261,7 +261,7 @@ export function Navbar() {
                     <Link
                       href="/dashboard/settings"
                       prefetch={false}
-                      className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
+                      className="block rounded-md px-1 py-4 text-sm font-bold text-foreground"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Settings
@@ -269,7 +269,7 @@ export function Navbar() {
                   )}
                   <button
                     type="button"
-                    className="block w-full rounded-lg px-3 py-3 text-left text-lg font-semibold text-foreground hover:bg-neutral-100"
+                    className="block w-full rounded-md px-1 py-4 text-left text-sm font-bold text-foreground"
                     onClick={async () => {
                       await signOut()
                       setMobileMenuOpen(false)
@@ -283,7 +283,7 @@ export function Navbar() {
                   <Link
                     href="/auth/signin"
                     prefetch={false}
-                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
+                    className="block rounded-md px-1 py-4 text-sm font-bold text-foreground"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign in
@@ -291,7 +291,7 @@ export function Navbar() {
                   <Link
                     href="/auth/signup"
                     prefetch={false}
-                    className="block rounded-lg px-3 py-3 text-lg font-semibold text-foreground hover:bg-neutral-100"
+                    className="block rounded-md px-1 py-4 text-sm font-bold text-foreground"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign up

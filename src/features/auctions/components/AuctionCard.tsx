@@ -53,12 +53,12 @@ export function AuctionCard({ auction, fiatSymbol, isAuthenticated, onJoin }: Pr
   }, [auction.end_time])
 
   return (
-    <Card className="bg-white shadow-md hover:shadow-lg transition-shadow">
-      <div className="h-48 bg-[linear-gradient(135deg,#fef3c7,#ffffff)] flex items-center justify-center relative overflow-hidden">
+    <Card className="card-interactive overflow-hidden py-0">
+      <div className="relative flex h-48 items-center justify-center overflow-hidden bg-muted">
         {auction.image_url ? (
           <Image src={auction.image_url} alt={auction.title} fill className="object-contain" />
         ) : (
-          <Gavel className="h-16 w-16 text-amber-400" />
+          <Gavel className="h-16 w-16 text-primary" />
         )}
         <Badge
           className="absolute top-3 right-3"
@@ -77,7 +77,7 @@ export function AuctionCard({ auction, fiatSymbol, isAuthenticated, onJoin }: Pr
       </div>
 
       <CardHeader className="pt-5 pb-2">
-        <CardTitle className="text-lg text-gray-900">{auction.title}</CardTitle>
+        <CardTitle className="text-lg text-foreground">{auction.title}</CardTitle>
         <div className="flex flex-wrap gap-1.5 mt-1">
           <Badge variant="outline" className="text-xs capitalize">{auction.category}</Badge>
           <Badge variant="secondary" className="text-xs">
@@ -85,21 +85,21 @@ export function AuctionCard({ auction, fiatSymbol, isAuthenticated, onJoin }: Pr
           </Badge>
           {auction.rarity && <Badge variant="outline" className="text-xs">{auction.rarity}</Badge>}
         </div>
-        <CardDescription className="text-gray-500 text-xs mt-1">
+        <CardDescription className="mt-1 text-xs text-muted-foreground">
           {auction.business_name ?? auction.seller_name ?? "Unknown seller"}
         </CardDescription>
       </CardHeader>
 
       <CardContent className="pb-5 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Current Bid</span>
-          <span className="text-2xl font-bold text-primary">{fiatSymbol}{(auction.current_bid ?? auction.starting_price ?? 0).toLocaleString()}</span>
+          <span className="text-sm text-muted-foreground">Current Bid</span>
+          <span className="price text-2xl text-foreground">{fiatSymbol}{(auction.current_bid ?? auction.starting_price ?? 0).toLocaleString()}</span>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600">Starting Bid</span>
-          <span className="font-medium text-gray-900">{fiatSymbol}{(auction.starting_price ?? 0).toLocaleString()}</span>
+          <span className="text-muted-foreground">Starting Bid</span>
+          <span className="font-medium text-foreground">{fiatSymbol}{(auction.starting_price ?? 0).toLocaleString()}</span>
         </div>
-        <div className="flex items-center text-sm text-gray-600 gap-1">
+        <div className="flex items-center gap-1 text-sm text-muted-foreground">
           <Clock className="h-3 w-3" />
           {timeLabel}
         </div>

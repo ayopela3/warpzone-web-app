@@ -124,10 +124,10 @@ export default async function PreOrderDetailPage({
         </Link>
 
         {/* ── Main grid ── */}
-        <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-14 items-start">
+        <div className="grid items-start gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10">
           {/* Image panel */}
           <div
-            className="rounded-2xl overflow-hidden bg-[#fdf6e3] border border-border flex items-center justify-center"
+            className="flex items-center justify-center overflow-hidden rounded-md border border-border bg-muted"
             style={{ minHeight: "420px" }}
           >
             {row.image_url ? (
@@ -146,28 +146,28 @@ export default async function PreOrderDetailPage({
           </div>
 
           {/* Pre-order info */}
-          <div className="flex flex-col">
+          <div className="flex flex-col rounded-md border border-border bg-card p-5 lg:p-6">
             {/* Pill tags */}
             <div className="flex flex-wrap gap-2 mb-5">
-              <span className="inline-flex items-center rounded-full bg-primary/90 px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary-foreground">
+              <span className="label-meta inline-flex items-center rounded-full border border-primary bg-primary px-3 py-1 text-primary-foreground">
                 {row.game}
               </span>
-              <span className="inline-flex items-center rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-foreground">
+              <span className="label-meta inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-muted-foreground">
                 Pre-order
               </span>
               {isClosed ? (
-                <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                <span className="label-meta inline-flex items-center rounded-full border border-border bg-muted px-3 py-1 text-muted-foreground">
                   Closed
                 </span>
               ) : (
-                <span className="inline-flex items-center rounded-full bg-green-500 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                <span className="label-meta inline-flex items-center rounded-full border border-green-600 bg-green-600 px-3 py-1 text-white">
                   Active
                 </span>
               )}
             </div>
 
             {/* Title */}
-            <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground leading-tight lg:text-5xl">
+            <h1 className="font-display text-4xl font-black leading-none text-foreground lg:text-5xl">
               {row.title}
             </h1>
 
@@ -184,13 +184,13 @@ export default async function PreOrderDetailPage({
             )}
 
             {/* Price + CTA card */}
-            <div className="mt-8 rounded-2xl border border-border bg-muted/40 p-5 space-y-4">
+            <div className="mt-8 space-y-4 border-t border-border pt-6">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+                  <p className="label-meta mb-2 text-muted-foreground">
                     {hasDownpayment ? "Down Payment" : "Price"}
                   </p>
-                  <p className="font-display text-3xl font-extrabold text-foreground leading-none">
+                  <p className="price text-4xl text-foreground">
                     {fiatSymbol}
                     {row.price.toLocaleString()}
                   </p>
@@ -204,10 +204,10 @@ export default async function PreOrderDetailPage({
 
                 {/* Status badge */}
                 <span
-                  className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${
+                  className={`label-meta inline-flex items-center rounded-full border px-3 py-1 ${
                     isClosed || isFull
-                      ? "bg-muted text-muted-foreground"
-                      : "bg-primary/90 text-primary-foreground"
+                      ? "border-border bg-muted text-muted-foreground"
+                      : "border-primary bg-primary text-primary-foreground"
                   }`}
                 >
                   {isClosed
@@ -233,11 +233,11 @@ export default async function PreOrderDetailPage({
             </div>
 
             {/* Info cards */}
-            <div className="mt-6 grid grid-cols-2 gap-4">
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {/* Release date card */}
-              <div className="rounded-2xl border border-border bg-white p-6">
+              <div className="rounded-md border border-border bg-background p-4">
                 <Calendar className="h-6 w-6 text-primary mb-4" />
-                <h2 className="font-display font-extrabold text-lg text-foreground leading-snug">
+                <h2 className="text-base font-extrabold leading-tight text-foreground">
                   Release Date
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
@@ -259,9 +259,9 @@ export default async function PreOrderDetailPage({
 
               {/* Cutoff date card — only if set */}
               {cutoffFormatted && (
-                <div className="rounded-2xl border border-border bg-white p-6">
+                <div className="rounded-md border border-border bg-background p-4">
                   <CalendarClock className="h-6 w-6 text-primary mb-4" />
-                  <h2 className="font-display font-extrabold text-lg text-foreground leading-snug">
+                  <h2 className="text-base font-extrabold leading-tight text-foreground">
                     Cutoff Date
                   </h2>
                   <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
@@ -271,9 +271,9 @@ export default async function PreOrderDetailPage({
               )}
 
               {/* Verified condition card */}
-              <div className="rounded-2xl border border-border bg-white p-6">
+              <div className="rounded-md border border-border bg-background p-4">
                 <ShieldCheck className="h-6 w-6 text-primary mb-4" />
-                <h2 className="font-display font-extrabold text-lg text-foreground leading-snug">
+                <h2 className="text-base font-extrabold leading-tight text-foreground">
                   Verified listing
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
@@ -283,9 +283,9 @@ export default async function PreOrderDetailPage({
 
               {/* Slots remaining card — only if limited */}
               {slotsLeft !== null && !isClosed && (
-                <div className="rounded-2xl border border-border bg-white p-6">
+                <div className="rounded-md border border-border bg-background p-4">
                   <Clock className="h-6 w-6 text-primary mb-4" />
-                  <h2 className="font-display font-extrabold text-lg text-foreground leading-snug">
+                  <h2 className="text-base font-extrabold leading-tight text-foreground">
                     {slotsLeft <= 0 ? "No Slots Left" : "Limited Slots"}
                   </h2>
                   <p className="mt-2 text-sm text-muted-foreground leading-relaxed">

@@ -22,18 +22,18 @@ export default function ProductImageCarousel({ imageUrl, productName }: ProductI
   const showThumbnails = images.length > 1
 
   return (
-    <div className="flex h-full gap-4">
+    <div className="flex h-full gap-3">
       {/* Thumbnails - Vertical on the left (Amazon style) */}
       {showThumbnails && (
-        <div className="flex flex-col gap-2 w-20 flex-shrink-0">
+        <div className="flex w-20 flex-shrink-0 flex-col gap-2">
           {images.map((image, index) => (
             <button
               key={index}
               onClick={() => handleThumbnailClick(index)}
-              className={`h-20 w-20 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${
+              className={`h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border transition-all ${
                 index === currentIndex 
-                  ? 'border-primary ring-2 ring-primary/20' 
-                  : 'border-neutral-200 hover:border-neutral-400'
+                  ? "border-primary ring-2 ring-primary/20"
+                  : "border-border hover:border-foreground"
               }`}
             >
               <img
@@ -47,7 +47,7 @@ export default function ProductImageCarousel({ imageUrl, productName }: ProductI
       )}
 
       {/* Main Image */}
-      <div className="flex-1 flex items-center justify-center bg-[#fdf6e3] p-8 rounded-2xl">
+      <div className="flex flex-1 items-center justify-center bg-muted p-8">
         {images.length > 0 && images[currentIndex] ? (
           <img
             src={images[currentIndex]}
@@ -55,7 +55,7 @@ export default function ProductImageCarousel({ imageUrl, productName }: ProductI
             className="max-h-[500px] w-full object-contain"
           />
         ) : (
-          <div className="flex h-[500px] w-full items-center justify-center rounded-3xl border-2 border-primary bg-white shadow-xl">
+          <div className="flex h-[500px] w-full items-center justify-center rounded-md border border-border bg-card">
             <ShoppingBag className="h-20 w-20 text-primary" />
           </div>
         )}
