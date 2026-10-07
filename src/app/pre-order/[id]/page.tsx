@@ -1,7 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { notFound } from "next/navigation"
-import { ArrowLeft, Calendar, Users, Clock, Package, ShieldCheck, CalendarClock } from "lucide-react"
+import { ArrowLeft, Calendar, Clock, Package, ShieldCheck, CalendarClock } from "lucide-react"
 import ReserveButton from "./reserve-button"
 import type { CloudflareEnv } from "@/types/cloudflare"
 
@@ -244,18 +244,6 @@ export default async function PreOrderDetailPage({
                   {releaseFormatted}
                 </p>
               </div>
-
-              {/* Reservations card */}
-              {/* <div className="rounded-2xl border border-border bg-white p-6">
-                <Users className="h-6 w-6 text-primary mb-4" />
-                <h2 className="font-display font-extrabold text-lg text-foreground leading-snug">
-                  Reservations
-                </h2>
-                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                  {row.reservation_count} reserved
-                  {row.max_slots !== null && ` of ${row.max_slots} slots`}
-                </p>
-              </div> */}
 
               {/* Cutoff date card — only if set */}
               {cutoffFormatted && (
